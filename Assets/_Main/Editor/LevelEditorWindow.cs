@@ -7,8 +7,8 @@ public class LevelEditorWindow : EditorWindow
     private LevelData levelData;
     private int selectedTile = 1;
     private Vector2 scroll;
-    private int newWidth = 10;
-    private int newHeight = 8;
+    private int newWidth = 7;
+    private int newHeight = 7;
 
     [MenuItem("Tools/Level Editor")]
     static void Open()
@@ -25,12 +25,23 @@ public class LevelEditorWindow : EditorWindow
         levelData.tiles = new int[levelData.width * levelData.height];
     }
 
+    void ClearGrid()
+    {
+        int height = levelData.height;
+        int width = levelData.width;
+
+        levelData = new LevelData();
+        levelData.height = height;        
+        levelData.width = width;
+        levelData.tiles = new int[levelData.width * levelData.height];
+    }
+
     void OnGUI()
     {
         if (levelData == null || levelData.tiles == null) { InitLevel(); return; }
 
         // ── Nombre ──────────────────────────────────────────────
-        levelData.name = EditorGUILayout.TextField("Nombre", levelData.name);
+        levelData.name = EditorGUILayout.TextField("Name", levelData.name);
 
         // ── Tamaño ──────────────────────────────────────────────
         EditorGUILayout.BeginHorizontal();
@@ -46,7 +57,7 @@ public class LevelEditorWindow : EditorWindow
         GUI.backgroundColor = TileColor((TileType)selectedTile);
         GUILayout.Label("Tile: " + (TileType)selectedTile);
         GUI.backgroundColor = Color.white;
-        selectedTile = EditorGUILayout.IntSlider(selectedTile, 0, 5);
+        selectedTile = EditorGUILayout.IntSlider(selectedTile, 0, 6);
 
         EditorGUILayout.Space();
 
@@ -66,6 +77,8 @@ public class LevelEditorWindow : EditorWindow
             GUI.backgroundColor = Color.white;
             EditorGUILayout.EndHorizontal();
         }
+        if (GUILayout.Button("Limpiar", GUILayout.Width(60)))
+            ClearGrid();
         EditorGUILayout.EndScrollView();
 
         // ── Export ──────────────────────────────────────────────
@@ -76,10 +89,11 @@ public class LevelEditorWindow : EditorWindow
     Color TileColor(TileType t) => t switch
     {
         TileType.Wall => Color.gray,
-        TileType.Spawn => Color.green,
+        TileType.Spawn => new Color(0.2f, 0.6f, 1f),
         TileType.Danger => Color.red,
         TileType.Point => Color.yellow,
-        TileType.Exit => new Color(0.2f, 0.6f, 1f),
+        TileType.Exit => Color.green,
+        TileType.Void => Color.black,
         _ => Color.white
     };
 

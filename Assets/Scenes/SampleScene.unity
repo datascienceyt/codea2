@@ -205,13 +205,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.5, y: 0, z: 0, w: 0.8660254}
+  m_LocalPosition: {x: 0, y: 6, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 60, y: 0, z: 0}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -442,6 +442,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1245720794}
   - component: {fileID: 1245720795}
+  - component: {fileID: 1245720796}
   m_Layer: 0
   m_Name: Map
   m_TagString: Untagged
@@ -476,13 +477,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d986bd24d73335941808e5950b75864e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelLoader
+  pathPrefab: {fileID: 3508795590032697016, guid: a92ded6e4fa50024682df29808a1bb62, type: 3}
   wallPrefab: {fileID: 5250274889489871892, guid: 42d06e15501a162469cc5b685ae49c94, type: 3}
   dangerPrefab: {fileID: 7193382371715767142, guid: a49d16e68e5d57e4dbafda7179cf63e5, type: 3}
   pointPrefab: {fileID: 6345231869145121931, guid: 7a52a58a1d4448d41817830f7f3581e6, type: 3}
   botPrefab: {fileID: 3757803444399024281, guid: 09cb29a56ba32e445b34478f9557c535, type: 3}
   exitPrefab: {fileID: 522974621567273210, guid: 91455b92baaa47f49a5efb3529ab2d6a, type: 3}
   tileSize: 1
-  levelJson: {fileID: 4900000, guid: 798f75121db1c2447b858d59aef01d69, type: 3}
+  levelJson: {fileID: 4900000, guid: c4b01c8e34506144eb49073afc0c84cc, type: 3}
+--- !u!114 &1245720796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1245720793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cffedb2d004e78046aae863c0a1fe353, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevelManager
+  levelName: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
