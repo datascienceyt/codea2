@@ -156,5 +156,5 @@ MonoBehaviour:
   botPos: {x: 0, y: 0}
   direction: 1
   levelManager: {fileID: 0}
-  moveSpeed: 3
-  rotateSpeed: 90
+  moveSpeed: 1
+  rotateSpeed: 270

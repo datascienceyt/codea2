@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 
 public enum TileType { Path = 0, Wall = 1, Spawn = 2, Danger = 3, Point = 4, Exit = 5, Void = 6 }
 
@@ -25,16 +26,23 @@ public class LevelLoader : MonoBehaviour
     [Header("Config")]
     public float tileSize = 1f;
     public TextAsset levelJson;
+    public bool loadOnStart = true;
 
     private LevelManager levelManager;
     private Bot bot;
 
     private void Awake() => levelManager = GetComponent<LevelManager>();
 
-    void Start() => LoadLevel(levelJson);
+    void Start()
+    {
+        if(loadOnStart)
+            LoadLevel(levelJson);
+    }
 
     public void LoadLevel(TextAsset json)
     {
+        transform.localScale *= tileSize;
+
         LevelData data = JsonUtility.FromJson<LevelData>(json.text);
         int[][] grid = new int[data.height][];
         GameObject[][] objectGrid = new GameObject[data.height][];
@@ -49,54 +57,56 @@ public class LevelLoader : MonoBehaviour
             for (int x = 0; x < data.width; x++)
             {
                 TileType type = (TileType)data.tiles[y * data.width + x];
-                Vector3 pos = new Vector3(x * tileSize, 0, -y * tileSize);
-                GameObject gameObject = null;
+                Vector3 pos = new Vector3(x, 0, -y);
+                GameObject prefab = null;
 
                 grid[y][x] = data.tiles[y * data.width + x];
 
                 switch (type)
                 {
                     case TileType.Path:
-                        gameObject = Instantiate(pathPrefab, pos, Quaternion.identity);
+                        prefab = pathPrefab;
                         break;
                     case TileType.Wall:
-                        gameObject = Instantiate(wallPrefab, pos, Quaternion.identity);
+                        prefab = wallPrefab;
                         break;
                     case TileType.Danger:
-                        gameObject = Instantiate(dangerPrefab, pos, Quaternion.identity);
+                        prefab = dangerPrefab;
                         break;
                     case TileType.Point:
-                        GameObject aux = Instantiate(pointPrefab, pos, Quaternion.identity);
-                        aux.transform.parent = transform;
-                        aux.GetComponent<Point>().OnCollected += levelManager.IncreasePoint;
-                        gameObject = Instantiate(pathPrefab, pos, Quaternion.identity);
-                        grid[y][x] = 0;
+                        prefab = Instantiate(pointPrefab, transform);       //Instanciar prefab de punto antes de convertir el grid en camino para que el usuario pueda caminar por ahí
+                        prefab.transform.localPosition = pos;
+                        prefab.GetComponent<Point>().OnCollected += levelManager.IncreasePoint;
+
+                        grid[y][x] = 0;                                     //Convertir en path en el grid numérico
+                        prefab = pathPrefab;
                         break;
                     case TileType.Spawn:
+                        grid[y][x] = 0;
                         spawnPos.x = x;
                         spawnPos.y = y;
-                        bot = Instantiate(botPrefab, pos, Quaternion.identity).GetComponent<Bot>();
-                        bot.transform.parent = transform;
-                        gameObject = Instantiate(pathPrefab, pos, Quaternion.identity);
-                        grid[y][x] = 0;
+
+                        bot = Instantiate(botPrefab, transform).GetComponent<Bot>();
+                        bot.transform.localPosition = pos;
+
+                        prefab = pathPrefab;
                         break;
                     case TileType.Exit:
-                        gameObject = Instantiate(exitPrefab, pos, Quaternion.identity);
+                        prefab = exitPrefab;
                         break;
                 }
 
-                if(gameObject != null)
+                if(prefab != null)
                 {
-                    gameObject.transform.parent = transform;
-                    objectGrid[y][x] = gameObject;
+                    prefab = Instantiate(prefab, transform);
+                    prefab.transform.localPosition = pos;
+                    objectGrid[y][x] = prefab;
                 }
             }
         }
 
         ReferenceLevelData(data.name, grid, objectGrid, spawnPos);
         PrintGrid(grid);
-        transform.Translate(-data.width * tileSize / 2, 0, -data.height * tileSize / 2);
-        bot.transform.parent = null;
     }
 
     private void ReferenceLevelData(string name, int[][] grid, GameObject[][] objectGrid, Vector2 spawnPos)

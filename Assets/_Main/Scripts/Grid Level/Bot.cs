@@ -22,104 +22,74 @@ public class Bot : MonoBehaviour
     void Update()
     {
         if (Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            TryMove();
-        }
+            StartCoroutine(MoveForward());
 
         if (Keyboard.current.aKey.wasPressedThisFrame)
-        {
-            TryRotate(Rotation.Left);
-        }
+            StartCoroutine(RotateLeft());
+
         if (Keyboard.current.dKey.wasPressedThisFrame)
-        {
-            TryRotate(Rotation.Right);
-        }
+            StartCoroutine(RotateRight());
     }
 
-    [ContextMenu("TryMove")]
-    void TryMove()
+    [ContextMenu("Move forward")]
+    public IEnumerator MoveForward()
     {
-        if (isMoving || isRotating) return;
+        if (isMoving || isRotating) yield break;
 
         tmpPos = botPos;
-
         switch (direction)
         {
-            case Direction.Up:
-                tmpPos.y -= 1;
-                break;
-            case Direction.Down:
-                tmpPos.y += 1;
-                break;
-            case Direction.Left:
-                tmpPos.x -= 1;
-                break;
-            case Direction.Right:
-                tmpPos.x += 1;
-                break;
+            case Direction.Up: tmpPos.y -= 1; break;
+            case Direction.Down: tmpPos.y += 1; break;
+            case Direction.Left: tmpPos.x -= 1; break;
+            case Direction.Right: tmpPos.x += 1; break;
         }
 
-        //print("Trying to move from " + botPos + " to " + tmpPos);
+        if (!levelManager.ValidMovementInGrid(tmpPos))
+            yield break; // movimiento inválido, no hace nada
 
-        if(levelManager.ValidMovementInGrid(tmpPos))
-        {
-            botPos = tmpPos;
-            StartCoroutine(Move(tmpPos));
-        }
-        else
-        {
-            tmpPos = botPos;
-        }
+        botPos = tmpPos;
+        yield return Move(tmpPos);
     }
 
     IEnumerator Move(Vector2 destination)
     {
         isMoving = true;
-
         int x = (int)destination.x;
         int y = (int)destination.y;
-
         Vector3 target = levelManager.objectGrid[y][x].transform.position;
-
-        while(transform.position != target)
+        while (transform.position != target)
         {
             rb.MovePosition(Vector3.MoveTowards(rb.position, target, moveSpeed * Time.deltaTime));
             yield return null;
         }
-        
         isMoving = false;
-        //print("Movement done");
     }
 
-    void TryRotate(Rotation rotation)
-    {
-        if (isMoving || isRotating) return;
-
-        StartCoroutine(Rotate(rotation));
-    }
+    [ContextMenu("Rotate left")]
+    public IEnumerator RotateLeft() => Rotate(Rotation.Left);
+    [ContextMenu("Rotate right")]
+    public IEnumerator RotateRight() => Rotate(Rotation.Right);
 
     IEnumerator Rotate(Rotation rotation)
     {
+        if (isMoving || isRotating) yield break;
+
         isRotating = true;
-
-        float angle = rotation == Rotation.Right ? 90f : -90f;
         float rotated = 0f;
-        float step = rotateSpeed * Time.deltaTime; // grados por frame
-
         while (Mathf.Abs(rotated) < 90f)
         {
+            float step = rotateSpeed * Time.deltaTime;
             float delta = Mathf.Min(step, 90f - Mathf.Abs(rotated));
             transform.Rotate(0, rotation == Rotation.Right ? delta : -delta, 0);
             rotated += delta;
             yield return null;
         }
 
-        // Snap exacto al final
         int dir = (int)direction;
         dir += rotation == Rotation.Right ? 1 : -1;
         direction = (Direction)(((dir % 4) + 4) % 4);
-        transform.rotation = Quaternion.Euler(0, (int)direction * 90f, 0);
-
+        transform.localRotation = Quaternion.Euler(0, (int)direction * 90f, 0);
         isRotating = false;
     }
 }

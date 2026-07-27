@@ -7,10 +7,10 @@ public class LevelManager : MonoBehaviour
     public int[][] grid;
     public GameObject[][] objectGrid;
 
-    public event Action OnExit;
+    //public event Action OnExit;
     public event Action OnDanger;
 
-    int pointCounter = 0;
+    public int pointCounter { get; private set; } = 0;
 
     public void IncreasePoint()
     {

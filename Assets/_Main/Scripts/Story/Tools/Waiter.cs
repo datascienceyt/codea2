@@ -1,16 +1,22 @@
+using System.Collections;
 using UnityEngine;
 
-public class Waiter : MonoBehaviour
+public class Waiter : MonoBehaviour, IStepAction
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [SerializeField] public float seconds = 1f;
+
+    public IEnumerator Execute()
     {
-        
+        yield return StartCoroutine(Wait());
     }
 
-    // Update is called once per frame
-    void Update()
+    public void SetSeconds(float newSeconds)
     {
-        
+        seconds = Mathf.Max(0, newSeconds);
+    }
+
+    public IEnumerator Wait()
+    {
+        yield return new WaitForSeconds(seconds);
     }
 }

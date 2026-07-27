@@ -2,15 +2,18 @@ using UnityEngine;
 
 public class Tools : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void DestroyObject(GameObject obj)
     {
-        
+        Destroy(obj);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void SetActive(GameObject obj)
     {
-        
+        obj.SetActive(true);
+    }
+
+    public void SetInactive(GameObject obj)
+    {
+        obj.SetActive(false);
     }
 }
