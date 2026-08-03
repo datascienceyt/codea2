@@ -9,8 +9,11 @@ public class ProgramRunner : MonoBehaviour
     {
         IsRunning = true;
         var current = start;
+        TelemetryManager.Instance.ResetFinalSequenceLenght();
+        
         while (current != null)
         {
+            TelemetryManager.Instance.IncrementFinalSequenceLenght();
             yield return current.Execute();
             current = current.Next;
         }

@@ -27,6 +27,24 @@ public class VRGrabEvents : MonoBehaviour
             interactable.WhenStateChanged -= OnStateChanged;
     }
 
+    [ContextMenu("Invoke On Hover")]
+    public void InvokeOnHover()
+    {
+        onHover?.Invoke();
+    }
+
+    [ContextMenu("Invoke On Grabbed")]
+    public void InvokeOnGrabbed()
+    {
+        onGrabbed?.Invoke();
+    }
+
+    [ContextMenu("Invoke On Released")]
+    public void InvokeOnReleased()
+    {
+        onReleased?.Invoke();
+    }
+
     private void OnStateChanged(InteractableStateChangeArgs args)
     {
         if (args.NewState == InteractableState.Hover)

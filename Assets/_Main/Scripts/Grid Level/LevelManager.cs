@@ -17,6 +17,11 @@ public class LevelManager : MonoBehaviour
         pointCounter++;
     }
 
+    public void ResetLevel()
+    {
+        pointCounter = 0;
+    }
+
     public bool ValidMovementInGrid(Vector2 direction)
     {
         int x = (int)direction.x;

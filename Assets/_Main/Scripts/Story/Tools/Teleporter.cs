@@ -25,7 +25,7 @@ public class Teleporter : MonoBehaviour, IStepAction
         yield return new WaitForSeconds(OVRScreenFade.instance.fadeTime);
 
         var teleportEvent = new LocomotionEvent(
-            locomotionEvents.GetInstanceID(),
+            locomotionEvents.GetEntityId(),
             target.position, // Corregido: se pasa Vector3 en vez de Pose
             LocomotionEvent.TranslationType.Absolute
         );

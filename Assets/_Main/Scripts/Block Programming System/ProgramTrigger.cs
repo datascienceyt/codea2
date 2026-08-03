@@ -5,6 +5,7 @@ public class ProgramTrigger : MonoBehaviour
     public ProgramRunner runner;
     public BlockNode startBlock;        //Bloque estático "Inicio"
 
+    [ContextMenu("Press")]
     public void OnPlayPressed()
     {
         if (runner.IsRunning) return;

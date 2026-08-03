@@ -35,13 +35,14 @@ public class LevelLoader : MonoBehaviour
 
     void Start()
     {
-        if(loadOnStart)
+        transform.localScale *= tileSize;
+     
+        if (loadOnStart)
             LoadLevel(levelJson);
     }
 
     public void LoadLevel(TextAsset json)
     {
-        transform.localScale *= tileSize;
 
         LevelData data = JsonUtility.FromJson<LevelData>(json.text);
         int[][] grid = new int[data.height][];
@@ -117,6 +118,22 @@ public class LevelLoader : MonoBehaviour
 
         bot.botPos = spawnPos;
         bot.levelManager = levelManager;
+    }
+
+    public void ReloadLevel()
+    {
+        ClearLevel();
+        LoadLevel(levelJson);
+    }
+
+    void ClearLevel()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+            Destroy(transform.GetChild(i).gameObject);
+
+        bot = null;
+        levelManager.grid = null;
+        levelManager.objectGrid = null;
     }
 
     void PrintGrid(int[][] grid)

@@ -5,10 +5,12 @@ public enum GridBlockType { MoveForward, RotateLeft, RotateRight }
 public class GridBlock : BlockNode
 {
     public GridBlockType blockType;
-    public Bot bot;
 
     public override IEnumerator Execute()
     {
+        Bot bot = FindAnyObjectByType<Bot>();
+        if (bot == null) yield break;
+
         switch (blockType)
         {
             case GridBlockType.MoveForward: yield return bot.MoveForward(); break;

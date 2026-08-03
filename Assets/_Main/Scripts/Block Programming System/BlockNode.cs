@@ -48,6 +48,26 @@ public abstract class BlockNode : MonoBehaviour
         candidate = null;
     }
 
+    [ContextMenu("TryAttatch")]
+    public void TryAtattch()
+    {
+        isGrabbed = true;
+        if (Previous != null)
+        {
+            Previous.Next = null;
+            Previous = null;
+        }
+        transform.SetParent(null);
+        candidate = FindNearestFreeSocket();
+        isGrabbed = false;
+        if (candidate != null)
+        {
+            AttachTo(candidate);
+            TelemetryManager.Instance.RegisterBlockConnected();
+        }
+        candidate = null;
+    }
+
     BlockNode FindNearestFreeSocket()
     {
         BlockNode best = null;
@@ -67,10 +87,13 @@ public abstract class BlockNode : MonoBehaviour
 
     void AttachTo(BlockNode parent)
     {
-        transform.position += parent.socketPoint.position - plugPoint.position;
-        transform.rotation = parent.socketPoint.rotation;
-        transform.SetParent(parent.transform);
+        Quaternion rotationDelta = parent.socketPoint.rotation * Quaternion.Inverse(plugPoint.rotation);
+        transform.rotation = rotationDelta * transform.rotation;
 
+        Vector3 positionDelta = parent.socketPoint.position - plugPoint.position;
+        transform.position += positionDelta;
+
+        transform.SetParent(parent.transform);
         parent.Next = this;
         Previous = parent;
     }
