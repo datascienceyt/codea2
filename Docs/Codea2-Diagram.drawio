@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net">
   <diagram name="Página-1" id="tGTt9euYzg1LeoKJumVk">
-    <mxGraphModel dx="2065" dy="1078" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="2288" dy="1213" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -241,33 +241,6 @@
         <mxCell id="igHUFgS7GHKOFBwZ9_lB-98" parent="1" style="rounded=1;whiteSpace=wrap;html=1;textDirection=vertical-rl;rotation=60;fillColor=#b1ddf0;strokeColor=#10739e;" value="Suministros&lt;div&gt;Alimento&lt;/div&gt;" vertex="1">
           <mxGeometry height="100" width="80" x="744.0025403784439" y="480.0020323027551" as="geometry" />
         </mxCell>
-        <mxCell id="igHUFgS7GHKOFBwZ9_lB-101" edge="1" parent="1" source="igHUFgS7GHKOFBwZ9_lB-84" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="igHUFgS7GHKOFBwZ9_lB-92" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <Array as="points">
-              <mxPoint x="700" y="210" />
-            </Array>
-            <mxPoint x="560" y="330" as="sourcePoint" />
-            <mxPoint x="610" y="280" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="igHUFgS7GHKOFBwZ9_lB-102" edge="1" parent="1" source="igHUFgS7GHKOFBwZ9_lB-93" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="igHUFgS7GHKOFBwZ9_lB-94" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <Array as="points">
-              <mxPoint x="770" y="210" />
-            </Array>
-            <mxPoint x="730" y="265" as="sourcePoint" />
-            <mxPoint x="793" y="190" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="igHUFgS7GHKOFBwZ9_lB-103" edge="1" parent="1" source="igHUFgS7GHKOFBwZ9_lB-92" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="igHUFgS7GHKOFBwZ9_lB-93" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <Array as="points">
-              <mxPoint x="723" y="190" />
-            </Array>
-            <mxPoint x="720" y="150" as="sourcePoint" />
-            <mxPoint x="777" y="225" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="igHUFgS7GHKOFBwZ9_lB-104" edge="1" parent="1" source="igHUFgS7GHKOFBwZ9_lB-94" style="curved=1;endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="igHUFgS7GHKOFBwZ9_lB-96" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <Array as="points">
@@ -418,7 +391,7 @@
         <mxCell id="igHUFgS7GHKOFBwZ9_lB-157" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;arcSize=50;" value="Soltar caja" vertex="1">
           <mxGeometry height="30" width="121.91" x="1244.09" y="983.5" as="geometry" />
         </mxCell>
-        <mxCell id="igHUFgS7GHKOFBwZ9_lB-158" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;arcSize=50;" value="Girar brazo isq" vertex="1">
+        <mxCell id="igHUFgS7GHKOFBwZ9_lB-158" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;arcSize=50;" value="Girar brazo izq" vertex="1">
           <mxGeometry height="30" width="121.91" x="1244.09" y="1013.5" as="geometry" />
         </mxCell>
         <mxCell id="igHUFgS7GHKOFBwZ9_lB-159" parent="1" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;size=6;fillColor=#b0e3e6;strokeColor=#0e8088;" value="" vertex="1">
@@ -549,6 +522,15 @@
         </mxCell>
         <mxCell id="igHUFgS7GHKOFBwZ9_lB-268" parent="1" style="verticalLabelPosition=middle;verticalAlign=middle;html=1;shape=trapezoid;perimeter=trapezoidPerimeter;whiteSpace=wrap;size=0.0830769230769236;arcSize=10;flipV=1;labelPosition=center;align=center;legacyAnchorPoints=0;rotation=90;fillColor=#b1ddf0;strokeColor=#10739e;" value="" vertex="1">
           <mxGeometry height="100" width="260" x="1661.2" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="oE5tb1ViHaE6lJiUnOBR-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=0;fontSize=21;" value="&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Diseño de algoritmos (principal)&lt;/li&gt;&lt;br&gt;&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Descomposición (dividir objetivo en pasos: agarrar tarjeta → puerta → apagar)&lt;/li&gt;&lt;br&gt;&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Abstracción (grupo 13-17, perspective-shifting sobre el grid)&lt;/li&gt;" vertex="1">
+          <mxGeometry height="189" width="304.95" x="135.04999999999995" y="1061" as="geometry" />
+        </mxCell>
+        <mxCell id="oE5tb1ViHaE6lJiUnOBR-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=0;fontSize=21;" value="&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Reconocimiento de patrones (principal: inferir el símbolo faltante por eliminación)&lt;br&gt;&lt;/li&gt;&lt;br&gt;&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Diseño de algoritmos (secundario: estructura SI→ENTONCES)&lt;/li&gt;" vertex="1">
+          <mxGeometry height="189" width="309.95" x="610.05" y="1043.5" as="geometry" />
+        </mxCell>
+        <mxCell id="oE5tb1ViHaE6lJiUnOBR-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;strokeWidth=0;fontSize=21;" value="&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Reconocimiento de patrones (identificar el ciclo repetido)&lt;/li&gt;&lt;br/&gt;&lt;li class=&quot;font-claude-response-body whitespace-normal break-words pl-2&quot;&gt;Abstracción (encapsular la secuencia repetida en un solo bloque Repetir)&lt;/li&gt;" vertex="1">
+          <mxGeometry height="189" width="328.8" x="1072.4" y="1120" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
