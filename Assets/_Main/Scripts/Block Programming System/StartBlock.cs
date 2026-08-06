@@ -8,4 +8,13 @@ public class StartBlock : BlockNode
         print("Iniciando.");
         yield break;
     }
+
+    public void Clear()
+    {
+        foreach (Transform transform in transform.GetComponentInChildren<Transform>())
+        {
+            if(transform.CompareTag("Block"))
+                Destroy(transform);
+        }
+    }
 }

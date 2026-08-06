@@ -48,18 +48,20 @@ public class LevelEditorWindow : EditorWindow
         newWidth = EditorGUILayout.IntField("Width", newWidth);
         newHeight = EditorGUILayout.IntField("Height", newHeight);
         if (GUILayout.Button("Aplicar", GUILayout.Width(60)))
-            InitLevel();
+            ResizeGrid();
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
 
         // ── Selector de tile ────────────────────────────────────
-        GUI.backgroundColor = TileColor((TileType)selectedTile);
-        GUILayout.Label("Tile: " + (TileType)selectedTile);
-        GUI.backgroundColor = Color.white;
-        selectedTile = EditorGUILayout.IntSlider(selectedTile, 0, 6);
+        //GUI.backgroundColor = TileColor((TileType)selectedTile);
+        //GUILayout.Label("Tile: " + (TileType)selectedTile);
+        //GUI.backgroundColor = Color.white;
+        //selectedTile = EditorGUILayout.IntSlider(selectedTile, 0, 6);
+        DrawTileSelector();
 
         EditorGUILayout.Space();
+
 
         // ── Grid ────────────────────────────────────────────────
         scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -82,8 +84,52 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.EndScrollView();
 
         // ── Export ──────────────────────────────────────────────
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Import JSON"))
+            ImportLevel();
         if (GUILayout.Button("Export JSON"))
             ExportLevel();
+        EditorGUILayout.EndHorizontal();
+    }
+
+    void DrawTileSelector()
+    {
+        GUILayout.Label("Tile Seleccionado:");
+        EditorGUILayout.BeginHorizontal();
+
+        foreach (TileType t in System.Enum.GetValues(typeof(TileType)))
+        {
+            bool isSelected = selectedTile == (int)t;
+            GUI.backgroundColor = isSelected ? Color.white : TileColor(t) * 0.6f;
+
+            var style = new GUIStyle(GUI.skin.button);
+            if (isSelected) style.fontStyle = FontStyle.Bold;
+
+            if (GUILayout.Button(t.ToString(), style, GUILayout.Height(30)))
+                selectedTile = (int)t;
+        }
+
+        GUI.backgroundColor = Color.white;
+        EditorGUILayout.EndHorizontal();
+    }
+
+    void ImportLevel()
+    {
+        string path = EditorUtility.OpenFilePanel("Load Level", "Assets/Levels", "json");
+        if (string.IsNullOrEmpty(path)) return;
+
+        string json = System.IO.File.ReadAllText(path);
+        levelData = JsonUtility.FromJson<LevelData>(json);
+
+        if (levelData == null || levelData.tiles == null)
+        {
+            Debug.LogError("JSON inválido o LevelData vacío.");
+            InitLevel();
+            return;
+        }
+
+        newWidth = levelData.width;
+        newHeight = levelData.height;
     }
 
     Color TileColor(TileType t) => t switch
@@ -96,6 +142,30 @@ public class LevelEditorWindow : EditorWindow
         TileType.Void => Color.black,
         _ => Color.white
     };
+
+    void ResizeGrid()
+    {
+        int[] oldTiles = levelData.tiles;
+        int oldWidth = levelData.width;
+        int oldHeight = levelData.height;
+
+        int[] newTiles = new int[newWidth * newHeight];
+
+        int copyWidth = Mathf.Min(oldWidth, newWidth);
+        int copyHeight = Mathf.Min(oldHeight, newHeight);
+
+        for (int y = 0; y < copyHeight; y++)
+        {
+            for (int x = 0; x < copyWidth; x++)
+            {
+                newTiles[y * newWidth + x] = oldTiles[y * oldWidth + x];
+            }
+        }
+
+        levelData.tiles = newTiles;
+        levelData.width = newWidth;
+        levelData.height = newHeight;
+    }
 
     void ExportLevel()
     {

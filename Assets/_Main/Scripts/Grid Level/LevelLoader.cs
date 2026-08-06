@@ -25,6 +25,7 @@ public class LevelLoader : MonoBehaviour
 
     [Header("Config")]
     public float tileSize = 1f;
+    public float tileScale = 1f;
     public TextAsset levelJson;
     public bool loadOnStart = true;
 
@@ -101,6 +102,7 @@ public class LevelLoader : MonoBehaviour
                 {
                     prefab = Instantiate(prefab, transform);
                     prefab.transform.localPosition = pos;
+                    prefab.transform.localScale = Vector3.one * tileScale;
                     objectGrid[y][x] = prefab;
                 }
             }
