@@ -1,5 +1,7 @@
 # Codea VR 2
 
+**CODEA 2: Fortalecimiento de Entornos Inmersivos con Realidad Virtual e Inteligencia Artificial en Educación**
+
 Escape room educativo en realidad virtual para el desarrollo de pensamiento computacional en niños y adolescentes (8–17 años), desarrollado para visores **Meta Quest 3S**.
 
 Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes de unidades educativas de sectores rurales del Ecuador.
@@ -15,6 +17,7 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 - [Sistema de telemetría](#sistema-de-telemetría)
 - [Requisitos de software](#requisitos-de-software)
 - [Requisitos técnicos del entorno](#requisitos-técnicos-del-entorno)
+- [Evolución previsible del sistema](#evolución-previsible-del-sistema)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Equipo](#equipo)
 - [Licencia](#licencia)
@@ -23,86 +26,109 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 
 ## Descripción
 
-El jugador despierta solo en una nave espacial dañada tras el impacto de un meteorito. Para llegar a su cápsula de escape debe atravesar 3 salas, resolviendo en cada una un problema mediante **programación por bloques**. Cada sala corresponde a un pilar distinto de pensamiento computacional:
+El jugador despierta solo en una nave espacial dañada tras el impacto de un meteorito. Para llegar a su cápsula de escape debe atravesar **4 escenarios**, resolviendo en cada uno un problema mediante **programación por bloques**. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
 
-| Sala | Habilidad | Mecánica |
-|---|---|---|
-| 1 — Dormitorio | Secuenciación | Ordenar bloques de instrucciones para que un robot (uemy-26) rescate al jugador |
-| 2 — Sala de sistemas | Condicionales | Insertar chips físicos `SI [condición] → [acción]` en paneles de temperatura |
-| 3 — Almacén | Bucles | Programar un brazo robótico para repetir un ciclo de manipulación de objetos |
+| Escenario | Categoría | Pilar(es) de CT | Mecánica |
+|---|---|---|---|
+| 1 — Dormitorio | Secuencialidad | Diseño de algoritmos, Descomposición, Abstracción | Ordenar bloques de instrucciones para que el robot uemy-26 controle un incendio y abra la puerta |
+| 2 — Sala de sistemas | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Elegir la opción correcta (ej. "Gasolina" / "Agua") ante un problema mostrado en un panel (ej. "Falta combustible") |
+| 3 — Almacén | Bucles | Reconocimiento de patrones, Abstracción | Programar un brazo robótico con un bloque Repetir para despejar barriles y cajas |
+| 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Insertar chips con figuras geométricas en el socket correcto, por forma o por número de lados |
 
-Cada reto tiene **dos versiones de dificultad** (básica / avanzada) para adaptarse a la amplia diferencia de edad del público objetivo.
+Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para adaptarse a la amplia diferencia de edad del público objetivo.
 
 ## Contexto pedagógico
 
 - Público: estudiantes de 8 a 17 años, mayoritariamente sin experiencia previa en VR ni en mandos espaciales, de contexto rural.
-- Sesiones de 15–20 minutos, con supervisor presente en todo momento.
-- Diseño de puzzles basado en **faded worked examples** (ejemplos resueltos que se desvanecen progresivamente) para introducir condicionales, y en **tangible/embodied programming** (chips físicos insertables) como puente hacia conceptos abstractos.
-- Restricción de scope: lógica estrictamente secuencial en la ejecución de bloques (sin anidado real), locomoción por teletransporte, sin hand tracking.
+- Sesiones limitadas a bloques de 15–20 minutos, con supervisor presente en todo momento.
+- Diseño basado en **fading worked examples** (ejemplos resueltos que se desvanecen progresivamente) para introducir condicionales, y en mecánicas de clasificación por atributo para introducir reconocimiento de patrones (Escenario 4).
+- Restricción de scope: lógica estrictamente secuencial en la ejecución de bloques (sin anidado real más allá del bloque Repetir), locomoción por teletransporte, sin hand tracking.
 
 ## Estructura de la experiencia
 
 ```
-PIN + Selección de dificultad (supervisor)
+Selección de dificultad (supervisor)
         │
         ▼
-   Reto 1: Secuenciación
-        │ (desbloquea)
-        ▼
-   Reto 2: Condicionales
-        │ (desbloquea)
-        ▼
-   Reto 3: Bucles
+Ingreso de username (jugador)
         │
         ▼
-   Cápsula de escape / fin de sesión
+   Escenario 1: Secuencialidad
+        │ (desbloquea)
+        ▼
+   Escenario 2: Condicionales
+        │ (desbloquea)
+        ▼
+   Escenario 3: Bucles
+        │ (desbloquea)
+        ▼
+   Escenario 4: Patrones
+        │
+        ▼
+   Fin de sesión
 ```
 
-El avance es secuencial y obligatorio: completar el reto activo (en cualquier dificultad) es el único disparador para desbloquear el siguiente.
+El supervisor fija la dificultad antes de entregar el visor al estudiante; una vez seleccionada, queda fija para los 4 escenarios de la sesión y no es modificable por el jugador. El avance entre escenarios es secuencial y obligatorio: completar el escenario activo (en cualquier dificultad) es el único disparador para desbloquear el siguiente.
 
 ## Arquitectura técnica
 
-- **Motor:** Unity, C#
+- **Motor:** Unity 6, C#
 - **SDK:** Meta XR All-in-One SDK
 - **Render pipeline:** URP + Shader Graph
-- **Sistema de bloques:**
+- **Sistema de bloques (Escenarios 1 y 3):**
   - `BlockNode` (abstracto) — nodo base de lista enlazada con lógica de snap/grab (`VRGrabEvents.cs`)
   - `ProgramRunner` — coroutine walker que ejecuta la secuencia
-  - `GridBlock` — acciones basadas en enum para movimiento en grid
-  - `LevelContext` — service locator para referencias del bot entre recargas de nivel
+  - `GridBlock` — acciones basadas en enum para movimiento en grid (Escenario 1)
+  - `RepeatBlock` — nodo contenedor que itera N veces sobre una sub-cadena interna (Escenario 3)
+  - `LevelContext` — service locator para referencias del agente activo (Bot / brazo robótico) entre recargas de nivel
   - `VRConsole` — consola de errores in-headset
-  - `SceneManager` / `ReloadLevel()` — reinicio de nivel
+  - `LevelLoader` / reinicio de nivel
+- **Sistema de selección (Escenario 2):** paneles independientes con problema/opciones, sin cadena de bloques — comparación directa contra la respuesta correcta del panel, con evento de resolución que actualiza el HUD diegético.
+- **Sistema de emparejamiento por atributo (Escenario 4):** snapping por proximidad (mismo mecanismo que `BlockConnector`), pero sin cadena `Next`/`Previous` — cada chip se valida contra un único socket comparando `ShapeType` (básico) o número de lados (avanzado).
 
 ## Sistema de telemetría
 
-Pipeline end-to-end integrado vía Cloudflare Tunnel:
+Pipeline de persistencia local con exportación remota manual:
 
-1. **`TelemetryManager`** (Unity, singleton) captura métricas de sesión y de interacción por reto/dificultad.
-2. **`CsvUploader`** con lógica de reintento envía los datos.
-3. **Servidor Flask** en Raspberry Pi, expuesto en `csv.penginexr.com`, recibe el upload.
-4. Respaldo local en `.csv` (`Application.persistentDataPath`) siempre disponible vía USB/ADB, independiente del estado de red.
+1. **`TelemetryManager`** (Unity, singleton) captura métricas de sesión y de interacción por escenario/dificultad (RF-03, RF-04).
+2. Al cerrar la sesión, el sistema genera un archivo **CSV individual por usuario**, nombrado `{username}_{session_id}.csv`, almacenado en `Application.persistentDataPath`.
+3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
+4. La exportación remota (HTTP POST hacia el servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) **no es automática**: se activa exclusivamente mediante un botón dedicado que solo el supervisor puede accionar. Si la conexión falla, el sistema notifica sin bloquear la experiencia ni eliminar el respaldo local.
+
+**Pendiente de definir:** formato exacto del payload HTTP POST (CSV plano vs. JSON estructurado) y política de reintentos ante fallo de conexión.
 
 ## Requisitos de software
 
-Documento formal bajo estándar **IEEE 830** (`Codea2_SRS.pdf`), con:
+Documento formal bajo estándar **IEEE 830** (`Codea2_SRS.pdf`, dentro del Informe Técnico Mes 1), con:
 
 - 5 interfaces (RI-01 a RI-05)
 - 8 requisitos funcionales (RF-01 a RF-08)
 - 4 requisitos no funcionales (RNF-01 a RNF-04)
 
-Cobertura por reto documentada internamente (ver `/docs`). Puntos críticos abiertos en el SRS:
+Matriz de requisitos por escenario documentada internamente (ver `/docs`). Puntos críticos abiertos en el SRS:
 
-- Taxonomía de errores lógicos (RF-04) definida solo para Reto 1; falta extenderla a Reto 2 (chips) y Reto 3 (brazo robótico).
-- Estructura exacta de columnas del CSV para el desglose por reto/dificultad.
+- Taxonomía de errores lógicos (RF-04), definida como cerrada de forma genérica (`colisión_bot`, `secuencia_incompleta`, `comando_inválido`), pendiente de extenderse/ajustarse conforme se detallen las mecánicas específicas de los Escenarios 2, 3 y 4.
+- Formato del payload y política de reintentos de la exportación remota (RI-05).
 
 ## Requisitos técnicos del entorno
 
-- Unity `6.4.1f1`
-- Meta XR All-in-One SDK `203.0.2`
+- Unity `6000.4.1f1`
+- Meta XR All-in-One SDK `203.0.2` o superior
 - Visor: Meta Quest 3S (plataforma exclusiva, sin soporte para otros headsets)
 - Mandos físicos únicamente (sin hand tracking)
+- Horizon OS actualizado a su versión más reciente disponible, para garantizar compatibilidad con el SDK
+
+## Evolución previsible del sistema
+
+Mejoras contempladas en la arquitectura para fases futuras, fuera del alcance actual:
+
+- **Sincronización en la nube:** migración del almacenamiento offline (.csv local) a un sistema híbrido en tiempo real mediante base de datos en la nube (ej. Firebase o PostgreSQL vía API REST), activado automáticamente al detectar conexión estable.
+- **Generación dinámica de escenarios:** ajuste automático de dificultad en tiempo de ejecución según el desempeño del usuario (tiempo invertido, tasa de errores).
+- **Panel de visualización docente (dashboard web):** plataforma externa para cargar los CSV recolectados y generar reportes visuales del desempeño en pensamiento computacional.
 
 ## Estructura del repositorio
+
+Repositorio oficial: [github.com/datascienceyt/codea2](https://github.com/datascienceyt/codea2/tree/dev) (rama `dev`)
 
 ```
 Assets/
@@ -110,9 +136,9 @@ Assets/
 │   ├── 3D Models/
 │   ├── CustomMaterials/
 │   ├── Editor/
-│   ├── Levels/             # Definiciones de nivel por reto/dificultad
+│   ├── Levels/             # Definiciones de nivel por escenario/dificultad
 │   ├── Prefabs/
-│   ├── Scripts/            # BlockNode, ProgramRunner, GridBlock, TelemetryManager, CsvUploader, etc.
+│   ├── Scripts/            # BlockNode, ProgramRunner, GridBlock, RepeatBlock, TelemetryManager, etc.
 │   └── Sounds/
 ├── _Recovery/               # Carpeta de recuperación (Unity)
 ├── Docs/
@@ -138,8 +164,8 @@ Assets/
 
 | Nombre | Rol |
 |---|---|
-| Víctor Echeverría | Desarrollador principal |
-| Erick Cuenca | Responsable del proyecto |
+| Ing. Víctor Echeverría | Técnico Especialista (Desarrollador principal) |
+| Ph.D. Erick Cuenca | Director del Proyecto |
 | Gabriela Cajamarca | Evaluadora técnica |
 | Rolando Armas | Evaluador técnico |
 
