@@ -7,10 +7,22 @@ public class LevelManager : MonoBehaviour
     public int[][] grid;
     public GameObject[][] objectGrid;
 
-    //public event Action OnExit;
-    public event Action OnDanger;
+    public event Action OnLevelCompleted;
+    bool completed;
 
-    public int pointCounter { get; private set; } = 0;
+    /// <summary>Si el bot ya llegó a la meta. Lo consulta ProgramTrigger para saber si un intento resolvió el reto.</summary>
+    public bool IsCompleted => completed;
+
+    // Contador latente: el sistema de puntos ya no condiciona la meta (solo Exit completa
+    // el nivel), pero Point/Interactable siguen en el proyecto y necesitan este enganche.
+    public int pointCounter;
+
+    public void CompleteLevel()
+    {
+        if (completed) return;
+        completed = true;
+        OnLevelCompleted?.Invoke();
+    }
 
     public void IncreasePoint()
     {
@@ -19,6 +31,7 @@ public class LevelManager : MonoBehaviour
 
     public void ResetLevel()
     {
+        completed = false;
         pointCounter = 0;
     }
 
@@ -30,27 +43,37 @@ public class LevelManager : MonoBehaviour
         if (!IsInsideGrid(x, y))
         {
             print("Out of grid...");
+            RegisterError(LogicErrorType.ColisionBot);
             return false;
         }
 
-        int gridValue = grid[y][x];
+        TileType tile = (TileType)grid[y][x];
 
-        TileType tile = (TileType)gridValue;
-
-        if (tile == TileType.Path || tile == TileType.Exit)
-        {
-            //print("Valid movement");
+        if (tile == TileType.Path)
             return true;
-        }
-        else
-        {
-            print("Ilegal move, cant reach [" + grid[y][x] + "]");
-            return false;
-        }
+
+        print("Ilegal move, cant reach [" + grid[y][x] + "]");
+        RegisterError(LogicErrorType.ComandoInvalido);
+        return false;
+    }
+
+    /// <summary>
+    /// La telemetría es opcional: esto lo llama el bot desde dentro de una corrutina, y sin
+    /// el guardia una escena sin el prefab de telemetría lanzaba NullReferenceException,
+    /// que aborta la ejecución del programa a media secuencia.
+    /// </summary>
+    void RegisterError(LogicErrorType error)
+    {
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.RegisterLogicError(error);
     }
 
     public bool IsInsideGrid(int x, int y)
     {
+        // grid queda a null entre ClearLevel() y LoadLevel(). Sin esta comprobación,
+        // un movimiento en esa ventana también reventaba la corrutina.
+        if (grid == null) return false;
+
         return y >= 0 && y < grid.Length &&
                x >= 0 && x < grid[y].Length;
     }
@@ -59,17 +82,32 @@ public class LevelManager : MonoBehaviour
     void PrintGrid()
     {
         string output = string.Empty;
-
         for (int i = 0; i < grid.Length; i++)
         {
             output += "\n";
-            for(int j = 0; j < grid[i].Length; j++)
+            for (int j = 0; j < grid[i].Length; j++)
             {
                 output += grid[i][j];
                 output += "\t";
             }
         }
-
         Debug.Log(output);
+    }
+
+    public bool TryGetInteractable(Vector2 position, out IInteractable interactable)
+    {
+        interactable = null;
+
+        int x = (int)position.x;
+        int y = (int)position.y;
+
+        if (!IsInsideGrid(x, y)) return false;
+        if ((TileType)grid[y][x] != TileType.Exit) return false;
+
+        GameObject obj = objectGrid[y][x];
+        if (obj == null) return false;
+
+        interactable = obj.GetComponent<IInteractable>();
+        return interactable != null;
     }
 }

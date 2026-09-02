@@ -13,11 +13,18 @@ public class SceneController : MonoBehaviour
 
     public void ChangeScenario(int index)
     {
-        foreach(GameObject go in scenarios)
+        if (scenarios == null || index < 0 || index >= scenarios.Length)
         {
-            go.SetActive(false);
+            Debug.LogError($"[SceneController] Escenario {index} fuera de rango.", this);
+            return;
         }
 
-        scenarios[index].SetActive(true);
+        foreach (GameObject go in scenarios)
+        {
+            if (go != null) go.SetActive(false);
+        }
+
+        if (scenarios[index] != null)
+            scenarios[index].SetActive(true);
     }
 }

@@ -1,0 +1,26 @@
+﻿ID_Texto,Texto_Narrativa
+1,¡Alerta! Impacto crítico detectado. Todos los tripulantes deben evacuar de inmediato.
+2,"Tus compañeros lograron llegar a sus cápsulas a tiempo y están a salvo. Sin embargo, tú sigues en la nave ya que el impacto te dejó inconsciente en tu habitación…"
+3,"Astronauta, ¿me escuchas? Bien. No hay tiempo que perder."
+4,"El meteorito causó daños graves en la nave. Pero hay un problema aún mayor...Durante el impacto, tu cápsula se activó por accidente y salió disparada. Ya no queda ninguna disponible."
+5,Ahora solo hay una forma de volver a casa y es reparando la nave.
+6,Revisa tu entorno. Empecemos.
+7,"Estás encerrado, astronauta. La puerta no se puede abrir desde adentro. La única forma de salir es presionando el botón verde de apertura que está afuera, lejos de ti."
+8,"Por suerte, no estás tan solo como pensabas. Ese es Roki, un robot de mantenimiento. Puede llegar hasta ese botón por ti... si le dices exactamente cómo hacerlo."
+9,"Frente a la ventana encontrarás bloques de instrucciones para Roki. Ordénalos para crear, paso a paso, el camino que Roki debe seguir."
+10,"Arma la secuencia completa, astronauta. No hay tiempo que perder."
+11,"Acabas de desbloquear todo el sistema de seguridad de la nave. Ahora, todas las puertas están abiertas."
+12,Sigue avanzando. Todavía queda mucho por reparar.
+13,"Muy bien, astronauta. Ya saliste de la habitación. Ahora vamos a lo importante: sin esta sala funcionando, la nave no podrá volver a la Tierra."
+14,"El golpe dañó tres sistemas a la vez: los motores, los generadores y el sistema de enfriamiento. Cada sistema necesita algo distinto para funcionar de nuevo. Piensa bien y elige la opción correcta para cada uno."
+15,"¡Excelente! Esta nave volverá a funcionar gracias a ti. Continúa así, astronauta. Ya falta poco."
+16,Lo que harás ahora se parece a lo que hiciste en el dormitorio: tendrás que darle órdenes a una máquina para que actúe por ti.
+17,"El golpe desordenó por completo los suministros de esta sala. Las cajas son demasiado pesadas para moverlas sin ayuda. Por suerte, tienes este brazo robótico. Prográmalo para despejar el camino hacia la siguiente sala."
+18,Cuenta cuántas cajas están bloqueando el camino. El brazo ya sabe cómo mover una. Tú solo tienes que decirle cuántas veces debe repetir esa acción.
+19,"¡Así se hace! Pasemos a la última sala. Ya casi terminas, astronauta."
+20,"Última sala, astronauta. Reparaste los sistemas dañados y despejaste el camino... pero nada de eso sirve si la nave no vuelve a encender."
+21,En esta sala te encargarás de encender la nave. Presta atención a cómo se hace.
+22,"Mira el panel: hay varias figuras y, al lado, bloques con esas mismas formas. Encaja cada bloque en el espacio que tenga la misma forma. Vamos, tú puedes."
+23,"¿Escuchas eso, astronauta? Motores encendidos. Sistemas estables. Ahora sí... vuelves a casa."
+24,"Ordena las acciones para crear la secuencia correcta. Después, utiliza el bloque «Repetir» para ejecutar la secuencia las veces necesarias hasta despejar el camino."
+25,En el panel encontrarás varias figuras y bloques con números. Cuenta los lados de cada figura y arrastra hasta ella el bloque con el número correspondiente.

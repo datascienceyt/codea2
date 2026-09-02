@@ -75,27 +75,42 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 - **Motor:** Unity 6, C#
 - **SDK:** Meta XR All-in-One SDK
 - **Render pipeline:** URP + Shader Graph
-- **Sistema de bloques (Escenarios 1 y 3):**
-  - `BlockNode` (abstracto) — nodo base de lista enlazada con lógica de snap/grab (`VRGrabEvents.cs`)
-  - `ProgramRunner` — coroutine walker que ejecuta la secuencia
-  - `GridBlock` — acciones basadas en enum para movimiento en grid (Escenario 1)
-  - `RepeatBlock` — nodo contenedor que itera N veces sobre una sub-cadena interna (Escenario 3)
-  - `LevelContext` — service locator para referencias del agente activo (Bot / brazo robótico) entre recargas de nivel
+- **Sistema de bloques (Escenarios 1, 3 y 4):**
+  - `BlockNode` (abstracto) — base común: agarre (`VRGrabEvents`) y acople por proximidad contra `Socket`
+  - `Socket` / `SocketRow` — huecos encadenados por `Next`, generados en runtime entre dos puntos
+  - `ProgramRunner` — recorre la cadena ejecutando cada bloque; `Run(inicio, repeticiones)`
+  - `BlockResetter` — devuelve los bloques a su sitio sin instanciar ni destruir nada
+  - `GridBlock` — acciones del robot por enum (Escenario 1)
   - `VRConsole` — consola de errores in-headset
-  - `LevelLoader` / reinicio de nivel
-- **Sistema de selección (Escenario 2):** paneles independientes con problema/opciones, sin cadena de bloques — comparación directa contra la respuesta correcta del panel, con evento de resolución que actualiza el HUD diegético.
-- **Sistema de emparejamiento por atributo (Escenario 4):** snapping por proximidad (mismo mecanismo que `BlockConnector`), pero sin cadena `Next`/`Previous` — cada chip se valida contra un único socket comparando `ShapeType` (básico) o número de lados (avanzado).
+- **Sistema de selección (Escenario 2):** módulos independientes con problema y opciones, sin cadena de bloques. El contenido vive en assets `ModuleData`, así que se puede variar por dificultad sin duplicar objetos en la escena.
+- **Bucles (Escenario 3):** no hay bloque contenedor — **la fila entera es el bucle**. `SocketRow` expone las repeticiones y un flag de edición que mapea sobre las dos dificultades: en básica la secuencia viene dada y el niño solo ajusta N; en intermedia además la ordena.
+- **Emparejamiento por atributo (Escenario 4):** `ShapeChip` hereda de `BlockNode`, así que reutiliza agarre, acople y reinicio. Cada ficha se valida contra un único socket comparando la figura (básico) o su número de lados (intermedio).
+- **Narrativa:** `Director` orquesta escenarios → pasos, con acciones que bloquean el paso hasta terminar (`IStepAction`). `Narrator` (voz) y `ScreenNarrator` (texto progresivo desde CSV) corren en paralelo.
 
 ## Sistema de telemetría
 
 Pipeline de persistencia local con exportación remota manual:
 
-1. **`TelemetryManager`** (Unity, singleton) captura métricas de sesión y de interacción por escenario/dificultad (RF-03, RF-04).
-2. Al cerrar la sesión, el sistema genera un archivo **CSV individual por usuario**, nombrado `{username}_{session_id}.csv`, almacenado en `Application.persistentDataPath`.
+1. **`TelemetryManager`** (singleton persistente) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
+2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}.json` en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
 3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
-4. La exportación remota (HTTP POST hacia el servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) **no es automática**: se activa exclusivamente mediante un botón dedicado que solo el supervisor puede accionar. Si la conexión falla, el sistema notifica sin bloquear la experiencia ni eliminar el respaldo local.
+4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) **no es automática**: la activa un botón exclusivo del supervisor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local.
 
-**Pendiente de definir:** formato exacto del payload HTTP POST (CSV plano vs. JSON estructurado) y política de reintentos ante fallo de conexión.
+Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 y el 3 registran la secuencia de bloques montada en cada intento, el 2 las opciones elegidas en cada módulo y el 4 qué figura se intentó encajar en qué hueco. Los escenarios 1 y 3 comparten además los contadores de manipulación de bloques y de errores de lógica.
+
+```json
+"escenario1": {
+    "started": true, "completed": true, "totalSeconds": 111.6,
+    "failedAttempts": 3, "blocksGrabbed": 12, "blocksReleased": 12,
+    "attempts": [
+        { "difficulty": 1,
+          "sequence": ["Avanzar", "Girar Derecha", "Avanzar 2", "Usar"],
+          "solved": 1, "durationSeconds": 7.2, "timestamp": "..." }
+    ]
+}
+```
+
+El detalle de cada variable y su lectura pedagógica está en [`Docs/VARIABLES_TELEMETRIA.md`](Docs/VARIABLES_TELEMETRIA.md).
 
 ## Requisitos de software
 
@@ -105,10 +120,27 @@ Documento formal bajo estándar **IEEE 830** (`Codea2_SRS.pdf`, dentro del Infor
 - 8 requisitos funcionales (RF-01 a RF-08)
 - 4 requisitos no funcionales (RNF-01 a RNF-04)
 
-Matriz de requisitos por escenario documentada internamente (ver `/docs`). Puntos críticos abiertos en el SRS:
+Puntos críticos abiertos en el SRS:
 
-- Taxonomía de errores lógicos (RF-04), definida como cerrada de forma genérica (`colisión_bot`, `secuencia_incompleta`, `comando_inválido`), pendiente de extenderse/ajustarse conforme se detallen las mecánicas específicas de los Escenarios 2, 3 y 4.
-- Formato del payload y política de reintentos de la exportación remota (RI-05).
+- Taxonomía de errores lógicos (RF-04): `secuencia_incompleta` sigue sin definición operativa que distinga "faltaron instrucciones" de "el orden estaba mal".
+- Identificación del participante: el SRS pide **username** (RF-01) y el sistema funciona hoy con **PIN** asignado por el supervisor.
+
+## Estado del desarrollo
+
+| Subsistema | Estado |
+|---|---|
+| Escenario 1 — Secuencialidad | Funcional, verificado en visor |
+| Escenario 2 — Condicionales | Montado en escena, pendiente de prueba |
+| Escenario 3 — Bucles | Montado en escena; mecánica del brazo sin validar |
+| Escenario 4 — Patrones | Código completo, sin montar |
+| Sistema narrativo | Funcional |
+| Telemetría JSON + subida | Funcional de punta a punta |
+| Selección de dificultad | Código completo, sin montar |
+| HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | Sin implementar |
+
+Documentación técnica en [`Docs/`](Docs/): [arquitectura](Docs/ARQUITECTURA.md),
+[checklist](Docs/CHECKLIST.md), [variables de telemetría](Docs/VARIABLES_TELEMETRIA.md)
+y [diagramas](Docs/DIAGRAMAS.md).
 
 ## Requisitos técnicos del entorno
 
@@ -138,7 +170,15 @@ Assets/
 │   ├── Editor/
 │   ├── Levels/             # Definiciones de nivel por escenario/dificultad
 │   ├── Prefabs/
-│   ├── Scripts/            # BlockNode, ProgramRunner, GridBlock, RepeatBlock, TelemetryManager, etc.
+│   ├── Scripts/
+│   │   ├── Block Programming System/   # BlockNode, Socket, SocketRow, ProgramRunner…
+│   │   ├── Grid Level/                 # Bot, LevelManager, LevelLoader (Escenario 1)
+│   │   ├── Scenario 2/                 # Módulos de la sala de sistemas
+│   │   ├── Scenario 3/                 # Brazo robótico y posiciones
+│   │   ├── Scenario 4/                 # Fichas y figuras
+│   │   ├── Session/                    # Selección de dificultad
+│   │   ├── Story/                      # Director, Narrator, ScreenNarrator, Fader…
+│   │   └── Telemetry/
 │   └── Sounds/
 ├── _Recovery/               # Carpeta de recuperación (Unity)
 ├── Docs/

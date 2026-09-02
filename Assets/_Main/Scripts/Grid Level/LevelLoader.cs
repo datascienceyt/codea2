@@ -1,7 +1,6 @@
-﻿using Unity.VisualScripting;
-using UnityEngine;
+﻿using UnityEngine;
 
-public enum TileType { Path = 0, Wall = 1, Spawn = 2, Danger = 3, Point = 4, Exit = 5, Void = 6 }
+public enum TileType { Path = 0, Wall = 1, Spawn = 2, Danger = 3, Point = 4, Exit = 5, Void = 6, Interactable = 7 }
 
 [System.Serializable]
 public class LevelData
@@ -22,6 +21,7 @@ public class LevelLoader : MonoBehaviour
     public GameObject pointPrefab;
     public GameObject botPrefab;
     public GameObject exitPrefab;
+    public GameObject interactablePrefab;
 
     [Header("Config")]
     public float tileSize = 1f;
@@ -69,12 +69,15 @@ public class LevelLoader : MonoBehaviour
                     case TileType.Path:
                         prefab = pathPrefab;
                         break;
+
                     case TileType.Wall:
                         prefab = wallPrefab;
                         break;
+
                     case TileType.Danger:
                         prefab = dangerPrefab;
                         break;
+
                     case TileType.Point:
                         prefab = Instantiate(pointPrefab, transform);       //Instanciar prefab de punto antes de convertir el grid en camino para que el usuario pueda caminar por ahí
                         prefab.transform.localPosition = pos;
@@ -83,6 +86,7 @@ public class LevelLoader : MonoBehaviour
                         grid[y][x] = 0;                                     //Convertir en path en el grid numérico
                         prefab = pathPrefab;
                         break;
+
                     case TileType.Spawn:
                         grid[y][x] = 0;
                         spawnPos.x = x;
@@ -93,8 +97,13 @@ public class LevelLoader : MonoBehaviour
 
                         prefab = pathPrefab;
                         break;
+
                     case TileType.Exit:
                         prefab = exitPrefab;
+                        break;
+
+                    case TileType.Interactable:
+                        prefab = interactablePrefab;
                         break;
                 }
 
@@ -104,7 +113,19 @@ public class LevelLoader : MonoBehaviour
                     prefab.transform.localPosition = pos;
                     prefab.transform.localScale = Vector3.one * tileScale;
                     objectGrid[y][x] = prefab;
-                }
+
+                    Exit exit = prefab.GetComponent<Exit>();
+                    Interactable interactable = prefab.GetComponent<Interactable>();
+
+                    if(exit)
+                    {
+                        exit.levelManager = levelManager;
+                    }
+                    else if(interactable)
+                    {
+                        interactable.levelManager = levelManager;
+                    }
+                }                    
             }
         }
 
@@ -117,6 +138,14 @@ public class LevelLoader : MonoBehaviour
         levelManager.levelName = name;
         levelManager.grid = grid;
         levelManager.objectGrid = objectGrid;
+
+        // Un JSON sin tile Spawn (2) deja bot a null. Antes eso reventaba aquí mismo con un
+        // NullReferenceException y el nivel se quedaba a medio construir sin explicación.
+        if (bot == null)
+        {
+            Debug.LogError($"[LevelLoader] El nivel '{name}' no tiene tile Spawn (2): no se creó el bot.", this);
+            return;
+        }
 
         bot.botPos = spawnPos;
         bot.levelManager = levelManager;
@@ -131,7 +160,19 @@ public class LevelLoader : MonoBehaviour
     void ClearLevel()
     {
         for (int i = transform.childCount - 1; i >= 0; i--)
-            Destroy(transform.GetChild(i).gameObject);
+        {
+            GameObject child = transform.GetChild(i).gameObject;
+
+            // Destroy es diferido al final del frame, y LoadLevel() se ejecuta justo después.
+            // Durante ese frame convivían el bot viejo y el nuevo, y FindAnyObjectByType<Bot>()
+            // podía devolver el que estaba a punto de morir. Desactivarlo lo saca de esa
+            // búsqueda (que por defecto ignora inactivos) y desparentarlo lo saca del conteo
+            // de hijos del loader.
+            child.SetActive(false);
+            child.transform.SetParent(null);
+
+            Destroy(child);
+        }
 
         bot = null;
         levelManager.grid = null;

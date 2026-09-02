@@ -18,6 +18,7 @@ public class VRConsole : MonoBehaviour
 
     void HandleLog(string message, string stackTrace, LogType type)
     {
+        if (logText == null) return;
         if (type != LogType.Error && type != LogType.Exception) return;
 
         logText.text += $"\n[{type}] {message}";

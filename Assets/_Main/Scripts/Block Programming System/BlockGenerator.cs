@@ -1,29 +1,42 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class BlockGenerator : MonoBehaviour
 {
     [SerializeField] GameObject prefab;
-    [SerializeField] Vector3 scale, position;
-    [SerializeField] Quaternion rotation;
+    Vector3 scale;
+    GameObject currentBlock;
 
-    private void Awake()
+    void Awake()
     {
-        if(!prefab)
+        if (!prefab)
             prefab = transform.GetChild(0).gameObject;
 
-        position = prefab.transform.position;
-        rotation = prefab.transform.rotation;
         scale = prefab.transform.localScale;
+        currentBlock = prefab;
+        Hook(currentBlock);
     }
 
-    private void Update()
+    void Hook(GameObject block)
     {
-        if(transform.childCount == 0)
-        {
-            GameObject aux = Instantiate(prefab, transform.position, transform.rotation);
-            aux.transform.localScale = scale;
-            aux.transform.parent = gameObject.transform;
-        }
+        var grabEvents = block.GetComponent<VRGrabEvents>();
+        if (grabEvents != null)
+            grabEvents.onGrabbed.AddListener(OnBlockTaken);
+    }
+
+    void OnBlockTaken()
+    {
+        var grabEvents = currentBlock.GetComponent<VRGrabEvents>();
+        if (grabEvents != null)
+            grabEvents.onGrabbed.RemoveListener(OnBlockTaken); // solo dispara una vez
+
+        SpawnNext();
+    }
+
+    void SpawnNext()
+    {
+        GameObject aux = Instantiate(prefab, transform.position, transform.rotation);
+        aux.transform.localScale = scale;
+        currentBlock = aux;
+        Hook(currentBlock);
     }
 }

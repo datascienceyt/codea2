@@ -140,6 +140,7 @@ public class LevelEditorWindow : EditorWindow
         TileType.Point => Color.yellow,
         TileType.Exit => Color.green,
         TileType.Void => Color.black,
+        TileType.Interactable => Color.magenta,
         _ => Color.white
     };
 

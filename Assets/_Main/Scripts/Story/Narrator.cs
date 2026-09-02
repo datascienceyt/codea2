@@ -18,13 +18,46 @@ public class Narrator : MonoBehaviour, IStepAction
     {
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
-        if (audioList.Count > 0)
-            currentAudioList = audioList[audioListIndex];
+
+        SelectList(audioListIndex);
+    }
+
+    /// <summary>
+    /// Cambia de lista de audios y reinicia el recorrido.
+    /// </summary>
+    public void SetAudioListIndex(int value)
+    {
+        SelectList(value);
+        index = 0;
+    }
+
+    /// <summary>
+    /// Antes esto solo guardaba el número: currentAudioList se quedaba apuntando a la lista
+    /// de Awake, así que cambiar de lista no tenía ningún efecto.
+    /// </summary>
+    private void SelectList(int listIndex)
+    {
+        if (audioList == null || audioList.Count == 0)
+        {
+            currentAudioList = null;
+            return;
+        }
+
+        if (listIndex < 0 || listIndex >= audioList.Count)
+        {
+            Debug.LogWarning($"[Narrator] Lista de audios {listIndex} fuera de rango (hay {audioList.Count}).");
+            return;
+        }
+
+        audioListIndex = listIndex;
+        currentAudioList = audioList[listIndex];
     }
 
     public void PlayAudio(string name)
     {
-        int foundIndex = currentAudioList.audios.FindIndex(x => x.name == name);
+        if (!HasClips()) return;
+
+        int foundIndex = currentAudioList.audios.FindIndex(x => x != null && x.name == name);
 
         if (foundIndex == -1)
         {
@@ -37,22 +70,56 @@ public class Narrator : MonoBehaviour, IStepAction
 
     public void PlayAudio(int _index)
     {
+        if (!HasClips()) return;
+
+        if (_index < 0 || _index >= currentAudioList.audios.Count)
+        {
+            Debug.LogWarning($"[Narrator] Índice de audio {_index} fuera de rango.");
+            return;
+        }
+
+        AudioClip clip = currentAudioList.audios[_index];
+
+        if (clip == null)
+        {
+            Debug.LogWarning($"[Narrator] El audio {_index} de la lista {audioListIndex} está vacío.");
+            return;
+        }
+
         index = _index;
-        AudioClip clip = currentAudioList.audios[index];
         audioSource.clip = clip;
         audioSource.Play();
+
         Debug.Log("Reproduciendo audio: " + clip.name);
     }
 
+    /// <summary>
+    /// Detiene la reproducción. NO anula el AudioSource: hacerlo dejaba el componente
+    /// inservible y cualquier llamada posterior lanzaba NullReferenceException.
+    /// </summary>
     public void StopAudio()
     {
-        audioSource.Stop();
-        audioSource = null;
+        if (audioSource != null)
+            audioSource.Stop();
     }
 
     [ContextMenu("Execute")]
     public IEnumerator Execute()
     {
+        if (!HasClips())
+        {
+            Debug.LogWarning($"[Narrator] '{name}' no tiene audios asignados.");
+            yield break;
+        }
+
+        // Se comprueba el límite ANTES de avanzar: antes se llamaba a PlayAudio(index) a
+        // ciegas y la lista desbordaba con IndexOutOfRangeException al agotarse.
+        if (index >= currentAudioList.audios.Count)
+        {
+            Debug.LogWarning($"[Narrator] No quedan audios en la lista {audioListIndex}.");
+            yield break;
+        }
+
         PlayAudio(index);
         index++;
 
@@ -60,17 +127,17 @@ public class Narrator : MonoBehaviour, IStepAction
         yield return new WaitWhile(() => audioSource.isPlaying);
     }
 
-    public void SetAudioListIndex(int value)
-    {
-        audioListIndex = value;
-        index = 0;
-    }
+    private bool HasClips() =>
+        currentAudioList != null &&
+        currentAudioList.audios != null &&
+        currentAudioList.audios.Count > 0;
 }
 
 [Serializable]
 public class AudioList
 {
     public List<AudioClip> audios;
+
     public AudioList(List<AudioClip> audios)
     {
         this.audios = audios;
