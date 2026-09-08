@@ -27,8 +27,8 @@ Esto es importante para no planificar un análisis sobre datos que aún no exist
 | 3 — Bucles | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
 | 4 — Patrones | ✅ Completo | ❌ **No. Falta montarlo en escena** |
 
-Las variables de los escenarios 2, 3 y 4 **están implementadas y probadas en código**, pero
-todavía no se ha jugado ni una sola sesión con ellos. Son un compromiso firme de qué se va a
+Las variables de los escenarios 2, 3 y 4 **están implementadas en código**, pero ese código
+todavía no se ha ejecutado en una sesión real. Son un compromiso firme de qué se va a
 recoger, no datos disponibles hoy.
 
 ---
@@ -119,31 +119,55 @@ ver cómo evoluciona la estrategia.
 
 **Pilares de diseño:** reconocimiento de patrones, diseño de algoritmos.
 
-Tres módulos averiados de la nave. Cada uno muestra un problema (*"Falta combustible"*) y
-ofrece opciones (*"Agregar agua"* / *"Agregar combustible"*). Si falla puede reintentar sin
-límite.
+Tres módulos averiados de la nave. Cada uno enuncia un problema en texto (*"Los motores no
+encienden: el tanque de combustible está vacío"*) y ofrece varias acciones. Los botones
+**alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el conjunto
+elegido coincide **exactamente** con el correcto: ni de menos ni de más. Se puede reintentar
+sin límite.
+
+La dificultad vive en los datos, no en el código:
+
+| Dificultad | Opciones | Correctas |
+|---|---|---|
+| Básica | 2 | 1 |
+| Intermedia | 4 | 2 |
+
+Cada distractor es una acción **correcta en otro módulo** —motores trata de combustible y
+lubricación, energía de electricidad, enfriamiento de temperatura—, así que no se puede
+acertar reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar
+agua"* aparece en los tres módulos y solo es correcta en uno.
 
 ## Variables del escenario
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `wrongSelections` | entero | Total de elecciones incorrectas en todo el escenario |
+| `wrongSelections` | entero | Cuántas veces **marcó** una acción incorrecta, en todo el escenario |
 
-## Variables por elección
+> Solo cuenta el acto de **marcar** algo incorrecto. Desmarcarlo después no suma otro error:
+> es la corrección, no una equivocación nueva.
 
-Se guarda **cada pulsación**, acertada o no:
+## Variables por pulsación
+
+Se guarda **cada pulsación**, tanto al marcar como al desmarcar:
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `module` | texto | En qué módulo: `"motores"`, `"generadores"`, `"enfriamiento"` |
-| `option` | texto | **Qué opción eligió**, con su texto literal |
-| `correct` | 0/1 | Si era la correcta |
+| `option` | texto | **Qué acción pulsó**, con su texto literal |
+| `selected` | 0/1 | `1` = la marcó · `0` = la desmarcó |
+| `correct` | 0/1 | Si esa acción formaba parte de la solución |
 | `timestamp` | fecha | Cuándo |
 
+**Por qué se registran también las deselecciones.** Desmarcar una acción es un acto de
+autocorrección: el niño la puso, la miró junto a las demás y decidió que no tocaba. Sin el
+campo `selected` ese momento sería indistinguible de no haber tocado nunca esa opción, y es
+justo la evidencia de razonamiento condicional que interesa medir.
+
 **Utilidad para el diseño pedagógico:** el escenario está construido sobre *fading worked
-examples*. Como se guarda el orden y el módulo de cada elección, se puede comprobar si los
+examples*. Como se guarda el orden y el módulo de cada pulsación, se puede comprobar si los
 errores **disminuyen del primer módulo al tercero**, que es exactamente la predicción del
-modelo. También permite ver si hay distractores concretos que confunden sistemáticamente.
+modelo. También permite ver si hay distractores concretos que confunden sistemáticamente y,
+gracias a `selected`, distinguir a quien duda y se corrige de quien acierta a la primera.
 
 ---
 
@@ -300,8 +324,10 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "totalSeconds": 84.2,
         "wrongSelections": 1,
         "selections": [
-            { "module": "motores", "option": "Agregar agua",        "correct": 0, "timestamp": "..." },
-            { "module": "motores", "option": "Agregar combustible", "correct": 1, "timestamp": "..." }
+            { "module": "motores", "option": "Agregar agua",     "selected": 1, "correct": 0, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar agua",     "selected": 0, "correct": 0, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar gasolina", "selected": 1, "correct": 1, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar aceite",   "selected": 1, "correct": 1, "timestamp": "..." }
         ]
     },
 
