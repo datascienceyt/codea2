@@ -17,5 +17,5 @@ MonoBehaviour:
   problem: Falta combustible
   options:
   - Agregar agua
-  - Agregar combustible
+  - Agregar gasolina
   correctOptionIndex: 1

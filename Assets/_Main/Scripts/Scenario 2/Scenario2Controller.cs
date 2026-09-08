@@ -31,7 +31,7 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
             modules = GetComponentsInChildren<SystemModule>(true);
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionChosen += HandleOptionChosen;
+            if (module != null) module.OnOptionToggled += HandleOptionToggled;
     }
 
     private void OnDestroy()
@@ -39,7 +39,7 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
         if (modules == null) return;
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionChosen -= HandleOptionChosen;
+            if (module != null) module.OnOptionToggled -= HandleOptionToggled;
     }
 
     private void Start()
@@ -54,16 +54,19 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
             TelemetryManager.Instance.StartChallenge(challengeId);
     }
 
-    private void HandleOptionChosen(SystemModule module, int optionIndex, bool correct)
+    private void HandleOptionToggled(SystemModule module, int optionIndex, bool selected, bool correct)
     {
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterSelection(
                 challengeId,
                 module.ModuleId,
-                module.Data != null ? module.Data.OptionAt(optionIndex) : optionIndex.ToString(),
+                module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString(),
+                selected,
                 correct);
 
-        if (correct) CheckCompletion();
+        // Se comprueba en cada pulsación, no solo en los aciertos: con selección múltiple, el
+        // módulo puede resolverse al DESELECCIONAR una acción que sobraba.
+        CheckCompletion();
     }
 
     private void CheckCompletion()

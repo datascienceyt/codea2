@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
 /// <summary>
-/// Un módulo de la sala de sistemas: una pantalla con el problema y N botones de opción.
-/// El jugador pulsa una; si acierta el módulo queda reparado y deja de aceptar pulsaciones,
-/// si falla puede reintentar sin límite.
+/// Un módulo de la sala de sistemas: una pantalla con el problema y varios botones de acción
+/// que se seleccionan y deseleccionan libremente.
+///
+/// El módulo se repara cuando el conjunto seleccionado coincide EXACTAMENTE con el conjunto de
+/// acciones correctas: ni de menos ni de más. Eso obliga a descartar los distractores de forma
+/// activa, no solo a acertar uno.
 /// </summary>
 public class SystemModule : MonoBehaviour
 {
@@ -15,29 +19,42 @@ public class SystemModule : MonoBehaviour
 
     [Header("Pantalla")]
     [SerializeField] private Text titleText;
+
+    [Tooltip("El problema se mantiene en texto; lo que pasa a ser visual es el estado.")]
     [SerializeField] private Text problemText;
-    [SerializeField] private Text statusText;
+
+    [Tooltip("Mensaje que sustituye al problema cuando el módulo queda reparado.")]
+    [SerializeField] private string repairedMessage = "Sistema restablecido";
+
+    [Header("Estado visual")]
+    [Tooltip("Icono de estado. Sustituye a las etiquetas de texto AVERIADO / REPARADO.")]
+    [SerializeField] private Image statusIcon;
+    [SerializeField] private Sprite brokenIcon;
+    [SerializeField] private Sprite repairedIcon;
+
+    [Tooltip("Luz del módulo: se le cambia el color al material. Sirve un Renderer cualquiera.")]
+    [SerializeField] private Renderer statusLight;
+    [SerializeField] private Color brokenColor = Color.red;
+    [SerializeField] private Color repairedColor = Color.green;
+
+    [Tooltip("Si el material usa emisión, además del color base se tiñe _EmissionColor.")]
+    [SerializeField] private bool tintEmission = true;
 
     [Header("Botones")]
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
     [SerializeField] private ModuleOptionButton[] optionButtons;
 
-    [Header("Estados (RI-02)")]
-    [SerializeField] private string brokenLabel = "AVERIADO";
-    [SerializeField] private string repairedLabel = "REPARADO";
-
-    [Tooltip("Mensaje que sustituye al problema cuando el módulo queda reparado.")]
-    [SerializeField] private string repairedMessage = "Sistema restablecido";
-
     [Header("Eventos")]
-    [Tooltip("Acierto: para sonido, luz verde, animación...")]
-    public UnityEvent OnCorrect;
+    [Tooltip("Al seleccionar o deseleccionar cualquier acción: sonido, parpadeo...")]
+    public UnityEvent OnSelectionChanged;
 
-    [Tooltip("Fallo: para sonido de rechazo, parpadeo en rojo...")]
-    public UnityEvent OnWrong;
+    [Tooltip("Al quedar reparado.")]
+    public UnityEvent OnSolved;
 
-    /// <summary>Módulo, índice elegido, si fue acierto. Lo consume Scenario2Controller.</summary>
-    public event Action<SystemModule, int, bool> OnOptionChosen;
+    /// <summary>Módulo, índice, si quedó seleccionada, si esa acción era correcta.</summary>
+    public event Action<SystemModule, int, bool, bool> OnOptionToggled;
+
+    private readonly HashSet<int> selected = new HashSet<int>();
 
     public ModuleData Data => data;
     public bool IsSolved { get; private set; }
@@ -53,62 +70,109 @@ public class SystemModule : MonoBehaviour
 
     private void Start() => Refresh();
 
-    /// <summary>Vuelca el contenido del asset a la pantalla y a los botones.</summary>
+    /// <summary>Vuelca el contenido del asset a la pantalla, los botones y el estado visual.</summary>
     public void Refresh()
     {
         if (data == null)
         {
-            Debug.LogError($"[Escenario2] '{name}' no tiene ModuleData asignado.");
+            Debug.LogError($"[Escenario2] '{name}' no tiene ModuleData asignado.", this);
             return;
         }
 
         if (!data.IsValid)
-            Debug.LogError($"[Escenario2] '{data.name}': correctOptionIndex fuera del rango de options.");
+            Debug.LogError($"[Escenario2] '{data.name}' no tiene opciones o no tiene ninguna correcta.", this);
 
         if (titleText != null) titleText.text = data.moduleName;
         if (problemText != null) problemText.text = IsSolved ? repairedMessage : data.problem;
-        if (statusText != null) statusText.text = IsSolved ? repairedLabel : brokenLabel;
+
+        RefreshStatus();
+        RefreshButtons();
+    }
+
+    private void RefreshStatus()
+    {
+        if (statusIcon != null)
+        {
+            Sprite sprite = IsSolved ? repairedIcon : brokenIcon;
+            if (sprite != null) statusIcon.sprite = sprite;
+        }
+
+        if (statusLight == null) return;
+
+        Color color = IsSolved ? repairedColor : brokenColor;
+
+        // .material y no .sharedMaterial: sharedMaterial teñiría de golpe todos los módulos
+        // que compartan ese material.
+        statusLight.material.color = color;
+
+        if (tintEmission && statusLight.material.HasProperty("_EmissionColor"))
+        {
+            statusLight.material.EnableKeyword("_EMISSION");
+            statusLight.material.SetColor("_EmissionColor", color);
+        }
+    }
+
+    private void RefreshButtons()
+    {
+        if (data == null) return;
 
         foreach (ModuleOptionButton button in optionButtons)
         {
             if (button == null) continue;
 
-            button.SetLabel(data.OptionAt(button.OptionIndex));
+            button.SetLabel(data.LabelAt(button.OptionIndex));
+            button.SetSelected(selected.Contains(button.OptionIndex));
             button.SetInteractable(!IsSolved);
         }
     }
 
     /// <summary>
-    /// Lo llaman los botones. Un módulo ya resuelto ignora cualquier pulsación, así que
-    /// no se puede "desreparar" ni inflar la telemetría pulsando de más.
+    /// Lo llaman los botones. Alterna entre seleccionada y no seleccionada.
+    /// Un módulo ya reparado ignora las pulsaciones.
     /// </summary>
-    public void ChooseOption(int optionIndex)
+    public void ToggleOption(int optionIndex)
     {
         if (IsSolved || data == null) return;
 
-        bool correct = optionIndex == data.correctOptionIndex;
+        bool nowSelected = !selected.Contains(optionIndex);
 
-        // El estado se actualiza ANTES de avisar.
-        //
-        // Al revés no funcionaba: el controlador comprueba el IsSolved de todos los módulos
-        // para saber si el escenario terminó, y al acertar el último lo veía todavía sin
-        // resolver, así que el escenario no se cerraba nunca.
-        if (correct)
-        {
-            IsSolved = true;
-            Refresh();
-        }
+        if (nowSelected) selected.Add(optionIndex);
+        else selected.Remove(optionIndex);
 
-        OnOptionChosen?.Invoke(this, optionIndex, correct);
+        // El estado se actualiza ANTES de avisar: el controlador comprueba el IsSolved de todos
+        // los módulos para saber si el escenario terminó, y si avisáramos primero vería este
+        // todavía sin resolver.
+        if (MatchesSolution()) IsSolved = true;
 
-        if (correct) OnCorrect?.Invoke();
-        else OnWrong?.Invoke();
+        Refresh();
+
+        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, data.IsCorrectAt(optionIndex));
+        OnSelectionChanged?.Invoke();
+
+        if (IsSolved) OnSolved?.Invoke();
+    }
+
+    /// <summary>
+    /// La selección debe coincidir exactamente con las acciones correctas. Sobrar una incorrecta
+    /// cuenta como no resuelto, igual que faltar una correcta.
+    /// </summary>
+    private bool MatchesSolution()
+    {
+        int needed = data.CorrectCount;
+
+        if (needed == 0 || selected.Count != needed) return false;
+
+        foreach (int index in selected)
+            if (!data.IsCorrectAt(index)) return false;
+
+        return true;
     }
 
     [ContextMenu("Reset Module")]
     public void ResetModule()
     {
         IsSolved = false;
+        selected.Clear();
         Refresh();
     }
 }

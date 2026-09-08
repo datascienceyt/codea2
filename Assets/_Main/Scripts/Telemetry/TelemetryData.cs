@@ -99,10 +99,19 @@ public class SelectionRecord
     /// <summary>Id del módulo: "motores", "generadores", "enfriamiento".</summary>
     public string module;
 
-    /// <summary>Texto de la opción elegida, p. ej. "Agregar combustible".</summary>
+    /// <summary>Texto de la acción, p. ej. "Agregar gasolina".</summary>
     public string option;
 
-    /// <summary>0/1, mismo criterio que AttemptRecord.solved.</summary>
+    /// <summary>
+    /// 1 = la seleccionó, 0 = la deselecionó.
+    ///
+    /// Deseleccionar es señal de autocorrección: el niño se dio cuenta de que esa acción no
+    /// tocaba. Sin este campo, seleccionar y arrepentirse sería indistinguible de no haberla
+    /// tocado nunca.
+    /// </summary>
+    public int selected;
+
+    /// <summary>Si esa acción formaba parte de la solución.</summary>
     public int correct;
 
     /// <summary>ISO-8601 UTC.</summary>

@@ -85,7 +85,7 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 - **Sistema de selección (Escenario 2):** módulos independientes con problema y opciones, sin cadena de bloques. El contenido vive en assets `ModuleData`, así que se puede variar por dificultad sin duplicar objetos en la escena.
 - **Bucles (Escenario 3):** no hay bloque contenedor — **la fila entera es el bucle**. `SocketRow` expone las repeticiones y un flag de edición que mapea sobre las dos dificultades: en básica la secuencia viene dada y el niño solo ajusta N; en intermedia además la ordena.
 - **Emparejamiento por atributo (Escenario 4):** `ShapeChip` hereda de `BlockNode`, así que reutiliza agarre, acople y reinicio. Cada ficha se valida contra un único socket comparando la figura (básico) o su número de lados (intermedio).
-- **Narrativa:** `Director` orquesta escenarios → pasos, con acciones que bloquean el paso hasta terminar (`IStepAction`). `Narrator` (voz) y `ScreenNarrator` (texto progresivo desde CSV) corren en paralelo.
+- **Narrativa:** `Director` orquesta escenarios → pasos, con acciones que bloquean el paso hasta terminar (`IStepAction`). `Narrator` reproduce la voz y escribe el texto en pantalla a la vez, emparejados por ID contra un CSV, y espera a la más larga de las dos.
 
 ## Sistema de telemetría
 
@@ -138,9 +138,12 @@ Puntos críticos abiertos en el SRS:
 | Selección de dificultad | Código completo, sin montar |
 | HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | Sin implementar |
 
-Documentación técnica en [`Docs/`](Docs/): [arquitectura](Docs/ARQUITECTURA.md),
-[checklist](Docs/CHECKLIST.md), [variables de telemetría](Docs/VARIABLES_TELEMETRIA.md)
-y [diagramas](Docs/DIAGRAMAS.md).
+**La documentación técnica completa está en [`Context.md`](Context.md)**: arquitectura,
+decisiones de diseño, API de cada componente, estado de avance y trampas conocidas. Es la
+fuente de verdad para desarrollo.
+
+Para el equipo evaluador, el detalle de qué mide cada variable está en
+[`Docs/VARIABLES_TELEMETRIA.md`](Docs/VARIABLES_TELEMETRIA.md).
 
 ## Requisitos técnicos del entorno
 
@@ -177,7 +180,7 @@ Assets/
 │   │   ├── Scenario 3/                 # Brazo robótico y posiciones
 │   │   ├── Scenario 4/                 # Fichas y figuras
 │   │   ├── Session/                    # Selección de dificultad
-│   │   ├── Story/                      # Director, Narrator, ScreenNarrator, Fader…
+│   │   ├── Story/                      # Director, Narrator, Fader, Timer…
 │   │   └── Telemetry/
 │   └── Sounds/
 ├── _Recovery/               # Carpeta de recuperación (Unity)

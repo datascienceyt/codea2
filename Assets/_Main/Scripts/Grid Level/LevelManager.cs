@@ -94,6 +94,14 @@ public class LevelManager : MonoBehaviour
         Debug.Log(output);
     }
 
+    /// <summary>
+    /// Devuelve el interactuable de una casilla, si lo hay.
+    ///
+    /// OJO: filtra únicamente TileType.Exit. Un tile marcado como TileType.Interactable se
+    /// instancia con su prefab pero queda INALCANZABLE para Bot.Use(), porque no pasa este
+    /// filtro. Point e Interactable se conservan de una iteración anterior del sistema de
+    /// puntos; para reactivarlos basta con añadir su TileType a la condición de abajo.
+    /// </summary>
     public bool TryGetInteractable(Vector2 position, out IInteractable interactable)
     {
         interactable = null;

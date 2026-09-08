@@ -45,6 +45,12 @@ public class TelemetryManager : MonoBehaviour
     public const string Scenario3Id = "escenario3";
     public const string Scenario4Id = "escenario4";
 
+    // Identificación del participante: PIN numérico secuencial, NO username.
+    //
+    // Divergencia deliberada con RF-01 del SRS, que pide un username de 3-12 letras. Se decidió
+    // mantener el PIN y corregir el documento, no al revés: cambiarlo obligaría a construir la
+    // UI de entrada de texto y rompería los JSON ya recogidos, porque 'pin' es además parte del
+    // nombre de archivo ({pin}_{sessionId}.json). No lo "arregles" sin hablarlo con el equipo.
     private const string SessionCounterKey = "telemetry_session_counter";
     private const string PinCounterKey = "telemetry_pin_counter";
     private const string DifficultyPrefKey = "telemetry_difficulty";
@@ -260,7 +266,8 @@ public class TelemetryManager : MonoBehaviour
     /// Una pulsación de botón en un módulo. Se registran también los fallos: son el dato
     /// pedagógico del escenario, no ruido.
     /// </summary>
-    public void RegisterSelection(string challengeId, string moduleId, string option, bool correct)
+    public void RegisterSelection(string challengeId, string moduleId, string option,
+                                  bool selected, bool correct)
     {
         Scenario2Record scenario = GetScenario2(challengeId);
         if (scenario == null) return;
@@ -269,11 +276,14 @@ public class TelemetryManager : MonoBehaviour
         {
             module = moduleId,
             option = option,
+            selected = selected ? 1 : 0,
             correct = correct ? 1 : 0,
             timestamp = NowUtc()
         });
 
-        if (!correct) scenario.wrongSelections++;
+        // Solo cuentan como error las veces que SELECCIONA una acción incorrecta. Deseleccionarla
+        // después es la corrección, no un error añadido.
+        if (selected && !correct) scenario.wrongSelections++;
 
         Save();
     }
