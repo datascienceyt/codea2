@@ -127,7 +127,17 @@ public class RoboticArm : MonoBehaviour
 
     private IEnumerator RotateBy(int direction)
     {
-        if (isBusy || !HasSlots) yield break;
+        if (isBusy) yield break;
+
+        if (!HasSlots)
+        {
+            // No se dispara OnInvalidAction a propósito: ese evento registra un ComandoInvalido
+            // en la telemetría del niño, y quedarse sin posiciones asignadas es un fallo de
+            // montaje de la escena, no un error de razonamiento suyo. Contarlo ensuciaría
+            // los datos justo en la variable que mide si entendió el programa.
+            Debug.LogError($"[RoboticArm] '{name}' no tiene posiciones asignadas.", this);
+            yield break;
+        }
 
         isBusy = true;
 

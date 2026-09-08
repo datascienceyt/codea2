@@ -88,7 +88,7 @@ public class ShapeSocket : MonoBehaviour
         if (correct)
         {
             IsSolved = true;
-            chip.SetLocked(true);
+            chip.SetInteractable(false);
         }
 
         OnChipEvaluated?.Invoke(this, chip, correct);
@@ -108,7 +108,16 @@ public class ShapeSocket : MonoBehaviour
     {
         IsSolved = false;
 
-        if (socket != null) socket.Release();
+        if (socket != null)
+        {
+            // Se desbloquea ANTES de soltar: Release() pone CurrentBlock a null y después ya
+            // no hay forma de saber qué ficha había aquí. Sin esto, toda ficha acertada quedaba
+            // inagarrable para siempre y el escenario no se podía repetir tras un reinicio.
+            if (socket.CurrentBlock is ShapeChip chip)
+                chip.SetInteractable(true);
+
+            socket.Release();
+        }
 
         Refresh();
     }

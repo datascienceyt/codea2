@@ -41,8 +41,23 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
         if (sockets == null || sockets.Length == 0)
             sockets = GetComponentsInChildren<ShapeSocket>(true);
 
+        // Deliberadamente NO se adivina cuando el campo está vacío.
+        //
+        // Main.unity tiene un BlockResetter por escenario, y FindAnyObjectByType devuelve uno
+        // cualquiera de entre los ACTIVOS. Si acertaba el que no es, ReturnBlock() fallaba y la
+        // ficha rechazada se quedaba clavada en el hueco, que ya había quedado libre: se podía
+        // soltar otra encima y quedaban superpuestas.
         if (chipResetter == null)
-            chipResetter = FindAnyObjectByType<BlockResetter>();
+        {
+            chipResetter = FindAnyObjectByType<BlockResetter>(FindObjectsInactive.Include);
+
+            Debug.LogError(chipResetter != null
+                ? $"[Escenario4] 'chipResetter' sin asignar en '{name}'; se ha tomado " +
+                  $"'{chipResetter.name}'. Asígnalo a mano: hay un BlockResetter por escenario " +
+                  "y esta búsqueda no distingue cuál es el de las fichas."
+                : $"[Escenario4] '{name}' no encuentra ningún BlockResetter: las fichas mal " +
+                  "colocadas no se podrán devolver a su sitio.", this);
+        }
 
         foreach (ShapeSocket socket in sockets)
         {

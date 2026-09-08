@@ -13,6 +13,15 @@ public class ArmBlock : BlockNode
 {
     public ArmActionType action;
 
+    /// <summary>
+    /// El brazo se busca una sola vez y se guarda.
+    ///
+    /// No es un campo del inspector a propósito: estos bloques son prefabs, y un prefab no
+    /// puede guardar una referencia a un objeto de escena. Unity la anula al guardar, en
+    /// silencio, y el bloque se quedaría sin brazo sin que nada avise.
+    /// </summary>
+    private RoboticArm arm;
+
     public override string InstructionLabel => action switch
     {
         ArmActionType.Pick => "Recoger",
@@ -24,8 +33,19 @@ public class ArmBlock : BlockNode
 
     public override IEnumerator Execute()
     {
-        RoboticArm arm = FindAnyObjectByType<RoboticArm>();
-        if (arm == null) yield break;
+        // Include: el brazo puede colgar de una estación que el Director todavía no ha
+        // activado, y la búsqueda por defecto ignora los objetos inactivos. Antes devolvía
+        // null y el bloque hacía yield break sin más: la secuencia entera se ejecutaba sin
+        // efecto y sin un solo mensaje en consola.
+        if (arm == null)
+            arm = FindAnyObjectByType<RoboticArm>(FindObjectsInactive.Include);
+
+        if (arm == null)
+        {
+            Debug.LogError($"[Escenario3] El bloque '{name}' no encuentra ningún RoboticArm " +
+                           "en la escena: la secuencia se ejecuta sin efecto.", this);
+            yield break;
+        }
 
         switch (action)
         {
