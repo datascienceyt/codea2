@@ -398,6 +398,33 @@ public class TelemetryManager : MonoBehaviour
         RegisterLogicError((LogicErrorType)errorTypeIndex);
     }
 
+    // --- Preparación de la sesión desde la pantalla del supervisor ---
+
+    /// <summary>
+    /// Deja fijados el PIN y la dificultad para la run que abrirá el TelemetryManager de la
+    /// escena de juego.
+    ///
+    /// Es estático a propósito, y gracias a eso la pantalla del supervisor NO necesita un
+    /// TelemetryManager propio. Si lo tuviera, su Awake abriría una run y escribiría un
+    /// archivo con el PIN anterior antes de que el supervisor teclee nada, y ese JSON vacío
+    /// quedaría huérfano en disco una vez por sesión.
+    ///
+    /// Escribe las mismas claves de PlayerPrefs que Awake lee, así que la run nace ya con el
+    /// PIN y la dificultad correctos en vez de abrirse y cerrarse.
+    /// </summary>
+    public static void PrepareSession(int pin, Difficulty difficulty)
+    {
+        PlayerPrefs.SetInt(PinCounterKey, pin);
+        PlayerPrefs.SetInt(DifficultyPrefKey, (int)difficulty);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// Último PIN guardado, sin necesidad de que exista un TelemetryManager. Lo usa la
+    /// pantalla del supervisor para proponer el siguiente correlativo.
+    /// </summary>
+    public static int GetLastPin() => PlayerPrefs.GetInt(PinCounterKey, 0);
+
     // --- Manejo de PIN ---
 
     /// <summary>Siguiente participante: nuevo PIN y, por tanto, nueva run y nuevo archivo.</summary>

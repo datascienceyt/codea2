@@ -105,7 +105,9 @@ dependencia:
 | `Tools/Timer.cs` | Cuenta atrás con avisos por umbral y `OnTimeUp` (RF-06) |
 | `Tools/Teleporter.cs` | Mueve el `OVRCameraRig` compensando el offset de cabeza |
 | `Tools/Waiter.cs`, `Tools/Tools.cs` | Utilidades para cablear en el inspector |
-| `Session/DifficultySelector.cs` | Fija la dificultad y carga la escena (RI-03) |
+| `Session/SessionSetup.cs` | Pantalla del supervisor: PIN + dificultad, y lanza la escena (RI-03) |
+| `Session/PinEntry.cs` | Teclado numérico del PIN. `AppendDigit`, borrar, siguiente correlativo |
+| `Session/SceneLoader.cs` | Carga una escena cerrando antes la run. Para volver con el siguiente niño |
 | `Session/DifficultyScene.cs` | Declara la dificultad de su escena y la impone si no coincide |
 | `Telemetry/TelemetryData.cs` | Modelo serializable del JSON |
 | `Telemetry/TelemetryManager.cs` | Singleton persistente. Captura, escritura diferida, pruebas |
@@ -336,7 +338,9 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `Narrator` | `PlayAudio(int/string)`, `StopAudio()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
-| `DifficultySelector` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)` |
+| `SessionSetup` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)`, `StartSession()` |
+| `PinEntry` | `AppendDigit(int)`, `DeleteLast()`, `Clear()`, `UseNextPin()`, `SetPin(int)` |
+| `SceneLoader` | `Load()`, `Load(string)` |
 | `Tools` | `SetActive(GameObject)`, `SetInactive(GameObject)`, `DestroyObject(GameObject)` |
 
 ## 9. Decisiones no obvias — el porqué
@@ -404,7 +408,7 @@ estética (sonidos, luces, transiciones), va en `UnityEvent`.
 | Escenario 3 | 🟡 Montado (brazo + 2 slots), sin probar. Mecánica sin validar |
 | Escenario 4 | ❌ Sin montar |
 | Narrativa, telemetría, subida | ✅ Funcionales |
-| Selección de dificultad | ❌ Sin montar; no existen las escenas |
+| Selección de dificultad | 🟡 Scripts listos (`SessionSetup`, `PinEntry`, `SceneLoader`); falta montar la escena |
 | HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
 **Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**, no
