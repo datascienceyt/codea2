@@ -10,12 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1011e4565646803419cf1dd4152f9276, type: 3}
-  m_Name: Motores
+  m_Name: Enfriamiento_Intermedia
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
-  moduleId: motores
-  moduleName: Tanque de motores
-  problem: Falta combustible
+  moduleId: enfriamiento
+  moduleName: Sistema de enfriamiento
+  problem: "El sistema se calienta demasiado: el tanque de agua est\xE1 vac\xEDo y el ventilador est\xE1 apagado."
   options:
-  - Agregar agua
-  - Agregar gasolina
-  correctOptionIndex: 1
+  - label: Encender el ventilador
+    isCorrect: 1
+  - label: Agregar gasolina
+    isCorrect: 0
+  - label: "Cambiar la bater\xEDa"
+    isCorrect: 0
+  - label: Agregar agua
+    isCorrect: 1
