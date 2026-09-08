@@ -219,7 +219,8 @@ y los cuatro `ScenarioNController`.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`, 25 líneas en `Scripts/Story/Audios Narrativa.csv`).
+(`ID_Texto, Texto_Narrativa`, 26 líneas en `Scripts/Story/Audios Narrativa.csv`; la 26 es la variante en
+plural del Escenario 2 para la escena de dificultad intermedia, **pendiente de grabar**).
 
 Degrada limpiamente: sin clip solo escribe, sin `Text` o sin CSV solo suena, `textId = 0`
 significa sin texto. **Ni el CSV ni el Text son obligatorios.**
