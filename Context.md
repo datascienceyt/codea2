@@ -3,7 +3,7 @@
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
 el sistema completo sin leer los 5.570 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **02/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **08/09/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
@@ -62,7 +62,7 @@ dependencia:
 | `ProgramTrigger.cs` | Botón de ejecutar. Registra el intento **antes** de correr |
 | `BlockResetter.cs` | Devuelve bloques a su sitio sin instanciar ni destruir |
 | `StartBlock.cs` | Bloque inicial |
-| `BlockGenerator.cs` | **Obsoleto.** Sustituido por `BlockResetter` |
+| `BlockGenerator.cs` | **Obsoleto**, sustituido por `BlockResetter`. Solo lo referencian las escenas de `_Recovery/`: borrarlo solo las degradaría más |
 
 ### `Scripts/Grid Level/` — Escenario 1
 
@@ -74,7 +74,7 @@ dependencia:
 | `LevelLoader.cs` | Instancia el nivel desde JSON. `TileType` vive aquí |
 | `Exit.cs` | Meta. Implementa `IInteractable` |
 | `Scenario1Controller.cs` | Puente con Director y telemetría. Reintento automático |
-| `Interactable.cs`, `Point.cs` | **Código muerto** del sistema de puntos eliminado |
+| `Interactable.cs`, `Point.cs` | Vestigios del sistema de puntos, pero **NO borrables**: `LevelLoader` los llama (líneas 84 y 118) y ambos tienen prefab activo. Quitarlos rompe la compilación |
 
 ### `Scripts/Scenario 2/` — Condicionales · `Scripts/Scenario 3/` — Bucles · `Scripts/Scenario 4/` — Patrones
 
@@ -154,19 +154,28 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 `OnAttemptFailed` tras `retryDelay` segundos. Ahí se cablean `RegisterFailedAttempt`,
 `ReloadLevel`, `ResetLevel` y `ResetRunner`. El niño no pulsa nada para reintentar.
 
-### Escenario 2 — Condicionales *(montado, sin probar)*
+### Escenario 2 — Condicionales *(básica montada, sin probar)*
 
-Tres módulos averiados. Cada uno muestra un problema en texto y varias acciones. Los botones
-**alternan** entre seleccionado y no seleccionado. El módulo se repara cuando el conjunto
-seleccionado coincide **exactamente** con el correcto: ni de menos ni de más.
+Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Los
+botones **alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el
+conjunto seleccionado coincide **exactamente** con el correcto: ni de menos ni de más.
 
 | | Opciones | Correctas |
 |---|---|---|
 | Básica | 2 | 1 |
-| Intermedia | 4 | 2 (o 3 y 1) |
+| Intermedia | 4 | 2 |
 
-La dificultad vive en los **datos** (`ModuleData`), no en código. Estado visual por icono y luz
-roja/verde; el problema se mantiene textual.
+La dificultad vive en los **datos** (`ModuleData`), no en código, y se cambia **cargando otra
+escena**. Hay un asset por módulo y dificultad en `Scripts/Scenario 2/Modulos/`, nombrados
+`<Modulo>_Basica` y `<Modulo>_Intermedia`. Los `moduleId` son idénticos entre dificultades
+para que la telemetría agregue.
+
+**Cada distractor es una acción correcta en otro módulo.** Motores trata de combustible y
+lubricación, energía de electricidad, enfriamiento de temperatura. Así no se puede acertar
+reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar agua"*
+aparece en los tres módulos y solo es correcta en uno.
+
+Estado visual por icono y luz roja/verde; el problema se mantiene textual.
 
 ### Escenario 3 — Bucles *(montado, sin probar · mecánica del brazo SIN VALIDAR)*
 
@@ -383,30 +392,44 @@ a mitad de sesión; como `EndRun` es idempotente, ya no se corregía.
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 02/09/2026
+## 11. Estado voluble — 08/09/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
 | Subsistema | Estado |
 |---|---|
 | Escenario 1 | ✅ Verificado en visor |
-| Escenario 2 | 🟡 Montado (3 módulos, 6 botones), sin probar |
+| Escenario 2 | 🟡 Montado en básica (3 módulos, 6 botones), sin probar |
 | Escenario 3 | 🟡 Montado (brazo + 2 slots), sin probar. Mecánica sin validar |
 | Escenario 4 | ❌ Sin montar |
 | Narrativa, telemetría, subida | ✅ Funcionales |
 | Selección de dificultad | ❌ Sin montar; no existen las escenas |
 | HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
+**Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**, no
+intercambiando datos en caliente. `SystemModule.data` apunta a un único asset, así que cada
+escena lleva su propio juego de `ModuleData`.
+
 **Pendiente inmediato en escena:**
 
-- `ScreenNarrator` sigue en `Main.unity` como **script perdido** (la clase se fusionó en
-  `Narrator`). Borrar el GameObject y quitarlo de los `waitActions` del Director
+- `ScreenNarrator` sigue en `Main.unity` como **script perdido**: un único `MonoBehaviour` con
+  `guid: 6d131647b98e46141a1d89097a26e78a`, en la línea 18325. La clase se fusionó en
+  `Narrator`. Borrar el GameObject y quitarlo de los `waitActions` del Director
 - Reconfigurar el `Narrator`: CSV, `Text`, y los clips con su `textId`
-- **Los 3 assets `ModuleData` usan la estructura antigua** (`options` como lista de strings +
-  `correctOptionIndex`). Hay que rehacerlos con `List<ModuleOption>`
-- Añadir botones hasta 4 por módulo para la dificultad intermedia
+- Escenario 2 intermedia: añadir los botones 3 y 4 por módulo, con su `optionIndex`, y
+  apuntar cada `SystemModule` a su asset `*_Intermedia`
+- Escenario 2: cablear el estado visual nuevo — `statusIcon` con sus dos sprites, el
+  `Renderer` de la luz y el `selectedMarker` de cada botón
 - Escenario 3: asignar el `Interaction Root` de los bloques, o la fila bloqueada se vacía igual
-- Servidor: quitar el prefijo de timestamp en `server.py` (`saved_as = filename`)
+- Escenario 3: el **pivot del brazo debe tener X y Z a cero**. `RotateTowardsSlot` termina con
+  `Quaternion.Euler(0, yaw, 0)` y aplasta cualquier inclinación en cuanto entras en Play. Si
+  el modelo la necesita, ponla en un hijo del pivot
+- Escenario 4: asignar `plugPoint` en cada ficha, o `FindNearestFreeSocket` lanza una excepción
+  por frame mientras se agarra
+- Escenario 4: asignar a mano el `chipResetter` de `Scenario4Controller`. Hay un `BlockResetter`
+  por escenario y la búsqueda automática no distingue cuál es el de las fichas
+- Servidor: quitar el prefijo de timestamp en `server.py` (`saved_as = filename`).
+  **Ese código no vive en este repositorio**
 
 **Otros datos del repositorio:** existe `Assets/Scenes/Tests.unity` además de `Main.unity`, y 7
 escenas de respaldo en `Assets/_Recovery/` que **no son las escenas activas** — aparecen en las
@@ -424,7 +447,6 @@ búsquedas y confunden.
 | Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. Renombrar rompería los JSON ya recogidos |
 | Mecánica del brazo | Propuesta sin validar. Si cambia, solo se tiran `RoboticArm`, `ArmSlot` y `ArmBlock` |
 | Meta del Escenario 3 | Se cumple en el `Recoger` del último ciclo, no en el `Soltar`: se completa con el objeto en la pinza. Mejor cambiarla a "el destino tiene N" |
-| Tres escenas o una | Con una por dificultad, el entorno y la narrativa se duplican |
 | Escenario 4 | ¿Necesita panel-ejemplo introductorio? Depende de los beta testers |
 
 ## 13. Documentación relacionada
@@ -441,7 +463,8 @@ búsquedas y confunden.
 ## 14. Comprobaciones rápidas
 
 ```bash
-# Compilar sin abrir Unity
+# Compilar sin abrir Unity. Necesita que Unity haya generado el .csproj al menos una vez:
+# en un worktree recién clonado no existe todavía
 dotnet build Assembly-CSharp.csproj -v:q --nologo -t:Rebuild
 
 # Superficie pública (si este documento parece desfasado)
