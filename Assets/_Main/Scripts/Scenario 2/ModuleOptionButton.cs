@@ -69,6 +69,17 @@ public class ModuleOptionButton : MonoBehaviour
             pressTargetRest = pressTarget.localPosition;
     }
 
+    private void Start()
+    {
+        // Se comprueba en Start y no en Awake: SystemModule rellena su lista en su propio
+        // Awake, y el orden entre dos Awake no está garantizado.
+        if (module != null && !module.Knows(this))
+            Debug.LogError($"[Escenario2] '{name}' apunta al módulo '{module.name}', pero no " +
+                           "está en su lista Option Buttons: al pulsarlo se alterna la opción, " +
+                           "pero este botón no se hunde ni se repinta. Añádelo a esa lista, o " +
+                           "vacíala del todo para que el módulo busque solo entre sus hijos.", this);
+    }
+
     public void SetLabel(string text)
     {
         if (label != null)
@@ -125,7 +136,19 @@ public class ModuleOptionButton : MonoBehaviour
     [ContextMenu("Press")]
     public void Press()
     {
-        if (!interactable || module == null) return;
+        if (module == null)
+        {
+            Debug.LogError($"[Escenario2] '{name}' no tiene SystemModule: ni cuelga de uno ni " +
+                           "lo tiene asignado a mano.", this);
+            return;
+        }
+
+        if (!interactable)
+        {
+            Debug.LogWarning($"[Escenario2] '{name}' está bloqueado porque su módulo ya está " +
+                             "reparado.", this);
+            return;
+        }
 
         module.ToggleOption(optionIndex);
     }

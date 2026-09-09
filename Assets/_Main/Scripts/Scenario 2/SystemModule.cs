@@ -69,7 +69,11 @@ public class SystemModule : MonoBehaviour
             optionButtons = GetComponentsInChildren<ModuleOptionButton>(true);
     }
 
-    private void Start() => Refresh();
+    private void Start()
+    {
+        WarnAboutDuplicateIndices();
+        Refresh();
+    }
 
     /// <summary>Vuelca el contenido del asset a la pantalla, los botones y el estado visual.</summary>
     public void Refresh()
@@ -128,12 +132,61 @@ public class SystemModule : MonoBehaviour
     }
 
     /// <summary>
+
+    /// <summary>
+    /// Si este módulo tiene registrado ese botón.
+    ///
+    /// Existe para cazar el fallo de montaje más silencioso del escenario: un botón que
+    /// apunta al módulo, pero que el módulo no conoce porque la lista se rellenó a mano y no
+    /// se actualizó al añadirlo. Pulsarlo alterna la opción de verdad, pero el botón nunca
+    /// recibe SetSelected y parece que no hace nada.
+    /// </summary>
+    public bool Knows(ModuleOptionButton button)
+    {
+        if (optionButtons == null) return false;
+
+        foreach (ModuleOptionButton candidate in optionButtons)
+            if (candidate == button) return true;
+
+        return false;
+    }
+
+    /// <summary>Dos botones con el mismo optionIndex alternan la misma acción.</summary>
+    private void WarnAboutDuplicateIndices()
+    {
+        if (optionButtons == null) return;
+
+        for (int i = 0; i < optionButtons.Length; i++)
+        {
+            if (optionButtons[i] == null) continue;
+
+            for (int j = i + 1; j < optionButtons.Length; j++)
+            {
+                if (optionButtons[j] == null) continue;
+                if (optionButtons[i].OptionIndex != optionButtons[j].OptionIndex) continue;
+
+                Debug.LogError($"[Escenario2] En '{name}', los botones " +
+                               $"'{optionButtons[i].name}' y '{optionButtons[j].name}' tienen " +
+                               $"el mismo optionIndex ({optionButtons[i].OptionIndex}): " +
+                               "alternan la misma acción.", this);
+            }
+        }
+    }
+
+    /// <summary>
     /// Lo llaman los botones. Alterna entre seleccionada y no seleccionada.
     /// Un módulo ya reparado ignora las pulsaciones.
     /// </summary>
     public void ToggleOption(int optionIndex)
     {
-        if (IsSolved || data == null) return;
+        if (data == null)
+        {
+            Debug.LogError($"[Escenario2] '{name}' no tiene ModuleData asignado: pulsar sus " +
+                           "botones no hará nada.", this);
+            return;
+        }
+
+        if (IsSolved) return;
 
         bool nowSelected = !selected.Contains(optionIndex);
 
