@@ -1,6 +1,6 @@
-using TMPro;
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -19,16 +19,10 @@ public class SystemModule : MonoBehaviour
     [SerializeField] private ModuleData data;
 
     [Header("Pantalla")]
-    [SerializeField] private Text titleText;
-
-    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que use tu panel.")]
-    [SerializeField] private TMP_Text titleTextTmp;
+    [SerializeField] private TMP_Text titleText;
 
     [Tooltip("El problema se mantiene en texto; lo que pasa a ser visual es el estado.")]
-    [SerializeField] private Text problemText;
-
-    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que use tu panel.")]
-    [SerializeField] private TMP_Text problemTextTmp;
+    [SerializeField] private TMP_Text problemText;
 
     [Tooltip("Mensaje que sustituye al problema cuando el módulo queda reparado.")]
     [SerializeField] private string repairedMessage = "Sistema restablecido";
@@ -89,8 +83,8 @@ public class SystemModule : MonoBehaviour
         if (!data.IsValid)
             Debug.LogError($"[Escenario2] '{data.name}' no tiene opciones o no tiene ninguna correcta.", this);
 
-        UiText.Set(titleText, titleTextTmp, data.moduleName);
-        UiText.Set(problemText, problemTextTmp, IsSolved ? repairedMessage : data.problem);
+        if (titleText != null) titleText.text = data.moduleName;
+        if (problemText != null) problemText.text = IsSolved ? repairedMessage : data.problem;
 
         RefreshStatus();
         RefreshButtons();
