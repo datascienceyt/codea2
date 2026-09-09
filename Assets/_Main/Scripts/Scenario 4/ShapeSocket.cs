@@ -1,3 +1,4 @@
+using TMPro;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +25,9 @@ public class ShapeSocket : MonoBehaviour
 
     [Tooltip("Opcional. Muestra la figura esperada o su número de lados, según el modo.")]
     [SerializeField] private Text label;
+
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text labelTmp;
 
     [Tooltip("Id para telemetría. Si queda vacío se usa el de la figura esperada.")]
     [SerializeField] private string socketId;
@@ -66,13 +70,13 @@ public class ShapeSocket : MonoBehaviour
 
     private void Refresh()
     {
-        if (label == null || expectedShape == null) return;
+        if (expectedShape == null || !UiText.Any(label, labelTmp)) return;
 
         // En intermedia el hueco NO revela qué figura espera, solo cuántos lados: si mostrara
         // la figura, el emparejamiento por atributo dejaría de tener sentido.
-        label.text = mode == ShapeMatchMode.Shape
+        UiText.Set(label, labelTmp, mode == ShapeMatchMode.Shape
             ? expectedShape.displayName
-            : expectedShape.sides.ToString();
+            : expectedShape.sides.ToString());
     }
 
     private void HandleOccupied(BlockNode block)

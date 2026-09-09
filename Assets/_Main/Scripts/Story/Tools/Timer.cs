@@ -1,3 +1,4 @@
+using TMPro;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,6 +30,9 @@ public class Timer : MonoBehaviour
     [Tooltip("Opcional. Si queda vacío el temporizador cuenta en privado, sin mostrar nada. " +
              "Para encender/apagar el canvas entero usa Tools.SetActive / SetInactive.")]
     [SerializeField] private Text display;
+
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text displayTmp;
 
     [Header("Tiempo límite")]
     [Tooltip("Tiempo límite en segundos. 900 = 15 minutos.")]
@@ -151,9 +155,9 @@ public class Timer : MonoBehaviour
 
     private void Refresh()
     {
-        if (display == null) return;
+        if (!UiText.Any(display, displayTmp)) return;
 
-        display.text = Format(Remaining);
+        UiText.Set(display, displayTmp, Format(Remaining));
     }
 
     /// <summary>

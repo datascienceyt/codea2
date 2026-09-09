@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -20,6 +21,10 @@ public class ModuleOptionButton : MonoBehaviour
 
     [Tooltip("Opcional. Se rellena solo con el texto de la acción.")]
     [SerializeField] private Text label;
+
+    [Tooltip("Lo mismo, pero para TextMeshPro: los botones de los samples de Meta usan este. " +
+             "Rellena solo el que tenga tu botón y deja el otro vacío.")]
+    [SerializeField] private TMP_Text labelTmp;
 
     [Header("Estado seleccionado")]
     [Tooltip("Opcional. Renderer del botón: se le tiñe el material según esté seleccionado.")]
@@ -55,8 +60,7 @@ public class ModuleOptionButton : MonoBehaviour
 
     public void SetLabel(string text)
     {
-        if (label != null)
-            label.text = text;
+        UiText.Set(label, labelTmp, text);
     }
 
     /// <summary>Refleja el estado de selección. Lo llama SystemModule, no el jugador.</summary>

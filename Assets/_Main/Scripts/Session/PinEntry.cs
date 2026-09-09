@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -21,6 +22,9 @@ public class PinEntry : MonoBehaviour
     [Header("Pantalla")]
     [Tooltip("Opcional. Muestra lo tecleado.")]
     [SerializeField] private Text display;
+
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text displayTmp;
 
     [Tooltip("Con qué se dibujan las cifras que faltan por teclear.")]
     [SerializeField] private string emptyChar = "_";
@@ -110,13 +114,13 @@ public class PinEntry : MonoBehaviour
 
     private void Refresh()
     {
-        if (display == null) return;
+        if (!UiText.Any(display, displayTmp)) return;
 
         string shown = entered;
 
         for (int i = entered.Length; i < digits; i++)
             shown += emptyChar;
 
-        display.text = shown;
+        UiText.Set(display, displayTmp, shown);
     }
 }

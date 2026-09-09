@@ -1,3 +1,4 @@
+using TMPro;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -41,6 +42,9 @@ public class SocketRow : MonoBehaviour
 
     [Tooltip("Opcional. Muestra el número actual de repeticiones.")]
     [SerializeField] private Text repetitionsLabel;
+
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text repetitionsLabelTmp;
 
     [Tooltip("Al cambiar el contador: sonido, parpadeo...")]
     public UnityEvent OnRepetitionsChanged;
@@ -96,8 +100,7 @@ public class SocketRow : MonoBehaviour
     {
         repetitions = Mathf.Clamp(repetitions, minRepetitions, maxRepetitions);
 
-        if (repetitionsLabel != null)
-            repetitionsLabel.text = repetitions.ToString();
+        UiText.Set(repetitionsLabel, repetitionsLabelTmp, repetitions.ToString());
     }
 
     // --- Bloqueo de edición ---

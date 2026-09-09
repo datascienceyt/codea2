@@ -1,3 +1,4 @@
+using TMPro;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -67,6 +68,9 @@ public class Narrator : MonoBehaviour, IStepAction
     [Tooltip("Opcional. Sin Text asignado, la narración es solo de voz.")]
     [SerializeField] private Text display;
 
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text displayTmp;
+
     [Tooltip("Caracteres por segundo. 25-35 se lee cómodo en VR.")]
     [SerializeField] private float charactersPerSecond = 28f;
 
@@ -108,7 +112,7 @@ public class Narrator : MonoBehaviour, IStepAction
 
     private void Start()
     {
-        if (display != null) display.text = string.Empty;
+        UiText.Set(display, displayTmp, string.Empty);
     }
 
     // --- Selección de tramo ---
@@ -201,7 +205,7 @@ public class Narrator : MonoBehaviour, IStepAction
 
     private IEnumerator TypeText(string full, Action done)
     {
-        if (display == null || string.IsNullOrEmpty(full)) { done(); yield break; }
+        if (!UiText.Any(display, displayTmp) || string.IsNullOrEmpty(full)) { done(); yield break; }
 
         IsTyping = true;
         skipRequested = false;
@@ -231,18 +235,19 @@ public class Narrator : MonoBehaviour, IStepAction
 
     private void Render(string full, int revealed)
     {
-        if (display == null) return;
+        if (!UiText.Any(display, displayTmp)) return;
 
         if (!stableLayout)
         {
-            display.text = full.Substring(0, revealed);
+            UiText.Set(display, displayTmp, full.Substring(0, revealed));
             return;
         }
 
         // El resto se pinta transparente: ocupa el mismo sitio, así el bloque de texto no
         // cambia de tamaño ni reajusta saltos de línea mientras se escribe.
-        display.supportRichText = true;
-        display.text = full.Substring(0, revealed) + "<color=#00000000>" + full.Substring(revealed) + "</color>";
+        UiText.EnableRichText(display, displayTmp);
+        UiText.Set(display, displayTmp,
+                   full.Substring(0, revealed) + "<color=#00000000>" + full.Substring(revealed) + "</color>");
     }
 
     private void PlayTick()
@@ -314,7 +319,7 @@ public class Narrator : MonoBehaviour, IStepAction
     [ContextMenu("Limpiar pantalla")]
     public void Clear()
     {
-        if (display != null) display.text = string.Empty;
+        UiText.Set(display, displayTmp, string.Empty);
     }
 
     private bool HasEntries() =>
