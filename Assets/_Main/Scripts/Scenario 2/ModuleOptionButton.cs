@@ -3,12 +3,13 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// Un botón de acción de un módulo. Alterna entre seleccionado y no seleccionado.
+/// Un botón de acción de un módulo. Alterna entre seleccionado y no seleccionado, y mientras
+/// lo está se queda hundido y con otro material.
 ///
-/// Deliberadamente NO conoce Oculus.Interaction: el prefab del botón solo tiene que llamar a
-/// Press() desde el WhenSelect de su InteractableUnityEventWrapper. Así este script sigue
-/// sirviendo si mañana se cambia la primitiva de interacción, y se puede probar sin visor
-/// desde el menú contextual.
+/// Deliberadamente NO conoce Oculus.Interaction: el botón solo tiene que llamar a Press()
+/// desde el evento que prefieras de su InteractableUnityEventWrapper, sea hover o select. Así
+/// este script sigue sirviendo si cambia la primitiva de interacción, y se puede probar sin
+/// visor desde el menú contextual.
 /// </summary>
 public class ModuleOptionButton : MonoBehaviour
 {
@@ -21,25 +22,24 @@ public class ModuleOptionButton : MonoBehaviour
     [Tooltip("Opcional. Se rellena solo con el texto de la acción.")]
     [SerializeField] private TMP_Text label;
 
-    [Header("Estado seleccionado")]
-    [Tooltip("La cara del botón, que se queda hundida mientras la acción está seleccionada. " +
-             "En los botones de los samples de Meta es el hijo que lleva el PokeInteractableVisual.")]
+    [Header("Aspecto al quedar seleccionado")]
+    [Tooltip("Qué se mueve al seleccionar. Si queda vacío se mueve este mismo objeto.")]
     [SerializeField] private Transform pressTarget;
 
-    [Tooltip("Cuánto se hunde y hacia dónde, en el espacio local del propio pressTarget. " +
-             "En un botón de Meta suele ser el eje Z: prueba (0, 0, 0.006) y ajusta.")]
-    [SerializeField] private Vector3 pressedOffset = new Vector3(0f, 0f, 0.006f);
+    [Tooltip("Cuánto se hunde, en metros, sobre el eje Z local de pressTarget. " +
+             "Ponlo en negativo si tu botón se hunde hacia el otro lado.")]
+    [SerializeField] private float pressDistance = 0.006f;
 
-    [Tooltip("El PokeInteractableVisual de Meta. Arrástralo aquí o el botón volverá a subir " +
-             "en cuanto apartes el dedo, porque ese componente recoloca la cara al terminar " +
-             "el contacto y desharía el hundido.")]
-    [SerializeField] private Behaviour pressVisual;
-
-    [Tooltip("Opcional. Renderer al que teñir el material. Ojo: en los botones de Meta el " +
-             "color lo gobierna su propio visual y este tinte no se vería.")]
+    [Tooltip("Renderer al que se le cambia el material. Si queda vacío se busca en los hijos.")]
     [SerializeField] private Renderer targetRenderer;
-    [SerializeField] private Color normalColor = Color.white;
-    [SerializeField] private Color selectedColor = new Color(0.2f, 0.7f, 1f);
+
+    [SerializeField] private Material normalMaterial;
+    [SerializeField] private Material selectedMaterial;
+
+    [Tooltip("El PokeInteractableVisual de Meta, si tu botón lo lleva. Recoloca la cara del " +
+             "botón al terminar el contacto, así que desharía el hundido: se apaga mientras " +
+             "la acción está seleccionada y se vuelve a encender al soltarla.")]
+    [SerializeField] private Behaviour pressVisual;
 
     [Tooltip("Opcional. Objeto que se apaga al resolver el módulo, para que el botón deje de " +
              "poder pulsarse. Apunta aquí al hijo que lleva el PokeInteractable.")]
@@ -63,10 +63,12 @@ public class ModuleOptionButton : MonoBehaviour
         if (module == null)
             Debug.LogError($"[Escenario2] El botón '{name}' no encuentra su SystemModule.", this);
 
-        // La posición de reposo se captura antes de que nadie la mueva. Guardarla y no
-        // calcularla evita que el botón se hunda un poco más en cada selección.
-        if (pressTarget != null)
-            pressTargetRest = pressTarget.localPosition;
+        if (pressTarget == null) pressTarget = transform;
+        if (targetRenderer == null) targetRenderer = GetComponentInChildren<Renderer>();
+
+        // La posición de reposo se guarda una vez, antes de que nadie la mueva. Calcularla
+        // cada vez haría que el botón se hundiera un poco más en cada selección.
+        pressTargetRest = pressTarget.localPosition;
     }
 
     private void Start()
@@ -76,8 +78,8 @@ public class ModuleOptionButton : MonoBehaviour
         if (module != null && !module.Knows(this))
             Debug.LogError($"[Escenario2] '{name}' apunta al módulo '{module.name}', pero no " +
                            "está en su lista Option Buttons: al pulsarlo se alterna la opción, " +
-                           "pero este botón no se hunde ni se repinta. Añádelo a esa lista, o " +
-                           "vacíala del todo para que el módulo busque solo entre sus hijos.", this);
+                           "pero este botón no se hunde ni cambia de material. Añádelo a esa " +
+                           "lista, o vacíala del todo para que el módulo busque entre sus hijos.", this);
     }
 
     public void SetLabel(string text)
@@ -92,10 +94,7 @@ public class ModuleOptionButton : MonoBehaviour
         bool changed = IsSelected != value;
         IsSelected = value;
 
-        ApplyPressed(value);
-
-        if (targetRenderer != null)
-            targetRenderer.material.color = value ? selectedColor : normalColor;
+        ApplySelectedLook(value);
 
         if (!changed) return;
 
@@ -104,22 +103,29 @@ public class ModuleOptionButton : MonoBehaviour
     }
 
     /// <summary>
-    /// Deja la cara del botón hundida, o la devuelve a su sitio.
+    /// Hunde el botón y le cambia el material, o lo devuelve a su estado normal.
     ///
-    /// Hay que apagar el visual de Meta mientras dure: PokeInteractableVisual recoloca esa
-    /// misma transform cuando el dedo se aleja, y lo hace precisamente para devolver el botón
-    /// arriba. Con él encendido, la selección se vería solo mientras tocas.
+    /// Apagar el visual de Meta mientras dura no es opcional si tu botón lo lleva:
+    /// PokeInteractableVisual recoloca esa misma transform cuando el dedo se aleja, y lo hace
+    /// justamente para devolver el botón arriba. Con él encendido, la selección solo se vería
+    /// mientras el niño mantiene el dedo puesto.
     /// </summary>
-    private void ApplyPressed(bool pressed)
+    private void ApplySelectedLook(bool selected)
     {
         if (pressVisual != null)
-            pressVisual.enabled = !pressed;
+            pressVisual.enabled = !selected;
 
-        if (pressTarget == null) return;
+        if (pressTarget != null)
+            pressTarget.localPosition = selected
+                ? pressTargetRest + Vector3.forward * pressDistance
+                : pressTargetRest;
 
-        pressTarget.localPosition = pressed
-            ? pressTargetRest + pressedOffset
-            : pressTargetRest;
+        if (targetRenderer == null) return;
+
+        Material material = selected ? selectedMaterial : normalMaterial;
+
+        if (material != null)
+            targetRenderer.material = material;
     }
 
     public void SetInteractable(bool value)
@@ -131,7 +137,8 @@ public class ModuleOptionButton : MonoBehaviour
     }
 
     /// <summary>
-    /// Punto de entrada del botón. Cablear aquí el WhenSelect del PokeInteractable.
+    /// Punto de entrada del botón: alterna la acción. Cablea aquí el evento de hover o de
+    /// select de tu InteractableUnityEventWrapper.
     /// </summary>
     [ContextMenu("Press")]
     public void Press()
@@ -153,15 +160,15 @@ public class ModuleOptionButton : MonoBehaviour
         module.ToggleOption(optionIndex);
     }
 
-    // --- Ajuste del hundido, para tunear pressedOffset sin ponerse el visor ---
+    // --- Para ajustar pressDistance sin ponerse el visor. Necesitan Play Mode ---
 
-    [ContextMenu("Previsualizar/Hundido")]
-    private void PreviewPressed() => Preview(true);
+    [ContextMenu("Previsualizar/Seleccionado")]
+    private void PreviewSelected() => Preview(true);
 
-    [ContextMenu("Previsualizar/Suelto")]
-    private void PreviewReleased() => Preview(false);
+    [ContextMenu("Previsualizar/Normal")]
+    private void PreviewNormal() => Preview(false);
 
-    private void Preview(bool pressed)
+    private void Preview(bool selected)
     {
         if (!Application.isPlaying)
         {
@@ -170,6 +177,6 @@ public class ModuleOptionButton : MonoBehaviour
             return;
         }
 
-        ApplyPressed(pressed);
+        ApplySelectedLook(selected);
     }
 }

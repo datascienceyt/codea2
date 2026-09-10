@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -13,7 +14,7 @@ using UnityEngine.UI;
 /// acciones correctas: ni de menos ni de más. Eso obliga a descartar los distractores de forma
 /// activa, no solo a acertar uno.
 /// </summary>
-public class SystemModule : MonoBehaviour
+public class SystemModule : MonoBehaviour, IStepAction
 {
     [Header("Contenido")]
     [SerializeField] private ModuleData data;
@@ -220,6 +221,21 @@ public class SystemModule : MonoBehaviour
             if (!data.IsCorrectAt(index)) return false;
 
         return true;
+    }
+
+    /// <summary>
+    /// Bloquea el paso del Director hasta que ESTE módulo quede reparado.
+    ///
+    /// Es por módulo y no por escenario a propósito: así la narración puede reaccionar a cada
+    /// avería por separado en vez de esperar a las tres. Scenario2Controller sigue encargándose
+    /// del escenario completo y de la telemetría.
+    ///
+    /// No se reinicia el estado al entrar: si el módulo ya estaba reparado cuando el Director
+    /// llega aquí, el paso se da por cumplido en vez de colgarse esperando algo que ya ocurrió.
+    /// </summary>
+    public IEnumerator Execute()
+    {
+        yield return new WaitUntil(() => IsSolved);
     }
 
     [ContextMenu("Reset Module")]
