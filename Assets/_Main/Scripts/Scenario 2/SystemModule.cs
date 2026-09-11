@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 
 /// <summary>
 /// Un módulo de la sala de sistemas: una pantalla con el problema y varios botones de acción
@@ -19,20 +19,18 @@ public class SystemModule : MonoBehaviour, IStepAction
     [SerializeField] private ModuleData data;
 
     [Header("Pantalla")]
-    [SerializeField] private TMP_Text titleText;
-
     [Tooltip("El problema se mantiene en texto; lo que pasa a ser visual es el estado.")]
-    [SerializeField] private TMP_Text problemText;
+    [SerializeField] private Text problemText;
 
     [Tooltip("Mensaje que sustituye al problema cuando el módulo queda reparado.")]
     [SerializeField] private string repairedMessage = "Sistema restablecido";
 
     [Header("Estado visual")]
-    [Tooltip("Icono de averiado. Encendido desde el arranque y hasta que se repare el módulo.")]
-    [SerializeField] private GameObject brokenIcon;
-
-    [Tooltip("Icono de reparado. Se enciende al resolverse, y apaga el de averiado.")]
-    [SerializeField] private GameObject repairedIcon;
+    [Tooltip("Icono de estado: es al que se le intercambia el sprite. Sustituye a las " +
+             "etiquetas de texto AVERIADO / REPARADO.")]
+    [SerializeField] private Image statusIcon;
+    [SerializeField] private Sprite brokenIcon;
+    [SerializeField] private Sprite repairedIcon;
 
     [Tooltip("Luz de averiado. Encendida desde el arranque y hasta que se repare el módulo.")]
     [SerializeField] private GameObject brokenLight;
@@ -86,7 +84,6 @@ public class SystemModule : MonoBehaviour, IStepAction
         if (!data.IsValid)
             Debug.LogError($"[Escenario2] '{data.name}' no tiene opciones o no tiene ninguna correcta.", this);
 
-        if (titleText != null) titleText.text = data.moduleName;
         if (problemText != null) problemText.text = IsSolved ? repairedMessage : data.problem;
 
         RefreshStatus();
@@ -95,11 +92,14 @@ public class SystemModule : MonoBehaviour, IStepAction
 
     private void RefreshStatus()
     {
-        // Cada objeto se comprueba por su lado: con un solo if, olvidar asignar uno de los
-        // dos dejaría el otro sin actualizar y el módulo acabaría enseñando los dos a la vez.
-        if (brokenIcon != null) brokenIcon.SetActive(!IsSolved);
-        if (repairedIcon != null) repairedIcon.SetActive(IsSolved);
+        if (statusIcon != null)
+        {
+            Sprite sprite = IsSolved ? repairedIcon : brokenIcon;
+            if (sprite != null) statusIcon.sprite = sprite;
+        }
 
+        // Cada luz se comprueba por su lado: con un solo if, olvidar asignar una de las dos
+        // dejaría la otra sin actualizar y el módulo acabaría con las dos encendidas a la vez.
         if (brokenLight != null) brokenLight.SetActive(!IsSolved);
         if (repairedLight != null) repairedLight.SetActive(IsSolved);
     }
