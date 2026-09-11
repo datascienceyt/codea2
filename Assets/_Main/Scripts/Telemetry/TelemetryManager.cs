@@ -167,6 +167,15 @@ public class TelemetryManager : MonoBehaviour
         ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null) return;
 
+        // Volver a iniciar un escenario ya iniciado le pisa la hora de inicio y el cronómetro:
+        // totalSeconds acabaría midiendo solo desde la última llamada, no desde que el niño
+        // empezó de verdad. Pasa al cablear StartChallenge en varios pasos, o junto a un
+        // StartScenario del controlador que ya lo llama por su cuenta.
+        if (scenario.started && !scenario.completed)
+            Debug.LogWarning($"[Telemetry] '{challengeId}' ya estaba iniciado; se reinicia su " +
+                             "hora de inicio y su cronómetro. ¿Está StartChallenge cableado en " +
+                             "más de un sitio, o junto a un StartScenario que ya lo llama?");
+
         scenario.started = true;
         scenario.startedUtc = NowUtc();
 

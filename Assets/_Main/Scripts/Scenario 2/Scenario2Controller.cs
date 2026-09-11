@@ -30,8 +30,37 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
         if (modules == null || modules.Length == 0)
             modules = GetComponentsInChildren<SystemModule>(true);
 
+        WarnAboutMissingModules();
+
         foreach (SystemModule module in modules)
             if (module != null) module.OnOptionToggled += HandleOptionToggled;
+    }
+
+    /// <summary>
+    /// Un hueco vacío en la lista de módulos es el fallo más caro del escenario, y el más
+    /// silencioso: ese módulo no registra ninguna selección, y CheckCompletion se salta los
+    /// nulos, así que el escenario se da por completado sin haberlo resuelto entero.
+    /// </summary>
+    private void WarnAboutMissingModules()
+    {
+        if (modules == null) return;
+
+        int empty = 0;
+
+        foreach (SystemModule module in modules)
+            if (module == null) empty++;
+
+        if (empty > 0)
+            Debug.LogError($"[Escenario2] '{name}' tiene {empty} hueco(s) vacío(s) en su lista " +
+                           "Modules: esos módulos no registrarán nada en telemetria y el " +
+                           "escenario se dará por completado sin ellos. Asígnalos, o vacía la " +
+                           "lista del todo para que se busquen entre los hijos.", this);
+
+        int inChildren = GetComponentsInChildren<SystemModule>(true).Length;
+
+        if (modules.Length - empty < inChildren)
+            Debug.LogWarning($"[Escenario2] '{name}' tiene {modules.Length - empty} módulo(s) " +
+                             $"en su lista, pero cuelgan {inChildren} de él. ¿Falta alguno?", this);
     }
 
     private void OnDestroy()
