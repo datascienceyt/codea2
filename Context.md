@@ -106,7 +106,7 @@ dependencia:
 | `Tools/Teleporter.cs` | Mueve el `OVRCameraRig` compensando el offset de cabeza |
 | `Tools/Waiter.cs`, `Tools/Tools.cs` | Utilidades para cablear en el inspector |
 | `Tools/UiText.cs` | Escribe en etiquetas de UI sean `Text` de uGUI o `TMP_Text`. Los samples de Meta usan TMP |
-| `Tools/ScreenFollower.cs` | Mantiene un panel delante del jugador con zona muerta: solo se recoloca al girar o alejarse |
+| `Tools/ScreenPlacer.cs` | `IStepAction` que coloca la pantalla de narración en su sitio al llegar el paso |
 | `Session/SessionSetup.cs` | Pantalla del supervisor: PIN + dificultad, y lanza la escena (RI-03) |
 | `Session/PinEntry.cs` | Teclado numérico del PIN. `AppendDigit`, borrar, siguiente correlativo |
 | `Session/SceneLoader.cs` | Carga una escena cerrando antes la run. Para volver con el siguiente niño |
