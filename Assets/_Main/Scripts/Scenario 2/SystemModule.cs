@@ -34,13 +34,11 @@ public class SystemModule : MonoBehaviour, IStepAction
     [SerializeField] private Sprite brokenIcon;
     [SerializeField] private Sprite repairedIcon;
 
-    [Tooltip("Luz del módulo: se le cambia el color al material. Sirve un Renderer cualquiera.")]
-    [SerializeField] private Renderer statusLight;
-    [SerializeField] private Color brokenColor = Color.red;
-    [SerializeField] private Color repairedColor = Color.green;
+    [Tooltip("Luz de averiado. Encendida desde el arranque y hasta que se repare el módulo.")]
+    [SerializeField] private GameObject brokenLight;
 
-    [Tooltip("Si el material usa emisión, además del color base se tiñe _EmissionColor.")]
-    [SerializeField] private bool tintEmission = true;
+    [Tooltip("Luz de reparado. Se enciende al resolverse, y apaga la de averiado.")]
+    [SerializeField] private GameObject repairedLight;
 
     [Header("Botones")]
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
@@ -103,19 +101,10 @@ public class SystemModule : MonoBehaviour, IStepAction
             if (sprite != null) statusIcon.sprite = sprite;
         }
 
-        if (statusLight == null) return;
-
-        Color color = IsSolved ? repairedColor : brokenColor;
-
-        // .material y no .sharedMaterial: sharedMaterial teñiría de golpe todos los módulos
-        // que compartan ese material.
-        statusLight.material.color = color;
-
-        if (tintEmission && statusLight.material.HasProperty("_EmissionColor"))
-        {
-            statusLight.material.EnableKeyword("_EMISSION");
-            statusLight.material.SetColor("_EmissionColor", color);
-        }
+        // Cada luz se comprueba por su lado: con un solo if, olvidar asignar una de las dos
+        // dejaría la otra sin actualizar y el módulo acabaría con las dos encendidas a la vez.
+        if (brokenLight != null) brokenLight.SetActive(!IsSolved);
+        if (repairedLight != null) repairedLight.SetActive(IsSolved);
     }
 
     private void RefreshButtons()
