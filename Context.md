@@ -3,7 +3,7 @@
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
 el sistema completo sin leer los 5.570 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **08/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **14/09/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
@@ -49,7 +49,7 @@ dependencia:
 
 ## 3. Mapa de archivos
 
-52 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
+56 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
 
 ### `Scripts/Block Programming System/` — núcleo compartido por escenarios 1, 3 y 4
 
@@ -81,8 +81,8 @@ dependencia:
 | Archivo | Responsabilidad |
 |---|---|
 | `ModuleData.cs` | ScriptableObject: problema y lista de `ModuleOption` con su `isCorrect` |
-| `SystemModule.cs` | Pantalla + botones. Selección múltiple con alternado |
-| `ModuleOptionButton.cs` | Un botón. Expone `Press()`, sin acoplarse a Oculus |
+| `SystemModule.cs` | Problema, icono y dos luces de estado. Selección múltiple. `IStepAction` que espera a su reparación |
+| `ModuleOptionButton.cs` | Un botón. `Press()` alterna; seleccionado se hunde y cambia de material |
 | `RoboticArm.cs` | Gira entre `ArmSlot`, recoge y suelta. Equivalente de `Bot` |
 | `ArmSlot.cs` | Una posición con su pila de objetos |
 | `ArmBlock.cs` | Recoger, Soltar, Girar Izq/Der |
@@ -117,6 +117,7 @@ dependencia:
 | `Map/AutomaticDoor.cs` | Puertas correderas. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
+| `Editor/InteractableEventInvoker.cs` | Click derecho en un `InteractableUnityEventWrapper` para disparar sus eventos sin visor |
 
 ## 4. Sistema de bloques
 
@@ -158,11 +159,12 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 `OnAttemptFailed` tras `retryDelay` segundos. Ahí se cablean `RegisterFailedAttempt`,
 `ReloadLevel`, `ResetLevel` y `ResetRunner`. El niño no pulsa nada para reintentar.
 
-### Escenario 2 — Condicionales *(básica montada, sin probar)*
+### Escenario 2 — Condicionales *(montado en intermedia, sin probar en visor)*
 
-Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Los
-botones **alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el
-conjunto seleccionado coincide **exactamente** con el correcto: ni de menos ni de más.
+Tres módulos averiados, **cada uno en una sala distinta**. Cada uno enuncia un problema en
+texto y ofrece varias acciones. Los botones **alternan** entre seleccionado y no seleccionado,
+y el módulo se repara cuando el conjunto seleccionado coincide **exactamente** con el correcto:
+ni de menos ni de más.
 
 | | Opciones | Correctas |
 |---|---|---|
@@ -179,7 +181,17 @@ lubricación, energía de electricidad, enfriamiento de temperatura. Así no se 
 reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar agua"*
 aparece en los tres módulos y solo es correcta en uno.
 
-Estado visual por icono y luz roja/verde; el problema se mantiene textual.
+**Aspecto.** El problema es un `Text` de uGUI. El nombre del módulo no lo escribe el código: va
+puesto a mano en la escena, y `moduleName` se conserva en los assets solo como referencia. El
+estado se ve de dos formas: un `statusIcon` al que se le intercambia el sprite, y **dos luces**,
+averiado y reparado, que son GameObjects distintos que se encienden y apagan. Un botón
+seleccionado **se hunde** `pressDistance` metros sobre su Z local y pasa de `normalMaterial` a
+`selectedMaterial`.
+
+**Flujo en el Director.** Un paso por módulo, en modo `Sequence`: `Fader → módulo → Fader`, con
+el teletransporte del jugador en los `instantEvents`. `SystemModule` es `IStepAction`, así que
+cada paso espera a **su** módulo y el Director avanza solo. `StartScenario()` va una sola vez,
+en el primer paso. El cierre de la telemetría no se cablea.
 
 ### Escenario 3 — Bucles *(montado, sin probar · mecánica del brazo SIN VALIDAR)*
 
@@ -334,7 +346,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `SocketRow` | `IncreaseRepetitions()`, `DecreaseRepetitions()`, `SetRepetitions(int)`, `Lock()`, `Unlock()`, `SetEditable(bool)`, `ClearRow(bool)`, `PlaceInitialBlocks()` |
 | `BlockResetter` | `ResetBlocks()` |
 | `LevelLoader` / `LevelManager` | `ReloadLevel()` · `ResetLevel()`, `CompleteLevel()` |
-| `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()` · `Press()` |
+| `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()`, `IStepAction` · `Press()` |
 | `RoboticArm` | `ResetArm()` |
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
 | `Narrator` | `PlayAudio(int/string)`, `StopAudio()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
@@ -344,6 +356,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `PinEntry` | `AppendDigit(int)`, `DeleteLast()`, `Clear()`, `UseNextPin()`, `SetPin(int)` |
 | `SceneLoader` | `Load()`, `Load(string)` |
 | `Tools` | `SetActive(GameObject)`, `SetInactive(GameObject)`, `DestroyObject(GameObject)` |
+| `ScreenTeleporter` | `TeleportTo(Transform)` |
 
 ## 9. Decisiones no obvias — el porqué
 
@@ -382,6 +395,25 @@ agarrado; una búsqueda global ahí costaba FPS (RNF-01).
 **`OnApplicationPause` no cierra la run.** Quitarse el visor pausaba la app y ponía `endedUtc`
 a mitad de sesión; como `EndRun` es idempotente, ya no se corregía.
 
+**`Scenario2Controller` cierra el escenario él solo.** Escucha a los tres módulos, no a los
+pasos del Director: en cuanto el tercero queda reparado llama a `CompleteChallenge`. No hay que
+cablearlo, y cablearlo a mano es peligroso: si se dispara antes de tiempo fija una duración
+falsa, y como `CompleteChallenge` es idempotente, la llamada buena ya no la corrige.
+
+**Iniciar un escenario dos veces le pisa el cronómetro.** `StartChallenge` reescribe
+`startedUtc` y la hora de inicio, así que `totalSeconds` mediría solo desde la última llamada.
+`StartScenario()` de los controladores ya lo llama; cablear además `StartChallenge` en el mismo
+paso lo duplica. `TelemetryManager` avisa si ocurre.
+
+**El botón seleccionado apaga el `PokeInteractableVisual` de Meta.** Ese componente recoloca la
+cara del botón cuando el dedo se aleja, justamente para devolverla arriba. Sin apagarlo, el
+hundido de la selección se desharía en cuanto el niño aparta la mano.
+
+**La escena del supervisor no lleva `TelemetryManager`.** Su `Awake` abre la run y escribe el
+archivo leyendo el PIN de `PlayerPrefs`: ahí dejaría un JSON vacío con el PIN anterior por cada
+sesión. `SessionSetup` fija los prefs con `PrepareSession` antes de cargar, y la run nace ya
+correcta en la escena de juego.
+
 ## 10. Trampas de Unity vividas en este proyecto
 
 1. **Un prefab no puede referenciar un objeto de escena.** Unity anula la referencia al guardar,
@@ -395,38 +427,53 @@ a mitad de sesión; como `EndRun` es idempotente, ya no se corregía.
    acción de todos los objetos ya colocados en escena.
 5. **Una corrutina muere si su GameObject se desactiva.** Si algo debe ocurrir sí o sí, no lo
    pongas al final de una corrutina interrumpible.
+6. **Una lista rellenada a mano no ve los objetos nuevos.** `SystemModule.optionButtons` y
+   `Scenario2Controller.modules` solo buscan entre sus hijos si la lista está **vacía**. En
+   cuanto tiene algo, lo que se añada después queda fuera sin aviso: el botón alterna la opción
+   pero no se repinta, o el módulo no registra nada. Durante el montaje, mejor dejarla a cero.
+   Ya hay avisos en consola para los dos casos.
+7. **Renombrar un método público rompe el cableado en silencio.** `Press()` está enganchado en
+   varios botones de `Main.unity` como override de prefab, que en el YAML aparece como
+   `value: Press` y no como `m_MethodName:`. Busca las dos formas antes de renombrar nada.
 
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 08/09/2026
+## 11. Estado voluble — 14/09/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
 | Subsistema | Estado |
 |---|---|
 | Escenario 1 | ✅ Verificado en visor |
-| Escenario 2 | 🟡 Montado en básica (3 módulos, 6 botones), sin probar |
+| Escenario 2 | 🟡 Montado en `Main.unity` **con los assets intermedios** (3 módulos, 4 botones cada uno), sin probar en visor |
 | Escenario 3 | 🟡 Montado (brazo + 2 slots), sin probar. Mecánica sin validar |
 | Escenario 4 | ❌ Sin montar |
 | Narrativa, telemetría, subida | ✅ Funcionales |
-| Selección de dificultad | 🟡 Scripts listos (`SessionSetup`, `PinEntry`, `SceneLoader`); falta montar la escena |
+| Selección de dificultad | 🟡 Scripts listos (`SessionSetup`, `PinEntry`, `SceneLoader`); **no existen las escenas** |
 | HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
 **Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**, no
 intercambiando datos en caliente. `SystemModule.data` apunta a un único asset, así que cada
 escena lleva su propio juego de `ModuleData`.
 
+**Ojo con `Main.unity`:** sus tres `SystemModule` apuntan a `Motores_Intermedia`,
+`Generadores_Intermedia` y `Enfriamiento_Intermedia`. A efectos del Escenario 2 es la escena de
+dificultad intermedia, aunque sea la única activa. Solo existen `Main.unity` y `Tests.unity`, y
+en Build Settings solo está `Main.unity`. `SessionSetup` espera por defecto escenas llamadas
+`Basica` e `Intermedia`, así que el flujo del supervisor no funciona hasta crearlas o cambiar
+esos nombres en el inspector.
+
 **Pendiente inmediato en escena:**
 
-- `ScreenNarrator` sigue en `Main.unity` como **script perdido**: un único `MonoBehaviour` con
-  `guid: 6d131647b98e46141a1d89097a26e78a`, en la línea 18325. La clase se fusionó en
-  `Narrator`. Borrar el GameObject y quitarlo de los `waitActions` del Director
-- Reconfigurar el `Narrator`: CSV, `Text`, y los clips con su `textId`
-- Escenario 2 intermedia: añadir los botones 3 y 4 por módulo, con su `optionIndex`, y
-  apuntar cada `SystemModule` a su asset `*_Intermedia`
-- Escenario 2: cablear el estado visual nuevo — `statusIcon` con sus dos sprites, el
-  `Renderer` de la luz y el `selectedMarker` de cada botón
+- Escenario 2: quitar el `CompleteChallenge` con argumento `escenario2` del objeto
+  `Escenario (2)`. `Scenario2Controller` ya cierra el escenario solo; ese sobra, y si se
+  disparase antes de tiempo fijaría una duración falsa que el bueno ya no podría corregir
+- Escenario 2: el Director tiene **dos pasos seguidos esperando al tercer módulo** (GameObject
+  `97428395`). El segundo pasa al instante. Confirmar si es una narración de cierre o un
+  duplicado de copiar y pegar
+- Escenario 3: un paso llama a `StartChallenge("scenario3")`, **sin la `e`**. El id válido es
+  `escenario3` y ese registro se descarta con un aviso
 - Escenario 3: asignar el `Interaction Root` de los bloques, o la fila bloqueada se vacía igual
 - Escenario 3: el **pivot del brazo debe tener X y Z a cero**. `RotateTowardsSlot` termina con
   `Quaternion.Euler(0, yaw, 0)` y aplasta cualquier inclinación en cuanto entras en Play. Si
@@ -435,8 +482,14 @@ escena lleva su propio juego de `ModuleData`.
   por frame mientras se agarra
 - Escenario 4: asignar a mano el `chipResetter` de `Scenario4Controller`. Hay un `BlockResetter`
   por escenario y la búsqueda automática no distingue cuál es el de las fichas
+- Narrador: **sin verificar** que cada clip esté asignado a su `textId`. Las voces ya están
+  renombradas por número en `Sounds/VoiceLines/`, pero no se ha comprobado el `Narrator`
 - Servidor: quitar el prefijo de timestamp en `server.py` (`saved_as = filename`).
   **Ese código no vive en este repositorio**
+
+**Resuelto desde la versión anterior:** el `ScreenNarrator` perdido ya no está en `Main.unity`;
+los tres módulos del Escenario 2 tienen su asset propio y están en la lista `Modules` del
+controlador; y el escenario se inicia una sola vez, con `StartScenario()`.
 
 **Otros datos del repositorio:** existe `Assets/Scenes/Tests.unity` además de `Main.unity`, y 7
 escenas de respaldo en `Assets/_Recovery/` que **no son las escenas activas** — aparecen en las
@@ -482,8 +535,10 @@ grep -n "m_MethodName: X\|value: X" Assets/Scenes/Main.unity
 ```
 
 **Probar sin visor:** casi todo tiene `[ContextMenu]`. `ModuleOptionButton → Press`,
-`RoboticArm → Probar/Ciclo completo`, `VRInteractEvents → Invoke Full Press`,
-`TelemetryManager → Test/Simular y subir`, y el teclado W/A/D/Espacio del `Bot` en editor.
+`RoboticArm → Probar/Ciclo completo`, `TelemetryManager → Test/Simular y subir`, y el teclado
+W/A/D/Espacio del `Bot` en editor. Para disparar el cableado real de un botón de Meta, tal cual
+está en la escena: click derecho en su `InteractableUnityEventWrapper` → **Pulsación
+completa**, sin añadir ningún componente.
 
 Los cuatro escenarios avisan al completarse:
 `[Escenario N] COMPLETADO · challengeId '...'`. Si uno no aparece, ahí está el corte.
