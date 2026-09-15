@@ -1,0 +1,208 @@
+{
+    "pin": "0007",
+    "sessionId": 42,
+    "difficulty": 1,
+    "startedUtc": "2026-09-15T14:02:11.4820000Z",
+    "endedUtc": "2026-09-15T14:12:41.0910000Z",
+    "escenario1": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": 148.3,
+        "startedUtc": "2026-09-15T14:03:05.2140000Z",
+        "endedUtc": "2026-09-15T14:05:33.5090000Z",
+        "failedAttempts": 2,
+        "blocksGrabbed": 11,
+        "blocksReleased": 11,
+        "errorCollisionBot": 1,
+        "errorIncompleteSequence": 0,
+        "errorInvalidCommand": 1,
+        "attempts": [
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Avanzar",
+                    "Girar Derecha"
+                ],
+                "solved": 0,
+                "durationSeconds": 24.7,
+                "timestamp": "2026-09-15T14:03:29.9310000Z"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Avanzar 2",
+                    "Girar Izquierda",
+                    "Usar"
+                ],
+                "solved": 0,
+                "durationSeconds": 31.2,
+                "timestamp": "2026-09-15T14:04:12.6470000Z"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Avanzar",
+                    "Girar Derecha",
+                    "Avanzar 2",
+                    "Usar"
+                ],
+                "solved": 1,
+                "durationSeconds": 38.9,
+                "timestamp": "2026-09-15T14:05:20.8020000Z"
+            }
+        ]
+    },
+    "escenario2": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": 96.5,
+        "startedUtc": "2026-09-15T14:06:02.1180000Z",
+        "endedUtc": "2026-09-15T14:07:38.6350000Z",
+        "wrongSelections": 2,
+        "selections": [
+            {
+                "module": "motores",
+                "option": "Agregar agua",
+                "selected": 1,
+                "correct": 0,
+                "timestamp": "2026-09-15T14:06:19.4400000Z"
+            },
+            {
+                "module": "motores",
+                "option": "Agregar agua",
+                "selected": 0,
+                "correct": 0,
+                "timestamp": "2026-09-15T14:06:27.9120000Z"
+            },
+            {
+                "module": "motores",
+                "option": "Agregar combustible",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:06:33.5680000Z"
+            },
+            {
+                "module": "generadores",
+                "option": "Revisar el cableado",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:06:58.2030000Z"
+            },
+            {
+                "module": "enfriamiento",
+                "option": "Agregar combustible",
+                "selected": 1,
+                "correct": 0,
+                "timestamp": "2026-09-15T14:07:21.7740000Z"
+            },
+            {
+                "module": "enfriamiento",
+                "option": "Agregar combustible",
+                "selected": 0,
+                "correct": 0,
+                "timestamp": "2026-09-15T14:07:29.0150000Z"
+            },
+            {
+                "module": "enfriamiento",
+                "option": "Agregar agua",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:07:35.4820000Z"
+            }
+        ]
+    },
+    "escenario3": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": 121.7,
+        "startedUtc": "2026-09-15T14:08:14.2260000Z",
+        "endedUtc": "2026-09-15T14:10:15.9370000Z",
+        "failedAttempts": 1,
+        "blocksGrabbed": 6,
+        "blocksReleased": 6,
+        "errorCollisionBot": 0,
+        "errorIncompleteSequence": 0,
+        "errorInvalidCommand": 1,
+        "attempts": [
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Soltar",
+                    "Girar Derecha",
+                    "Girar Izquierda"
+                ],
+                "repetitions": 4,
+                "solved": 0,
+                "durationSeconds": 52.4,
+                "timestamp": "2026-09-15T14:09:06.6310000Z"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar Derecha",
+                    "Soltar",
+                    "Girar Izquierda"
+                ],
+                "repetitions": 4,
+                "solved": 1,
+                "durationSeconds": 41.8,
+                "timestamp": "2026-09-15T14:10:01.4650000Z"
+            }
+        ]
+    },
+    "escenario4": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": 73.9,
+        "startedUtc": "2026-09-15T14:11:03.0440000Z",
+        "endedUtc": "2026-09-15T14:12:16.9860000Z",
+        "matchMode": "forma",
+        "wrongPlacements": 1,
+        "chipsGrabbed": 6,
+        "chipsReleased": 6,
+        "placements": [
+            {
+                "socket": "triangulo",
+                "chip": "triangulo",
+                "chipSides": 3,
+                "expectedSides": 3,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:11:21.3370000Z"
+            },
+            {
+                "socket": "cuadrado",
+                "chip": "estrella",
+                "chipSides": 10,
+                "expectedSides": 4,
+                "correct": 0,
+                "timestamp": "2026-09-15T14:11:38.8120000Z"
+            },
+            {
+                "socket": "cuadrado",
+                "chip": "cuadrado",
+                "chipSides": 4,
+                "expectedSides": 4,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:11:52.6900000Z"
+            },
+            {
+                "socket": "estrella",
+                "chip": "estrella",
+                "chipSides": 10,
+                "expectedSides": 10,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:12:04.1580000Z"
+            },
+            {
+                "socket": "circulo",
+                "chip": "circulo",
+                "chipSides": 1,
+                "expectedSides": 1,
+                "correct": 1,
+                "timestamp": "2026-09-15T14:12:16.9860000Z"
+            }
+        ]
+    }
+}

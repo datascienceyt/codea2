@@ -83,6 +83,9 @@ public class TelemetryManager : MonoBehaviour
     /// </summary>
     private float _attemptCycleStart;
 
+    /// <summary>Para no repetir el aviso de manipulación sin reto activo en cada frame.</summary>
+    private bool _warnedManipulationWithoutChallenge;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -128,6 +131,7 @@ public class TelemetryManager : MonoBehaviour
         _challengeStartTimes.Clear();
         _currentChallengeId = null;
         _attemptCycleStart = Time.time;
+        _warnedManipulationWithoutChallenge = false;
 
         // El sessionId evita que dos participantes con el mismo PIN se pisen el archivo.
         _filePath = Path.Combine(Application.persistentDataPath, $"{pin}_{_sessionId}.json");
@@ -357,28 +361,57 @@ public class TelemetryManager : MonoBehaviour
         Save();
     }
 
-    // --- Manipulación de bloques (cablear a VRGrabEvents.onGrabbed / onReleased) ---
+    // --- Manipulación de piezas. Lo llama BlockNode desde código, no por UnityEvent ---
 
+    /// <summary>
+    /// Un agarre. Vale para los bloques de los escenarios 1 y 3 y para las fichas del 4:
+    /// BlockNode es la clase base de los tres y no sabe —ni debe saber— en qué escenario está.
+    /// </summary>
     public void RegisterBlockGrabbed()
     {
-        BlockScenarioRecord scenario = GetBlockScenario(_currentChallengeId);
-        if (scenario == null) return;
+        ScenarioRecord scenario = GetManipulationScenario();
 
-        scenario.blocksGrabbed++;
+        if (scenario is BlockScenarioRecord blocks) blocks.blocksGrabbed++;
+        else if (scenario is Scenario4Record shapes) shapes.chipsGrabbed++;
+        else return;
+
         MarkDirty();
-
-        print("RegisterBlockGrabbed");
     }
 
     public void RegisterBlockReleased()
     {
-        BlockScenarioRecord scenario = GetBlockScenario(_currentChallengeId);
-        if (scenario == null) return;
+        ScenarioRecord scenario = GetManipulationScenario();
 
-        scenario.blocksReleased++;
+        if (scenario is BlockScenarioRecord blocks) blocks.blocksReleased++;
+        else if (scenario is Scenario4Record shapes) shapes.chipsReleased++;
+        else return;
+
         MarkDirty();
+    }
 
-        print("RegisterBlockReleased");
+    /// <summary>
+    /// Escenario al que atribuir una manipulación.
+    ///
+    /// Avisa UNA sola vez si llegan agarres sin ningún reto activo. Ese caso significa que
+    /// nadie llamó a StartChallenge, y entonces TODA la manipulación de ese escenario se
+    /// estaba descartando en silencio: el JSON salía con los contadores a cero y parecía que
+    /// el niño resolvió el reto sin tocar una sola pieza.
+    /// </summary>
+    private ScenarioRecord GetManipulationScenario()
+    {
+        if (!string.IsNullOrEmpty(_currentChallengeId))
+            return GetScenario(_currentChallengeId);
+
+        if (!_warnedManipulationWithoutChallenge)
+        {
+            _warnedManipulationWithoutChallenge = true;
+
+            Debug.LogWarning("[Telemetry] Llegan agarres sin ningún reto activo: no se están " +
+                             "contando. ¿Falta llamar a StartScenario/StartChallenge en el paso " +
+                             "del Director que abre el escenario?");
+        }
+
+        return null;
     }
 
     public void RegisterLogicError(LogicErrorType errorType)
@@ -468,7 +501,8 @@ public class TelemetryManager : MonoBehaviour
     {
         if (_run == null) return false;
 
-        return _run.escenario1.started || _run.escenario2.started || _run.escenario3.started;
+        return _run.escenario1.started || _run.escenario2.started ||
+               _run.escenario3.started || _run.escenario4.started;
     }
 
     public string GetCurrentPin() => _run?.pin;

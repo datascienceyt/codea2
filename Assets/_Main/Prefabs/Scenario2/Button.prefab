@@ -624,7 +624,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _planeSurface: {fileID: 6464736528398577083}
-  _radius: 0.05
+  _radius: 0.1
 --- !u!1 &6286235120197964112
 GameObject:
   m_ObjectHideFlags: 0
