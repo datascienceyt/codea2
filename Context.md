@@ -3,7 +3,7 @@
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
 el sistema completo sin leer los 5.570 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **08/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **15/09/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
@@ -181,7 +181,7 @@ aparece en los tres módulos y solo es correcta en uno.
 
 Estado visual por icono y luz roja/verde; el problema se mantiene textual.
 
-### Escenario 3 — Bucles *(montado, sin probar · mecánica del brazo SIN VALIDAR)*
+### Escenario 3 — Bucles *(montado y cableado, sin probar en visor)*
 
 **La fila entera es el bucle.** No hay bloque contenedor: `SocketRow.Repetitions` (por defecto
 1, así el resto de escenarios no se entera) y `ProgramRunner.Run(inicio, N)`.
@@ -190,22 +190,45 @@ El brazo gira entre posiciones fijas (`ArmSlot`), cada una con una pila. `Recoge
 pila de delante, `Soltar` deja en ella. El ciclo `Recoger · Girar D · Soltar · Girar I` traslada
 objetos de un montón a otro.
 
+La **meta se mide por el destino**, no por el origen vacío: `Scenario3Controller.destinationSlot`
+tiene que acumular `requiredCount` objetos (origen + destino al arrancar). Ver sección 9.
+
 | | `editable` | `initialBlocks` | Qué hace el niño |
 |---|---|---|---|
 | Básica | ❌ | Secuencia completa | Solo ajusta N |
-| Intermedia | ✅ | Vacío o desordenado | Ordena **y** ajusta N |
+| Intermedia | ✅ | Desordenada, pero **los 4 sockets llenos** | Reordena **y** ajusta N |
 
 Bloquear necesita **las dos mitades**: `Socket.AcceptsBlocks = false` (impide meter) y
 `BlockNode.SetInteractable(false)` (impide sacar). Solo una lo deja a medio bloquear.
 
-### Escenario 4 — Patrones *(código completo, SIN MONTAR)*
+**Reintento:** `Scenario3Controller` escucha a `ProgramRunner.OnRunFinished`. Si la secuencia
+acaba sin resolver, registra el fallo **desde código** y dispara `OnAttemptFailed` tras
+`retryDelay` para el reinicio visual. No cablees `RegisterFailedAttempt` en ese evento: se
+contaría dos veces.
+
+**Montaje en escena:** objeto raíz `Escenario (3)` con `Scenario3Controller` + `ProgramRunner` +
+`ProgramTrigger`. La fila es `SocketColumn` (4 sockets); las posiciones del brazo son
+`ObstacleSlot` (4 barriles, origen) y `FreeSlot` (destino). Los bloques salen de
+`Prefabs/Blocks/ArmBlock.prefab`.
+
+### Escenario 4 — Patrones *(en montaje)*
 
 Fichas que encajan en huecos. `ShapeData` separa **identidad** (`shapeId`) de **atributo**
 (`sides`): básica compara la figura, intermedia compara el número de lados. Convención del GDD:
-triángulo 3, cuadrado 4, estrella 10, círculo 1.
+triángulo 3, cuadrado 4, estrella 10, círculo 1. Los cuatro assets viven en
+`Scripts/Scenario 4/Figuras/`.
+
+`ShapeData` lleva además el **sprite** de la figura, y `ShapeChip` lo pinta solo en su
+`shapeImage` al arrancar (y en el editor, por `OnValidate`). La imagen NO se asigna ficha por
+ficha a propósito: tener la figura y su imagen en dos sitios acaba en una ficha que dice ser un
+triángulo y enseña un círculo.
 
 En modo `lados` la etiqueta del hueco muestra **el número, no la figura** — si mostrara la
 figura, el emparejamiento por atributo perdería el sentido.
+
+Aquí **no hay `SocketRow`, ni `ProgramRunner`, ni botón de ejecutar**: cada `ShapeSocket` es
+independiente (sin `Next`) y valida al soltar. El escenario termina cuando todos están resueltos.
+Prefabs: `Prefabs/Blocks/ShapeChip.prefab` y `Prefabs/Blocks/ShapeSocket.prefab`.
 
 ## 6. Sistema narrativo
 
@@ -244,51 +267,30 @@ ScenarioRecord            started, completed, totalSeconds, startedUtc, endedUtc
 │   ├── Scenario1Record   + attempts[]  (AttemptRecord)
 │   └── Scenario3Record   + attempts[]  (LoopAttemptRecord: + repetitions)
 ├── Scenario2Record       + wrongSelections, selections[]
-└── Scenario4Record       + matchMode, wrongPlacements, placements[]
+└── Scenario4Record       + matchMode, wrongPlacements, chipsGrabbed/Released, placements[]
 
 RunRecord (raíz) ── pin, sessionId, difficulty, startedUtc, endedUtc
                  └─ escenario1, escenario2, escenario3, escenario4
 ```
 
-`difficulty` es **1-based**: 1 = básica, 2 = intermedia. Los booleanos van como **0/1**.
+`difficulty` es **1-based**: 1 = básica, 2 = intermedia. `started`/`completed` son booleanos de
+verdad (`true`/`false`); el resto de banderas (`solved`, `correct`, `selected`) van como **0/1**.
+
+**El escenario 4 NO hereda de `BlockScenarioRecord`** aunque sus fichas también se agarren.
+Tiene sus propios `chipsGrabbed`/`chipsReleased`: heredar habría metido `failedAttempts` y los
+tres contadores de error como ceros permanentes que nadie puede interpretar, porque ese
+escenario no tiene intentos ni ejecución.
 
 ### Ejemplo
 
-```json
-{
-  "pin": "0004", "sessionId": 187, "difficulty": 1,
-  "startedUtc": "...", "endedUtc": "...",
-  "escenario1": {
-    "started": true, "completed": true, "totalSeconds": 111.6,
-    "failedAttempts": 3, "blocksGrabbed": 12, "blocksReleased": 12,
-    "errorCollisionBot": 1, "errorIncompleteSequence": 0, "errorInvalidCommand": 1,
-    "attempts": [
-      { "difficulty": 1, "sequence": ["Avanzar", "Girar Derecha", "Usar"],
-        "solved": 1, "durationSeconds": 7.2, "timestamp": "..." }
-    ]
-  },
-  "escenario2": {
-    "wrongSelections": 1,
-    "selections": [
-      { "module": "motores", "option": "Agregar agua", "selected": 1, "correct": 0, "timestamp": "..." },
-      { "module": "motores", "option": "Agregar agua", "selected": 0, "correct": 0, "timestamp": "..." }
-    ]
-  },
-  "escenario3": {
-    "attempts": [
-      { "sequence": ["Recoger", "Girar Derecha", "Soltar", "Girar Izquierda"],
-        "repetitions": 4, "solved": 1, "durationSeconds": 42.7, "timestamp": "..." }
-    ]
-  },
-  "escenario4": {
-    "matchMode": "lados", "wrongPlacements": 2,
-    "placements": [
-      { "socket": "estrella", "chip": "triangulo",
-        "chipSides": 3, "expectedSides": 10, "correct": 0, "timestamp": "..." }
-    ]
-  }
-}
-```
+Hay una run completa y coherente, con los cuatro escenarios resueltos, en
+**`Docs/ejemplo_run_telemetria.json`**. Está escrita con el formato exacto que emite
+`JsonUtility.ToJson(run, true)`: todos los campos presentes, orden de declaración, campos
+heredados primero. Sirve de referencia para el equipo evaluador y para validar el parser de
+análisis sin tener que jugar una sesión entera.
+
+> Los `float` reales pueden salir con ruido de precisión (`148.3` → `148.30001`). Es normal en
+> `JsonUtility`, no es un error de escritura.
 
 ### Puntos de captura
 
@@ -296,11 +298,17 @@ RunRecord (raíz) ── pin, sessionId, difficulty, startedUtc, endedUtc
 |---|---|
 | Inicio / fin de escenario | `ScenarioNController` o eventos del Director |
 | Intento (secuencia + repeticiones) | `ProgramTrigger.OnPlayPressed` |
-| Bloques agarrados / soltados | `BlockNode.OnGrabbed` / `OnReleased`, **desde código** |
-| Colisión / comando inválido | `LevelManager.ValidMovementInGrid`, `Bot.Use` |
-| Intentos fallidos | `Scenario1Controller.OnAttemptFailed` |
+| Piezas agarradas / soltadas | `BlockNode.OnGrabbed` / `OnReleased`, **desde código**. Enruta a `blocksGrabbed` (esc. 1 y 3) o a `chipsGrabbed` (esc. 4) según el reto activo |
+| Colisión / comando inválido | `LevelManager.ValidMovementInGrid`, `Bot.Use` (esc. 1) · `RoboticArm.OnInvalidAction` (esc. 3) |
+| Intentos fallidos (esc. 1) | `Scenario1Controller.OnAttemptFailed` — **cableado en escena** |
+| Intentos fallidos (esc. 3) | `Scenario3Controller.HandleRunFinished` — **desde código** |
 | Selecciones (esc. 2) | `Scenario2Controller` — registra **también las deselecciones** |
 | Colocaciones (esc. 4) | `Scenario4Controller` |
+| `matchMode` (esc. 4) | `Scenario4Controller.Start()`, siempre, no solo al arrancar el reto |
+
+**Todo se atribuye al reto activo** (`_currentChallengeId`, que fija `StartChallenge`). Si el
+Director no abre el escenario, los agarres y los errores de lógica se van al último escenario
+que sí arrancó. Cuando no hay ninguno activo, `TelemetryManager` avisa una vez en consola.
 
 ### Escritura
 
@@ -337,6 +345,8 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()` · `Press()` |
 | `RoboticArm` | `ResetArm()` |
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
+| `ShapeChip` | `ApplyShape()`, `SetShape(ShapeData)` |
+| `ShapeSocket` | `SetMode(ShapeMatchMode)`, `ResetSocket()` |
 | `Narrator` | `PlayAudio(int/string)`, `StopAudio()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
@@ -371,6 +381,29 @@ autocorrección, y sin ese campo sería indistinguible de no haberla tocado.
 **`RoboticArm` fuerza el sentido de giro** en vez de tomar el camino más corto: con ciertos
 `yaw`, "Girar Derecha" giraba visualmente a la izquierda.
 
+**El intento fallido del Escenario 3 se registra ANTES del `retryDelay`, y desde código.** Si se
+esperase primero, el Director puede desactivar la estación durante la espera y matar la
+corrutina: el fallo se perdería. Y si se cablease por `UnityEvent`, olvidarlo dejaría
+`failedAttempts` a 0 sin que nada avise. Solo el aviso visual (`OnAttemptFailed`) va diferido.
+
+**El Escenario 4 registra `matchMode` en `Start()`, no dentro de `StartScenario()`.** Colgado
+del arranque del reto, si el Director abría el escenario por su cuenta el JSON se quedaba sin
+saber si se emparejó por figura o por lados — y sin ese dato, dos sesiones con la misma tasa de
+acierto no son comparables. El modo es propiedad de la escena, no del momento de empezar.
+
+**`Scenario4Record` no hereda de `BlockScenarioRecord`.** Sus fichas se agarran igual que los
+bloques, pero el escenario no tiene intentos ni ejecución: heredar habría emitido
+`failedAttempts` y los tres contadores de error como ceros permanentes. Tiene sus propios
+`chipsGrabbed`/`chipsReleased`, y `RegisterBlockGrabbed/Released` enruta a uno u otro. Antes el
+cast a `BlockScenarioRecord` devolvía null y **cada agarre del Escenario 4 se descartaba en
+silencio**.
+
+**`Scenario3Controller` mide la meta por `destinationSlot`, no por `slotToClear.IsEmpty`.**
+`ArmSlot.Take()` saca el objeto de la lista en el propio `Recoger`, antes de que el brazo
+gire y lo suelte en algún sitio. Medir por el origen vacío completaba el nivel con el último
+objeto todavía en la pinza, sin que el niño hubiera terminado el ciclo. `requiredCount` se
+calcula una vez en `Start()` sumando el contenido inicial de origen y destino.
+
 **`Socket.Active` es un registro estático.** `BlockNode` lo recorre cada frame por cada bloque
 agarrado; una búsqueda global ahí costaba FPS (RNF-01).
 
@@ -399,7 +432,7 @@ a mitad de sesión; como `EndRun` es idempotente, ya no se corregía.
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 08/09/2026
+## 11. Estado voluble — 15/09/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
@@ -407,9 +440,10 @@ estética (sonidos, luces, transiciones), va en `UnityEvent`.
 |---|---|
 | Escenario 1 | ✅ Verificado en visor |
 | Escenario 2 | 🟡 Montado en básica (3 módulos, 6 botones), sin probar |
-| Escenario 3 | 🟡 Montado (brazo + 2 slots), sin probar. Mecánica sin validar |
-| Escenario 4 | ❌ Sin montar |
-| Narrativa, telemetría, subida | ✅ Funcionales |
+| Escenario 3 | 🟡 Montado y cableado entero (4 bloques, fila reordenable, botón de ejecutar, meta y telemetría). Sin probar en visor. Quedan 2 correcciones de montaje |
+| Escenario 4 | 🟡 Prefabs, figuras y sprites listos. 4 `ShapeSocket` y el controller ya en escena; faltan las fichas y el `BlockResetter` |
+| Narrativa, subida | ✅ Funcionales |
+| Telemetría | ✅ Funcional. Los cuatro escenarios registran; ver sección 7 |
 | Selección de dificultad | 🟡 Scripts listos (`SessionSetup`, `PinEntry`, `SceneLoader`); falta montar la escena |
 | HUD diegético (RI-02), username (RI-01), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
@@ -417,24 +451,37 @@ estética (sonidos, luces, transiciones), va en `UnityEvent`.
 intercambiando datos en caliente. `SystemModule.data` apunta a un único asset, así que cada
 escena lleva su propio juego de `ModuleData`.
 
+**Decidido el 15/09/2026:** los retos los abre **siempre el Director**. Un gestor de retos
+dedicado queda como mejora futura; mientras tanto, la atribución de telemetría depende de que
+cada paso llame a `StartScenario()`.
+
 **Pendiente inmediato en escena:**
 
 - `ScreenNarrator` sigue en `Main.unity` como **script perdido**: un único `MonoBehaviour` con
-  `guid: 6d131647b98e46141a1d89097a26e78a`, en la línea 18325. La clase se fusionó en
-  `Narrator`. Borrar el GameObject y quitarlo de los `waitActions` del Director
+  `guid: 6d131647b98e46141a1d89097a26e78a`. La clase se fusionó en `Narrator`. Borrar el
+  GameObject y quitarlo de los `waitActions` del Director
 - Reconfigurar el `Narrator`: CSV, `Text`, y los clips con su `textId`
 - Escenario 2 intermedia: añadir los botones 3 y 4 por módulo, con su `optionIndex`, y
   apuntar cada `SystemModule` a su asset `*_Intermedia`
 - Escenario 2: cablear el estado visual nuevo — `statusIcon` con sus dos sprites, el
   `Renderer` de la luz y el `selectedMarker` de cada botón
-- Escenario 3: asignar el `Interaction Root` de los bloques, o la fila bloqueada se vacía igual
-- Escenario 3: el **pivot del brazo debe tener X y Z a cero**. `RotateTowardsSlot` termina con
-  `Quaternion.Euler(0, yaw, 0)` y aplasta cualquier inclinación en cuanto entras en Play. Si
-  el modelo la necesita, ponla en un hijo del pivot
-- Escenario 4: asignar `plugPoint` en cada ficha, o `FindNearestFreeSocket` lanza una excepción
-  por frame mientras se agarra
-- Escenario 4: asignar a mano el `chipResetter` de `Scenario4Controller`. Hay un `BlockResetter`
-  por escenario y la búsqueda automática no distingue cuál es el de las fichas
+- **Escenario 3: los textos de los dos bloques de giro están cruzados.** `BloqueRotarI`
+  (`action = 2`, gira a la izquierda) muestra "girar derecha"; `BloqueRotarD` (`action = 3`)
+  muestra "Girar izquerda", con errata. La lógica y la telemetría son correctas, pero la
+  instrucción visible miente
+- **Escenario 3: asignar el campo `runner`** de `Scenario3Controller` (el `ProgramRunner` del
+  objeto `Escenario (3)`). Sin él no se registran los intentos fallidos y `failedAttempts`
+  sale siempre 0
+- Escenario 3: el **pivot del brazo debe tener X y Z a cero** (hoy los tiene). `RotateTowardsSlot`
+  termina con `Quaternion.Euler(0, yaw, 0)` y aplasta cualquier inclinación en cuanto entras en
+  Play. Si el modelo la necesita, ponla en un hijo del pivot
+- Escenario 4: instanciar las 4 fichas desde `ShapeChip.prefab` y asignarles su `ShapeData`
+- Escenario 4: crear el `BlockResetter` de la bandeja de fichas y **asignarlo a mano** en
+  `chipResetter`. Hay un `BlockResetter` por escenario y la búsqueda automática no distingue
+  cuál es el de las fichas
+- Escenario 4: el hueco sigue mostrando **texto** en modo figura. Ahora que las fichas llevan
+  sprite, lo coherente es que el hueco enseñe la imagen en modo `Shape` y el número en modo
+  `SideCount`
 - Servidor: quitar el prefijo de timestamp en `server.py` (`saved_as = filename`).
   **Ese código no vive en este repositorio**
 
@@ -452,15 +499,17 @@ búsquedas y confunden.
 | `SecuenciaIncompleta` | Sin definición operativa que separe "faltaron instrucciones" de "el orden estaba mal". Siempre vale 0. Es criterio pedagógico |
 | `SessionResult` | Declarado pero sin campo en el JSON. Falta decidir qué dispara "abandonado" |
 | Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. Renombrar rompería los JSON ya recogidos |
-| Mecánica del brazo | Propuesta sin validar. Si cambia, solo se tiran `RoboticArm`, `ArmSlot` y `ArmBlock` |
-| Meta del Escenario 3 | Se cumple en el `Recoger` del último ciclo, no en el `Soltar`: se completa con el objeto en la pinza. Mejor cambiarla a "el destino tiene N" |
+| Mecánica del brazo | Montada entera, pero sin probar en visor ni con niños |
 | Escenario 4 | ¿Necesita panel-ejemplo introductorio? Depende de los beta testers |
+| Tanteo con el contador de repeticiones | Cada pulsación de `+`/`−` del Escenario 3 no se registra; solo queda el valor final del intento. Añadirlo es una métrica nueva, no un arreglo: decisión pedagógica |
+| Gestor de retos | Hoy el reto activo lo fija quien llame a `StartChallenge`, y eso lo hace el Director. Un gestor que cada escenario declare al activarse eliminaría el riesgo de atribución, pero no hace falta mientras el Director abra todos los pasos |
 
 ## 13. Documentación relacionada
 
 | Archivo | Para quién |
 |---|---|
 | `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
+| `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
 | `Docs/Codea2_GDD.docx` | Game Design Document |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |

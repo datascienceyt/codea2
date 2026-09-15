@@ -204,6 +204,17 @@ public class Scenario4Record : ScenarioRecord
     /// <summary>Colocaciones incorrectas acumuladas.</summary>
     public int wrongPlacements;
 
+    /// <summary>
+    /// Manipulación de fichas, el equivalente de blocksGrabbed/Released de los escenarios de
+    /// bloques: cuántas veces cogió y soltó una ficha, que es la señal de duda y tanteo.
+    ///
+    /// Van aquí con nombre propio en vez de heredar de BlockScenarioRecord: este escenario no
+    /// tiene intentos, ni reinicios, ni errores de lógica, y heredarlos solo llenaría el JSON
+    /// de ceros permanentes que nadie puede interpretar.
+    /// </summary>
+    public int chipsGrabbed;
+    public int chipsReleased;
+
     public List<PlacementRecord> placements = new List<PlacementRecord>();
 }
 

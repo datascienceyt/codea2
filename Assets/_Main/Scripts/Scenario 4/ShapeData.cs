@@ -21,4 +21,9 @@ public class ShapeData : ScriptableObject
     [Tooltip("Número de lados, el criterio de la dificultad intermedia. Por convención del " +
              "GDD: triángulo 3, cuadrado 4, estrella 10, círculo 1.")]
     public int sides = 3;
+
+    [Tooltip("Imagen de la figura. La pinta ShapeChip en su propio SpriteRenderer, para que " +
+             "la ficha enseñe la forma y no su nombre escrito: un niño que aún no lee bien " +
+             "tiene que poder jugar igual.")]
+    public Sprite sprite;
 }

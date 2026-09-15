@@ -78,6 +78,16 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
 
     private void Start()
     {
+        // El modo se registra SIEMPRE, no solo si este controlador arranca el reto.
+        //
+        // Sin el modo, dos sesiones con la misma tasa de acierto no son comparables: emparejar
+        // por figura y por número de lados son retos muy distintos. Colgarlo de StartScenario
+        // significaba que, si el Director abría el escenario por su cuenta, el JSON se quedaba
+        // sin saber cuál de los dos retos se jugó. El modo es una propiedad de la escena, no
+        // del momento en que empieza.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.SetMatchMode(challengeId, MatchModeId);
+
         if (startChallengeOnStart) StartScenario();
     }
 
@@ -87,13 +97,10 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
         if (TelemetryManager.Instance == null) return;
 
         TelemetryManager.Instance.StartChallenge(challengeId);
-
-        // Sin el modo, dos sesiones con la misma tasa de acierto no son comparables:
-        // emparejar por figura y por número de lados son retos muy distintos.
-        TelemetryManager.Instance.SetMatchMode(
-            challengeId,
-            matchMode == ShapeMatchMode.Shape ? "forma" : "lados");
+        TelemetryManager.Instance.SetMatchMode(challengeId, MatchModeId);
     }
+
+    private string MatchModeId => matchMode == ShapeMatchMode.Shape ? "forma" : "lados";
 
     private void HandleChipEvaluated(ShapeSocket socket, ShapeChip chip, bool correct)
     {

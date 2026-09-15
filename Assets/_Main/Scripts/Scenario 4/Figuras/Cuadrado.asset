@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ab8bd4e6542ad840af8f8c2dc649ce4, type: 3}
+  m_Name: Cuadrado
+  m_EditorClassIdentifier: Assembly-CSharp::ShapeData
+  shapeId: cuadrado
+  displayName: Cuadrado
+  sides: 4
+  sprite: {fileID: 21300000, guid: 014be5fd3d1e4c6428f464d51a935229, type: 3}
