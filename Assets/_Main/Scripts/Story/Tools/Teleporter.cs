@@ -1,11 +1,12 @@
 using UnityEngine;
+using System.Collections;
 
 /// <summary>
 /// Teletransporta al jugador (OVRCameraRig) a la posición/rotación de un Transform destino.
 /// Mueve el rig completo compensando el offset de la cabeza, no la cámara directamente,
 /// porque el tracking del headset sobreescribe la posición de la cámara cada frame.
 /// </summary>
-public class Teleporter : MonoBehaviour
+public class Teleporter : MonoBehaviour, IStepAction
 {
     [SerializeField] private OVRCameraRig cameraRig;
 
@@ -15,10 +16,25 @@ public class Teleporter : MonoBehaviour
     [Tooltip("Si está activo, rota al jugador para que mire hacia adelante del target.")]
     [SerializeField] private bool alignRotation = true;
 
+    private Transform target;
+
     private void Reset()
     {
         cameraRig = GetComponentInChildren<OVRCameraRig>();
         characterController = GetComponent<CharacterController>();
+    }
+
+    public void SetTarget(Transform target)
+    {
+        this.target = target;
+    }
+
+    public IEnumerator Execute()
+    {
+        if (target == null) yield break;
+        Teleport(target);
+        target = null;
+        yield return null;
     }
 
     public void Teleport(Transform target)

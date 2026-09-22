@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Meta.XR.BuildingBlocks::Meta.XR.BuildingBlocks.BuildingBlock
   blockId: f8766c17-aaf8-4b55-9431-de8deea83842
-  instanceId: 6fffd6f9-68d2-493b-b9f7-cbf2f20ed631
+  instanceId: 94263dc2-659d-4b82-b266-7a0476d1fa81
   version: 1
   installationRoutineCheckpoint:
     _installationRoutineId: f8338144-8280-4ff6-9455-ae2bb9c20fe8
@@ -275,7 +275,7 @@ MonoBehaviour:
   plugPoint: {fileID: 7231108140489731718}
   snapDistance: 0.05
   interactionRoot: {fileID: 694266517665060323}
-  shape: {fileID: 0}
+  shape: {fileID: 11400000, guid: 18f39ee278915b5f12d3aaba30de70c1, type: 2}
   shapeImage: {fileID: 2514534822151943962}
 --- !u!1 &4316021436736865068
 GameObject:
@@ -343,7 +343,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8949904f815f6de42868ca0571d9fb48, type: 2}
+  - {fileID: 2100000, guid: cc4077f6a9ab31c49abc650a527c5921, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -576,8 +576,8 @@ Transform:
   m_GameObject: {fileID: 8763209393040275730}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.05}
-  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
+  m_LocalPosition: {x: 0.003, y: 0, z: -0.05}
+  m_LocalScale: {x: 0.08, y: 0.08, z: 0.08}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3695799707419290809}
@@ -631,13 +631,13 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: ba12c5f701a4eb14e8f1c3a7767d7f4a, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 2.56, y: 2.56}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
+  m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0

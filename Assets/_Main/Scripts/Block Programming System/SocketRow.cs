@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using System.Collections.Generic;
 using UnityEngine;
@@ -50,13 +51,33 @@ public class SocketRow : MonoBehaviour
     public UnityEvent OnRepetitionsChanged;
 
     [Header("Edición")]
-    [Tooltip("Desactivado: la fila queda bloqueada. Ni se pueden sacar los bloques que trae " +
-             "ni meter otros. Es la dificultad básica, donde el niño solo ajusta las repeticiones.")]
+    [Tooltip("Desactivado: la fila entera queda bloqueada. Ni se pueden sacar los bloques que " +
+             "trae ni meter otros.")]
     [SerializeField] private bool editable = true;
 
-    [Tooltip("Bloques con los que arranca la fila, en orden. Necesario si no es editable: " +
-             "una fila bloqueada y vacía no se podría resolver.")]
-    [SerializeField] private List<BlockNode> initialBlocks = new List<BlockNode>();
+    [Tooltip("Con qué arranca la fila, un elemento por socket y en orden.\n\n" +
+             "Un elemento sin bloque deja ese socket VACÍO para que el niño lo rellene, y " +
+             "marcarlo como fijo lo deja intocable aunque la fila sea editable. Con eso se " +
+             "monta la dificultad básica: Recoger y Soltar puestos y fijos, y los dos huecos " +
+             "de giro libres para que el niño decida hacia dónde.")]
+    [SerializeField] private List<InitialBlock> initialBlocks = new List<InitialBlock>();
+
+    /// <summary>
+    /// Con qué arranca un socket de la fila. Un elemento por socket, en orden.
+    ///
+    /// Va emparejado y no como dos listas sueltas porque los sockets se generan en Awake y no
+    /// existen en el editor: no hay dónde marcar "este no se toca" salvo aquí, junto al bloque
+    /// que le corresponde.
+    /// </summary>
+    [Serializable]
+    public class InitialBlock
+    {
+        [Tooltip("Vacío deja el socket libre para que lo rellene el niño.")]
+        public BlockNode block;
+
+        [Tooltip("Bloqueado aunque la fila sea editable: ni se saca ni se sustituye.")]
+        public bool fixedInPlace;
+    }
 
     public Socket FirstSocket { get; private set; }
 
@@ -124,20 +145,34 @@ public class SocketRow : MonoBehaviour
     /// </summary>
     private void ApplyEditable()
     {
-        foreach (Socket socket in sockets)
+        for (int i = 0; i < sockets.Count; i++)
         {
+            Socket socket = sockets[i];
             if (socket == null) continue;
 
-            socket.SetAcceptsBlocks(editable);
+            // Un socket fijo se queda bloqueado aunque la fila sea editable. Es lo que separa
+            // las dos dificultades: en básica solo se abren los huecos de giro, en intermedia
+            // no hay ninguno fijo y se reordena todo.
+            bool open = editable && !IsFixed(i);
+
+            socket.SetAcceptsBlocks(open);
 
             if (socket.CurrentBlock != null)
-                socket.CurrentBlock.SetInteractable(editable);
+                socket.CurrentBlock.SetInteractable(open);
         }
     }
 
+    private bool IsFixed(int index) =>
+        index >= 0 && index < initialBlocks.Count &&
+        initialBlocks[index] != null && initialBlocks[index].fixedInPlace;
+
     /// <summary>
-    /// Coloca los bloques iniciales en los primeros sockets, en el orden de la lista.
+    /// Coloca los bloques iniciales, un elemento de la lista por socket y en orden.
     /// Vuelve a llamarse desde el menú contextual para recolocarlos en pruebas.
+    ///
+    /// Un elemento sin bloque NO se salta: consume su socket y lo deja vacío. Así se pueden
+    /// dejar huecos en medio de una secuencia ya montada, que es lo que pide la básica —
+    /// Recoger y Soltar puestos, los giros por decidir.
     /// </summary>
     [ContextMenu("Rellenar fila")]
     public void PlaceInitialBlocks()
@@ -149,25 +184,23 @@ public class SocketRow : MonoBehaviour
             return;
         }
 
-        int slot = 0;
+        if (initialBlocks.Count > sockets.Count)
+            Debug.LogWarning($"[SocketRow] '{name}' tiene más elementos iniciales " +
+                             $"({initialBlocks.Count}) que sockets ({sockets.Count}).", this);
 
-        foreach (BlockNode block in initialBlocks)
+        for (int i = 0; i < initialBlocks.Count && i < sockets.Count; i++)
         {
+            BlockNode block = initialBlocks[i] != null ? initialBlocks[i].block : null;
             if (block == null) continue;
-
-            if (slot >= sockets.Count)
-            {
-                Debug.LogWarning($"[SocketRow] '{name}' tiene más bloques iniciales " +
-                                 $"({initialBlocks.Count}) que sockets ({sockets.Count}).", this);
-                break;
-            }
 
             // Si venía de otro socket hay que soltarlo antes, o aquel se quedaría ocupado.
             block.DetachFromSocket();
-            block.AttachToSocket(sockets[slot]);
-
-            slot++;
+            block.AttachToSocket(sockets[i]);
         }
+
+        // Después de colocar, no antes: un bloque recién acoplado tiene que recibir su estado
+        // de bloqueo, y al revés se quedaba agarrable en un socket marcado como fijo.
+        ApplyEditable();
     }
 
     private void CreateSockets()

@@ -111,6 +111,23 @@ public class TelemetryManager : MonoBehaviour
         BeginRun(PlayerPrefs.GetInt(PinCounterKey, 0).ToString("D4"));
     }
 
+    private void Start()
+    {
+        // La dificultad sale de PlayerPrefs, que la deja la pantalla del supervisor. Si esta
+        // escena se abre directamente —desde el editor, o porque se saltó el selector— ese
+        // valor es el de la ÚLTIMA sesión, y el JSON diría "básica" mientras el niño juega la
+        // intermedia. Ese error es indetectable al analizar, y por eso existe DifficultyScene.
+        //
+        // Se comprueba en Start y no en Awake: DifficultyScene corrige en su propio Start, y
+        // buscarla antes daría igual porque aún no se habría pronunciado.
+        if (FindAnyObjectByType<DifficultyScene>(FindObjectsInactive.Include) != null) return;
+
+        Debug.LogWarning($"[Telemetry] Ninguna DifficultyScene en '{gameObject.scene.name}'. " +
+                         $"La run queda con dificultad '{_currentDifficulty}' heredada de " +
+                         "PlayerPrefs, sin nadie que la verifique. Añade un DifficultyScene a " +
+                         "la escena y declara la que le corresponde.", this);
+    }
+
     // --- Ciclo de la run ---
 
     /// <summary>
@@ -147,6 +164,120 @@ public class TelemetryManager : MonoBehaviour
 
         _run.endedUtc = NowUtc();
         Save();
+
+        ReportIntegrity();
+    }
+
+    /// <summary>
+    /// Resumen de lo capturado al cerrar la run, con aviso de lo que huele a cable olvidado.
+    ///
+    /// Existe porque el modo en que esta telemetría falla NO es reventando: falla saliendo a
+    /// cero. Un escenario que nunca llamó a StartChallenge, un contador que nadie incrementó o
+    /// un reto que se resolvió sin marcarse producen un JSON perfectamente válido y
+    /// perfectamente vacío, y eso solo se descubre semanas después, al analizar, cuando ya no
+    /// se puede repetir la sesión. Aquí se ve en consola en cuanto termina la partida.
+    ///
+    /// Avisa, no corrige: un cero puede ser legítimo —un niño que no falló ni una vez— y el
+    /// sistema no puede saberlo. Por eso son warnings y no errores.
+    /// </summary>
+    [ContextMenu("Comprobar integridad de la run")]
+    public void ReportIntegrity()
+    {
+        if (_run == null)
+        {
+            Debug.LogWarning("[Telemetry] No hay ninguna run abierta que comprobar.");
+            return;
+        }
+
+        StringBuilder report = new StringBuilder();
+        int warnings = 0;
+
+        report.AppendLine($"[Telemetry] Resumen de la run · pin {_run.pin} · " +
+                          $"sesión {_run.sessionId} · dificultad {_run.difficulty}");
+
+        warnings += ReportScenario(report, "escenario1", _run.escenario1);
+        warnings += ReportScenario(report, "escenario2", _run.escenario2);
+        warnings += ReportScenario(report, "escenario3", _run.escenario3);
+        warnings += ReportScenario(report, "escenario4", _run.escenario4);
+
+        report.AppendLine($"  Archivo: {_filePath}");
+
+        if (warnings == 0)
+        {
+            Debug.Log(report.ToString());
+            return;
+        }
+
+        report.AppendLine($"  {warnings} aviso(s): revisa el cableado antes de dar la sesión " +
+                          "por buena.");
+
+        Debug.LogWarning(report.ToString());
+    }
+
+    private static int ReportScenario(StringBuilder report, string id, ScenarioRecord scenario)
+    {
+        if (scenario == null)
+        {
+            report.AppendLine($"  {id}: SIN REGISTRO");
+            return 1;
+        }
+
+        int warnings = 0;
+        string estado = scenario.completed ? "completado"
+                      : scenario.started ? "iniciado sin completar"
+                      : "NUNCA INICIADO";
+
+        if (!scenario.started) warnings++;
+
+        // Completado sin haber arrancado significa que alguien llamó a CompleteChallenge por su
+        // cuenta: la duración del escenario no mide nada.
+        if (scenario.completed && !scenario.started)
+        {
+            report.AppendLine($"  {id}: completado SIN haberse iniciado; totalSeconds no vale.");
+            return warnings + 1;
+        }
+
+        string detalle = string.Empty;
+
+        if (scenario is Scenario1Record s1)
+        {
+            detalle = $"{s1.attempts.Count} intento(s), {s1.failedAttempts} fallido(s), " +
+                      $"{s1.blocksGrabbed} agarre(s)";
+
+            if (scenario.started && s1.attempts.Count == 0) warnings++;
+            if (scenario.started && s1.blocksGrabbed == 0) warnings++;
+        }
+        else if (scenario is Scenario3Record s3)
+        {
+            detalle = $"{s3.attempts.Count} intento(s), {s3.failedAttempts} fallido(s), " +
+                      $"{s3.blocksGrabbed} agarre(s)";
+
+            if (scenario.started && s3.attempts.Count == 0) warnings++;
+
+            // Sin itemType no se sabe con qué tipo se corrió cada pasada, y dos intentos
+            // iguales dejan de ser distinguibles. Suele significar que falta el socket de tipo
+            // en las 'preconditions' del ProgramTrigger.
+            foreach (LoopAttemptRecord attempt in s3.attempts)
+                if (string.IsNullOrEmpty(attempt.itemType)) { warnings++; break; }
+        }
+        else if (scenario is Scenario2Record s2)
+        {
+            detalle = $"{s2.selections.Count} selección(es), {s2.wrongSelections} incorrecta(s)";
+
+            if (scenario.started && s2.selections.Count == 0) warnings++;
+        }
+        else if (scenario is Scenario4Record s4)
+        {
+            detalle = $"{s4.placements.Count} colocación(es), {s4.wrongPlacements} incorrecta(s), " +
+                      $"{s4.chipsGrabbed} agarre(s)";
+
+            if (scenario.started && s4.placements.Count == 0) warnings++;
+            if (scenario.started && s4.chipsGrabbed == 0) warnings++;
+        }
+
+        report.AppendLine($"  {id}: {estado} · {scenario.totalSeconds:0.0}s · {detalle}");
+
+        return warnings;
     }
 
     // --- Ciclo de reto ---
@@ -218,7 +349,8 @@ public class TelemetryManager : MonoBehaviour
     ///
     /// Lo llama ProgramTrigger, que es común a ambos escenarios y no debe saber en cuál está.
     /// </summary>
-    public void RegisterBlockAttempt(string challengeId, List<string> sequence, int repetitions = 1)
+    public void RegisterBlockAttempt(string challengeId, List<string> sequence, int repetitions = 1,
+                                     string itemType = null)
     {
         ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null) return;
@@ -243,6 +375,7 @@ public class TelemetryManager : MonoBehaviour
                 difficulty = _run.difficulty,
                 sequence = Copy(sequence),
                 repetitions = repetitions,
+                itemType = itemType,
                 solved = 0,
                 durationSeconds = duration,
                 timestamp = NowUtc()
@@ -304,11 +437,15 @@ public class TelemetryManager : MonoBehaviour
     // --- Escenario 4: emparejamiento de figuras ---
 
     /// <summary>
-    /// Una ficha colocada en un hueco. Se registran también los fallos: en dificultad
-    /// intermedia, qué figuras creyó equivalentes el jugador es el dato pedagógico.
+    /// Una ficha colocada en un hueco. Se registran también los fallos: qué figuras confundió
+    /// el jugador entre sí es el dato pedagógico del escenario.
+    ///
+    /// Ya no recibe el número de lados de la ficha ni el del hueco: el escenario empareja por
+    /// figura idéntica y ese atributo dejó de existir. PlacementRecord conserva los dos campos
+    /// para no mover el esquema del JSON, que el equipo evaluador ya tiene documentado.
     /// </summary>
     public void RegisterPlacement(string challengeId, string socketId, string chipId,
-                                  int chipSides, int expectedSides, bool correct)
+                                  bool correct)
     {
         Scenario4Record scenario = GetScenario4(challengeId);
         if (scenario == null) return;
@@ -317,8 +454,6 @@ public class TelemetryManager : MonoBehaviour
         {
             socket = socketId,
             chip = chipId,
-            chipSides = chipSides,
-            expectedSides = expectedSides,
             correct = correct ? 1 : 0,
             timestamp = NowUtc()
         });
@@ -326,19 +461,6 @@ public class TelemetryManager : MonoBehaviour
         if (!correct) scenario.wrongPlacements++;
 
         Save();
-    }
-
-    /// <summary>
-    /// Modo de emparejamiento del escenario 4 ("forma" o "lados"). Lo fija su controlador:
-    /// sin este dato, dos sesiones con la misma tasa de acierto no son comparables.
-    /// </summary>
-    public void SetMatchMode(string challengeId, string mode)
-    {
-        Scenario4Record scenario = GetScenario4(challengeId);
-        if (scenario == null) return;
-
-        scenario.matchMode = mode;
-        MarkDirty();
     }
 
     // --- RF-03 / RF-04 ---
@@ -694,11 +816,11 @@ public class TelemetryManager : MonoBehaviour
             return;
         }
 
-        CsvUploader uploader = FindAnyObjectByType<CsvUploader>();
+        JSONUploader uploader = FindAnyObjectByType<JSONUploader>();
 
         if (uploader == null)
         {
-            Debug.LogError("[Telemetry] No hay ningún CsvUploader en la escena.");
+            Debug.LogError("[Telemetry] No hay ningún JSONUploader en la escena.");
             return;
         }
 

@@ -158,48 +158,37 @@
         "totalSeconds": 73.9,
         "startedUtc": "2026-09-15T14:11:03.0440000Z",
         "endedUtc": "2026-09-15T14:12:16.9860000Z",
-        "matchMode": "forma",
         "wrongPlacements": 1,
         "chipsGrabbed": 6,
         "chipsReleased": 6,
         "placements": [
             {
-                "socket": "triangulo",
-                "chip": "triangulo",
-                "chipSides": 3,
-                "expectedSides": 3,
+                "socket": "glifo_04",
+                "chip": "glifo_04",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:11:21.3370000Z"
             },
             {
-                "socket": "cuadrado",
-                "chip": "estrella",
-                "chipSides": 10,
-                "expectedSides": 4,
+                "socket": "glifo_11",
+                "chip": "glifo_12",
                 "correct": 0,
                 "timestamp": "2026-09-15T14:11:38.8120000Z"
             },
             {
-                "socket": "cuadrado",
-                "chip": "cuadrado",
-                "chipSides": 4,
-                "expectedSides": 4,
+                "socket": "glifo_11",
+                "chip": "glifo_11",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:11:52.6900000Z"
             },
             {
-                "socket": "estrella",
-                "chip": "estrella",
-                "chipSides": 10,
-                "expectedSides": 10,
+                "socket": "glifo_19",
+                "chip": "glifo_19",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:12:04.1580000Z"
             },
             {
-                "socket": "circulo",
-                "chip": "circulo",
-                "chipSides": 1,
-                "expectedSides": 1,
+                "socket": "glifo_27",
+                "chip": "glifo_27",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:12:16.9860000Z"
             }

@@ -1,3 +1,4 @@
+using TMPro;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,6 +20,13 @@ public class SystemModule : MonoBehaviour, IStepAction
     [SerializeField] private ModuleData data;
 
     [Header("Pantalla")]
+    [Tooltip("Título del sistema: 'Enfriamiento', 'Motores'... Sale del moduleName del asset, " +
+             "así que no se escribe a mano por módulo ni cambia entre dificultades.")]
+    [SerializeField] private Text titleText;
+
+    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
+    [SerializeField] private TMP_Text titleTextTmp;
+
     [Tooltip("El problema se mantiene en texto; lo que pasa a ser visual es el estado.")]
     [SerializeField] private Text problemText;
 
@@ -45,6 +53,12 @@ public class SystemModule : MonoBehaviour, IStepAction
     [Header("Eventos")]
     [Tooltip("Al seleccionar o deseleccionar cualquier acción: sonido, parpadeo...")]
     public UnityEvent OnSelectionChanged;
+
+    [Tooltip("Al SELECCIONAR una acción que no forma parte de la solución. Aquí va la frase de " +
+             "error del narrador, o un sonido.\n\n" +
+             "No salta al deseleccionarla: quitar una opción equivocada es autocorrección, y " +
+             "regañar por acertar sería justo al revés.")]
+    public UnityEvent OnWrongOption;
 
     [Tooltip("Al quedar reparado.")]
     public UnityEvent OnSolved;
@@ -83,6 +97,9 @@ public class SystemModule : MonoBehaviour, IStepAction
 
         if (!data.IsValid)
             Debug.LogError($"[Escenario2] '{data.name}' no tiene opciones o no tiene ninguna correcta.", this);
+
+        // El título NO cambia al repararse: es el nombre del sistema, no su estado.
+        UiText.Set(titleText, titleTextTmp, data.moduleName);
 
         if (problemText != null) problemText.text = IsSolved ? repairedMessage : data.problem;
 
@@ -187,8 +204,15 @@ public class SystemModule : MonoBehaviour, IStepAction
 
         Refresh();
 
-        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, data.IsCorrectAt(optionIndex));
+        bool wasCorrect = data.IsCorrectAt(optionIndex);
+
+        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, wasCorrect);
         OnSelectionChanged?.Invoke();
+
+        // Solo al seleccionarla, y solo si el módulo no quedó resuelto de todos modos: una
+        // incorrecta nunca puede formar parte de la solución, pero el guardia deja el evento a
+        // salvo si algún día una opción cuenta de otra forma.
+        if (nowSelected && !wasCorrect && !IsSolved) OnWrongOption?.Invoke();
 
         if (IsSolved) OnSolved?.Invoke();
     }

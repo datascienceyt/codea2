@@ -213,21 +213,26 @@ aproximación sistemática o probando al azar.
 
 **Pilares de diseño:** reconocimiento de patrones, abstracción.
 
-Fichas con figuras geométricas que encajan en los huecos de un panel.
+Fichas con figuras abstractas que encajan en los huecos de un panel. Varias fichas se parecen
+mucho entre sí y solo una es idéntica a la del hueco, así que el reto es de **discriminación
+visual**: hay que comparar el detalle, no reconocer una forma conocida.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `matchMode` | texto | `"forma"` (básica) o `"lados"` (intermedia) |
 | `wrongPlacements` | entero | Colocaciones incorrectas |
 | `socket` | texto | En qué hueco intentó colocar |
 | `chip` | texto | Qué figura colocó |
-| `chipSides` | entero | Lados de la figura que colocó |
-| `expectedSides` | entero | Lados que esperaba el hueco |
 | `correct` | 0/1 | Si encajaba |
+| `chipsGrabbed` / `chipsReleased` | entero | Cuántas veces cogió y soltó una ficha: la señal de duda y tanteo |
 
-Se guardan **los lados de ambos lados de la comparación**, no solo el acierto: en modo
-`"lados"` eso permite reconstruir **qué figuras consideró equivalentes** el niño, que es más
-informativo que un simple acierto/fallo.
+Se guarda **qué figura fue a qué hueco**, no solo el acierto. Ese par es el dato pedagógico
+del escenario: saber **cuál confundió con cuál** dice qué detalle no llegó a distinguir, y de
+ahí salen las parejas de figuras que resultaron demasiado parecidas para la edad.
+
+> La dificultad de la sesión **no se guarda aquí**. Va en `difficulty`, en la raíz del JSON:
+> la mecánica es idéntica en básica e intermedia y lo único que cambia es el juego de figuras,
+> más simples o más densas. Hubo un campo `matchMode` mientras el escenario emparejaba también
+> por número de lados; ese modo ya no existe y el campo tampoco.
 
 ---
 
@@ -347,9 +352,25 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         ]
     },
 
-    "escenario4": {}
+    "escenario4": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": 73.9,
+        "wrongPlacements": 1,
+        "chipsGrabbed": 6,
+        "chipsReleased": 6,
+        "placements": [
+            { "socket": "glifo_04", "chip": "glifo_04", "correct": 1, "timestamp": "..." },
+            { "socket": "glifo_11", "chip": "glifo_12", "correct": 0, "timestamp": "..." },
+            { "socket": "glifo_11", "chip": "glifo_11", "correct": 1, "timestamp": "..." }
+        ]
+    }
 }
 ```
+
+En ese fragmento se lee de un vistazo lo que mide el escenario: confundió `glifo_12` con
+`glifo_11` y acertó al segundo intento. Ese par concreto es lo que interesa, porque señala qué
+dos figuras resultaron demasiado parecidas.
 
 ---
 

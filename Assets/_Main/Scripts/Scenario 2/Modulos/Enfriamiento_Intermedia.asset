@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: enfriamiento
   moduleName: Sistema de enfriamiento
-  problem: "El sistema se calienta demasiado: el tanque de agua est\xE1 vac\xEDo y el ventilador est\xE1 apagado."
+  problem: "La nave se est\xE1 calentando demasiado y echa vapor. El aire no circula."
   options:
   - label: Encender el ventilador
     isCorrect: 1

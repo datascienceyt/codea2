@@ -3,7 +3,23 @@ using UnityEngine;
 
 // Los valores nuevos van SIEMPRE al final: el índice se serializa en los bloques de la
 // escena, así que insertar en medio les cambiaría la acción.
-public enum ArmActionType { Pick, Drop, RotateLeft, RotateRight }
+public enum ArmActionType
+{
+    Pick,
+    Drop,
+    RotateLeft,
+    RotateRight,
+
+    /// <summary>
+    /// Gira hacia donde va lo que el brazo tiene puesto en su socket de tipo. Es el giro de la
+    /// dificultad básica: ahí el niño no ordena instrucciones ni elige sentidos, así que el
+    /// bloque resuelve el destino por sí mismo a partir del argumento.
+    /// </summary>
+    RotateToDestination,
+
+    /// <summary>Vuelve a la posición de recogida. El regreso del ciclo básico.</summary>
+    RotateToOrigin
+}
 
 /// <summary>
 /// Bloque de acción del Escenario 3. Mismo patrón que GridBlock: enum + switch en vez de
@@ -28,6 +44,8 @@ public class ArmBlock : BlockNode
         ArmActionType.Drop => "Soltar",
         ArmActionType.RotateLeft => "Girar Izquierda",
         ArmActionType.RotateRight => "Girar Derecha",
+        ArmActionType.RotateToDestination => "Girar al destino",
+        ArmActionType.RotateToOrigin => "Volver",
         _ => action.ToString()
     };
 
@@ -60,6 +78,12 @@ public class ArmBlock : BlockNode
                 break;
             case ArmActionType.RotateRight:
                 yield return arm.RotateRight();
+                break;
+            case ArmActionType.RotateToDestination:
+                yield return arm.RotateToDestination();
+                break;
+            case ArmActionType.RotateToOrigin:
+                yield return arm.RotateToOrigin();
                 break;
         }
     }

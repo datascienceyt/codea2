@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: enfriamiento
   moduleName: Sistema de enfriamiento
-  problem: "El sistema de enfriamiento est\xE1 seco: el tanque de agua se vaci\xF3."
+  problem: "La nave se est\xE1 calentando demasiado y echa vapor."
   options:
   - label: Agregar gasolina
     isCorrect: 0

@@ -14,13 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: generadores
   moduleName: "Sistema de energ\xEDa"
-  problem: "El sistema de energ\xEDa est\xE1 apagado: la bater\xEDa est\xE1 descargada y un cable se solt\xF3 con el impacto."
+  problem: "Las luces est\xE1n apagadas y ning\xFAn bot\xF3n funciona. Hay circuitos
+    tirando chispas."
   options:
   - label: Agregar agua
     isCorrect: 0
   - label: "Conectar una bater\xEDa cargada"
     isCorrect: 1
-  - label: Reconectar el cable suelto
+  - label: "Reparar circuitos el\xE9ctricos"
     isCorrect: 1
   - label: Agregar aceite
     isCorrect: 0

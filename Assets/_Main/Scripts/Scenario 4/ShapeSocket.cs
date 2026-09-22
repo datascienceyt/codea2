@@ -1,51 +1,41 @@
-using TMPro;
 using System;
 using UnityEngine;
-using UnityEngine.UI;
-
-/// <summary>Cómo se decide si una ficha encaja.</summary>
-public enum ShapeMatchMode
-{
-    /// <summary>Básica: tiene que ser la misma figura.</summary>
-    Shape,
-
-    /// <summary>Intermedia: basta con que coincida el número de lados.</summary>
-    SideCount
-}
 
 /// <summary>
-/// Un hueco del panel del Escenario 4. Se apoya en el Socket de siempre para el acople y
-/// solo añade la validación de la figura.
+/// Un hueco del panel del Escenario 4. Se apoya en el Socket de siempre para el acople y solo
+/// añade la validación de la figura.
+///
+/// Encaja la ficha cuyo sprite sea EL MISMO asset que el esperado. Se compara la referencia y
+/// no el nombre a propósito: con figuras abstractas que se parecen mucho entre sí, el nombre
+/// es un texto suelto que se puede renombrar desde el Sprite Editor, y el emparejamiento se
+/// rompería sin que nada avisara. La referencia o está o no está.
 /// </summary>
 [RequireComponent(typeof(Socket))]
 public class ShapeSocket : MonoBehaviour
 {
     [Header("Figura esperada")]
-    [SerializeField] private ShapeData expectedShape;
+    [Tooltip("El mismo sprite que lleva la ficha que debe encajar aquí.")]
+    [SerializeField] private Sprite expectedShape;
 
-    [Tooltip("Opcional. Muestra la figura esperada o su número de lados, según el modo.")]
-    [SerializeField] private Text label;
+    [Tooltip("Dónde se dibuja la figura esperada. El hueco tiene que ENSEÑAR la figura: el " +
+             "reto es encontrar la idéntica entre otras muy parecidas, y un rótulo con su " +
+             "nombre lo resolvería leyendo en vez de mirando.")]
+    [SerializeField] private SpriteRenderer shapeImage;
 
-    [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
-    [SerializeField] private TMP_Text labelTmp;
-
-    [Tooltip("Id para telemetría. Si queda vacío se usa el de la figura esperada.")]
+    [Tooltip("Id para telemetría. Si queda vacío se usa el nombre del sprite esperado.")]
     [SerializeField] private string socketId;
 
     private Socket socket;
-    private ShapeMatchMode mode = ShapeMatchMode.Shape;
 
     /// <summary>Hueco, ficha colocada, si encajaba.</summary>
     public event Action<ShapeSocket, ShapeChip, bool> OnChipEvaluated;
 
     public bool IsSolved { get; private set; }
-    public ShapeData Expected => expectedShape;
+    public Sprite Expected => expectedShape;
 
     public string SocketId =>
         !string.IsNullOrEmpty(socketId) ? socketId :
-        expectedShape != null ? expectedShape.shapeId : name;
-
-    public int ExpectedSides => expectedShape != null ? expectedShape.sides : 0;
+        expectedShape != null ? expectedShape.name : name;
 
     private void Awake()
     {
@@ -59,24 +49,69 @@ public class ShapeSocket : MonoBehaviour
             socket.OnOccupied -= HandleOccupied;
     }
 
-    /// <summary>Lo fija Scenario4Controller según la dificultad de la escena.</summary>
-    public void SetMode(ShapeMatchMode value)
-    {
-        mode = value;
-        Refresh();
-    }
-
     private void Start() => Refresh();
 
-    private void Refresh()
+    /// <summary>Pinta en el hueco la figura que espera.</summary>
+    public void Refresh()
     {
-        if (expectedShape == null || !UiText.Any(label, labelTmp)) return;
+        if (shapeImage == null) return;
 
-        // En intermedia el hueco NO revela qué figura espera, solo cuántos lados: si mostrara
-        // la figura, el emparejamiento por atributo dejaría de tener sentido.
-        UiText.Set(label, labelTmp, mode == ShapeMatchMode.Shape
-            ? expectedShape.displayName
-            : expectedShape.sides.ToString());
+        shapeImage.sprite = expectedShape;
+    }
+
+    /// <summary>
+    /// Nombre del hijo que lleva el SpriteRenderer de la figura. El mismo que en ShapeChip:
+    /// hueco y ficha se montan igual, así no hay dos convenciones que recordar.
+    /// </summary>
+    private const string SpriteChildName = "Sprite";
+
+    /// <summary>
+    /// Engancha el SpriteRenderer del hijo "Sprite" y pinta la figura esperada de una vez.
+    ///
+    /// Gemela de ShapeChip.ApplyShapeToChild(). Deja shapeImage guardado, no solo pintado: si
+    /// únicamente se asignara el sprite, al entrar en Play el Refresh() de Start lo
+    /// encontraría vacío y el hueco saldría en blanco.
+    /// </summary>
+    [ContextMenu("Aplicar figura al hijo 'Sprite'")]
+    public void ApplyShapeToChild()
+    {
+        SpriteRenderer target = FindSpriteChild();
+
+        if (target == null)
+        {
+            Debug.LogWarning($"[Escenario4] '{name}' no tiene ningún hijo '{SpriteChildName}' " +
+                             "con SpriteRenderer: no hay dónde pintar la figura.", this);
+            return;
+        }
+
+#if UNITY_EDITOR
+        UnityEditor.Undo.RecordObjects(new UnityEngine.Object[] { this, target }, "Aplicar figura");
+#endif
+
+        shapeImage = target;
+        Refresh();
+
+#if UNITY_EDITOR
+        // Sin marcar sucio, el campo aparece relleno en el inspector pero no se guarda: al
+        // recargar la escena o entrar en Play vuelve a estar vacío.
+        UnityEditor.EditorUtility.SetDirty(this);
+        UnityEditor.EditorUtility.SetDirty(target);
+#endif
+    }
+
+    private SpriteRenderer FindSpriteChild()
+    {
+        Transform child = transform.Find(SpriteChildName);
+
+        if (child != null && child.TryGetComponent(out SpriteRenderer direct))
+            return direct;
+
+        // Rebusca más abajo e incluye los desactivados, por si la figura cuelga de un pivote
+        // o de un grupo de visuales en vez de ser hija directa.
+        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>(true))
+            if (renderer.name == SpriteChildName) return renderer;
+
+        return null;
     }
 
     private void HandleOccupied(BlockNode block)
@@ -98,14 +133,7 @@ public class ShapeSocket : MonoBehaviour
         OnChipEvaluated?.Invoke(this, chip, correct);
     }
 
-    private bool Matches(ShapeChip chip)
-    {
-        if (expectedShape == null || chip.Shape == null) return false;
-
-        return mode == ShapeMatchMode.Shape
-            ? chip.Shape.shapeId == expectedShape.shapeId
-            : chip.Sides == expectedShape.sides;
-    }
+    private bool Matches(ShapeChip chip) => expectedShape != null && chip.Shape == expectedShape;
 
     /// <summary>Vacía el hueco y lo devuelve a su estado inicial.</summary>
     public void ResetSocket()
@@ -125,4 +153,9 @@ public class ShapeSocket : MonoBehaviour
 
         Refresh();
     }
+
+#if UNITY_EDITOR
+    /// <summary>Igual que en la ficha: el panel se monta viendo la figura, no adivinándola.</summary>
+    private void OnValidate() => Refresh();
+#endif
 }
