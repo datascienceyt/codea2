@@ -38,8 +38,16 @@ public class RoboticArm : MonoBehaviour
     [SerializeField] private AudioClip dropSound;
     [SerializeField] private AudioClip rotateSound;
 
+    [Header("Argumento")]
+    [Tooltip("Socket que decide de qué pila se recoge. Si queda vacío se busca en la escena.")]
+    [SerializeField] private ArmTypeSocket typeSocket;
+
     private AudioSource audioSource;
     private Transform held;
+
+    /// <summary>De dónde salió lo que lleva, para poder devolverlo si lo suelta donde no va.</summary>
+    private ArmSlot heldOrigin;
+
     private int slotIndex;
     private bool isBusy;
 
@@ -54,12 +62,33 @@ public class RoboticArm : MonoBehaviour
 
     private bool HasSlots => slots != null && slots.Length > 0;
 
+    /// <summary>
+    /// Cuántos objetos de ese tipo hay repartidos por todas sus posiciones. Lo usa el
+    /// controlador para saber cuántos hay que clasificar sin tener que enumerar los montones.
+    /// </summary>
+    public int CountOf(ArmItemType type)
+    {
+        int total = 0;
+
+        if (!HasSlots) return total;
+
+        foreach (ArmSlot slot in slots)
+            if (slot != null) total += slot.CountOf(type);
+
+        return total;
+    }
+
     private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
 
         if (pivot == null) pivot = transform;
         if (holdPoint == null) holdPoint = transform;
+
+        // El brazo es un objeto de escena, así que puede guardar la referencia sin caer en la
+        // trampa del prefab. La búsqueda es solo para no obligar a asignarlo.
+        if (typeSocket == null)
+            typeSocket = FindAnyObjectByType<ArmTypeSocket>(FindObjectsInactive.Include);
 
         slotIndex = HasSlots ? Mathf.Clamp(startSlotIndex, 0, slots.Length - 1) : 0;
     }
@@ -76,9 +105,20 @@ public class RoboticArm : MonoBehaviour
 
         ArmSlot slot = CurrentSlot;
 
-        // Recoger con el brazo ocupado, o de un sitio donde no queda nada, es un error de
-        // lógica del programa: se avisa y se sigue, no se aborta la secuencia.
-        if (held != null || slot == null || slot.IsEmpty)
+        // Recoger con el brazo ocupado, o de un sitio donde no queda nada de lo que toca, es un
+        // error de lógica del programa: se avisa y se sigue, no se aborta la secuencia.
+        //
+        // De qué pila se coge lo decide el socket de tipo, no la rotación: en el frente conviven
+        // barriles y cajas, y el brazo elige por el argumento que lleve puesto.
+        if (held != null || slot == null || typeSocket == null || !typeSocket.HasType)
+        {
+            OnInvalidAction?.Invoke();
+            yield break;
+        }
+
+        Transform item = slot.Take(typeSocket.SelectedType);
+
+        if (item == null)
         {
             OnInvalidAction?.Invoke();
             yield break;
@@ -86,7 +126,8 @@ public class RoboticArm : MonoBehaviour
 
         isBusy = true;
 
-        held = slot.Take();
+        held = item;
+        heldOrigin = slot;
         held.SetParent(holdPoint);
         held.localPosition = Vector3.zero;
         held.localRotation = Quaternion.identity;
@@ -112,8 +153,27 @@ public class RoboticArm : MonoBehaviour
 
         isBusy = true;
 
-        slot.Put(held);
+        // Soltar donde no va SÍ se permite intentarlo —el niño tiene que poder equivocarse—,
+        // pero no se consuma: el objeto vuelve a la pila de la que salió. Dejarlo caer en el
+        // destino equivocado obligaría a recogerlo de allí para arreglarlo, y ese rescate no
+        // es el ejercicio. El brazo no gira de vuelta: la acción se deshace donde está.
+        if (!slot.Put(held))
+        {
+            if (heldOrigin != null) heldOrigin.Put(held);
+
+            held = null;
+            heldOrigin = null;
+
+            yield return new WaitForSeconds(actionPause);
+
+            isBusy = false;
+            OnInvalidAction?.Invoke();
+
+            yield break;
+        }
+
         held = null;
+        heldOrigin = null;
 
         Play(dropSound);
         yield return new WaitForSeconds(actionPause);
@@ -124,6 +184,81 @@ public class RoboticArm : MonoBehaviour
 
     public IEnumerator RotateLeft() => RotateBy(-1);
     public IEnumerator RotateRight() => RotateBy(1);
+
+    /// <summary>
+    /// Quién sabe a qué posición va cada tipo. Lo registra Scenario3Controller, que es donde
+    /// vive esa correspondencia.
+    ///
+    /// Va por delegado y no por un campo del inspector para no tener la misma tabla en dos
+    /// sitios: duplicarla significa que algún día dirán cosas distintas y el brazo llevará los
+    /// barriles a un lado mientras el controlador los espera en el otro.
+    /// </summary>
+    private Func<ArmItemType, ArmSlot> destinationResolver;
+
+    public void SetDestinationResolver(Func<ArmItemType, ArmSlot> resolver) =>
+        destinationResolver = resolver;
+
+    /// <summary>
+    /// Gira hacia donde va el tipo que lleva puesto. El giro de la dificultad básica, donde el
+    /// niño no elige sentidos.
+    ///
+    /// Se resuelve con un bloque propio en vez de reinterpretar "Girar Izquierda" según el
+    /// tipo. Un bloque que dice una cosa y hace otra es exactamente el fallo que ya costó
+    /// arreglar en RotateTowardsSlot, y aquí sería peor: en intermedia esos mismos bloques sí
+    /// significan izquierda y derecha literales.
+    /// </summary>
+    public IEnumerator RotateToDestination()
+    {
+        if (typeSocket == null || !typeSocket.HasType || destinationResolver == null)
+        {
+            OnInvalidAction?.Invoke();
+            yield break;
+        }
+
+        ArmSlot destination = destinationResolver(typeSocket.SelectedType);
+
+        yield return RotateToSlot(destination);
+    }
+
+    /// <summary>Vuelve a la posición de recogida, la de arranque.</summary>
+    public IEnumerator RotateToOrigin()
+    {
+        if (!HasSlots) yield break;
+
+        yield return RotateToSlot(slots[Mathf.Clamp(startSlotIndex, 0, slots.Length - 1)]);
+    }
+
+    private IEnumerator RotateToSlot(ArmSlot target)
+    {
+        int index = IndexOf(target);
+
+        if (index < 0)
+        {
+            OnInvalidAction?.Invoke();
+            yield break;
+        }
+
+        if (index == slotIndex) yield break;
+
+        // Por el camino corto del anillo. Con tres posiciones y el brazo en el centro eso es un
+        // solo paso a cada lado, que es lo que el niño ve; el bucle está por si algún día hay
+        // más posiciones, y acotado para que un montaje raro no lo deje girando para siempre.
+        int forward = ((index - slotIndex) % slots.Length + slots.Length) % slots.Length;
+        int direction = forward <= slots.Length - forward ? 1 : -1;
+
+        for (int step = 0; step < slots.Length && slotIndex != index; step++)
+            yield return RotateBy(direction);
+    }
+
+    private int IndexOf(ArmSlot slot)
+    {
+        if (slot == null || !HasSlots) return -1;
+
+        for (int i = 0; i < slots.Length; i++)
+            if (slots[i] == slot) return i;
+
+        return -1;
+    }
 
     private IEnumerator RotateBy(int direction)
     {
@@ -190,6 +325,7 @@ public class RoboticArm : MonoBehaviour
         StopAllCoroutines();
         isBusy = false;
         held = null;
+        heldOrigin = null;
 
         if (!HasSlots) return;
 

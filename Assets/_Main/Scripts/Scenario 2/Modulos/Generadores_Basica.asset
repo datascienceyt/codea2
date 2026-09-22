@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: generadores
   moduleName: "Sistema de energ\xEDa"
-  problem: "El sistema de energ\xEDa est\xE1 apagado: la bater\xEDa est\xE1 descargada."
+  problem: "Las luces est\xE1n apagadas y ning\xFAn bot\xF3n funciona."
   options:
   - label: "Conectar una bater\xEDa cargada"
     isCorrect: 1

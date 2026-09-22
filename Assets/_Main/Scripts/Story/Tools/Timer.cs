@@ -11,6 +11,10 @@ using UnityEngine.UI;
 ///
 /// Si se le asigna un Text lo va mostrando; si se deja vacío cuenta en privado y el tiempo
 /// se consulta desde código con Elapsed y Remaining.
+///
+/// Para que se vea en varios sitios a la vez —un panel por sala, más el de la muñeca— no se
+/// duplica el Timer: se pone un TimerDisplay en cada pantalla y ellas se registran aquí. La
+/// cuenta sigue siendo una sola, que es lo que mide RF-06.
 /// </summary>
 public class Timer : MonoBehaviour
 {
@@ -27,12 +31,19 @@ public class Timer : MonoBehaviour
     }
 
     [Header("Visualización")]
-    [Tooltip("Opcional. Si queda vacío el temporizador cuenta en privado, sin mostrar nada. " +
+    [Tooltip("Opcional. Pantalla propia del Timer, aparte de los TimerDisplay que se registren. " +
+             "Si queda vacío el temporizador cuenta en privado, sin mostrar nada. " +
              "Para encender/apagar el canvas entero usa Tools.SetActive / SetInactive.")]
     [SerializeField] private Text display;
 
     [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
     [SerializeField] private TMP_Text displayTmp;
+
+    /// <summary>
+    /// Pantallas repartidas por la nave. No es un campo del inspector: las llena el propio
+    /// TimerDisplay al activarse, para no tener que arrastrar aquí el panel de cada sala.
+    /// </summary>
+    private readonly List<TimerDisplay> screens = new List<TimerDisplay>();
 
     [Header("Tiempo límite")]
     [Tooltip("Tiempo límite en segundos. 900 = 15 minutos.")]
@@ -113,6 +124,22 @@ public class Timer : MonoBehaviour
         Refresh();
     }
 
+    /// <summary>
+    /// Lo llama TimerDisplay al activarse. Se le escribe la hora en el acto: una sala que se
+    /// enciende con el temporizador pausado —o antes de arrancarlo— no tendría quien se la
+    /// escribiera hasta el siguiente Update, y el panel aparecería en blanco.
+    /// </summary>
+    public void Register(TimerDisplay screen)
+    {
+        if (screen == null || screens.Contains(screen)) return;
+
+        screens.Add(screen);
+        screen.Show(Format(Remaining));
+    }
+
+    /// <summary>Lo llama TimerDisplay al desactivarse, para no escribir en salas apagadas.</summary>
+    public void Unregister(TimerDisplay screen) => screens.Remove(screen);
+
     /// <summary>Permite fijar el límite desde el inspector o por evento.</summary>
     public void SetTimeLimit(int seconds)
     {
@@ -153,11 +180,18 @@ public class Timer : MonoBehaviour
             if (alert != null) alert.fired = false;
     }
 
+    /// <summary>
+    /// Escribe la misma cadena en todas partes. Se formatea una sola vez: con cinco pantallas
+    /// esto corre en cada frame de la cuenta.
+    /// </summary>
     private void Refresh()
     {
-        if (!UiText.Any(display, displayTmp)) return;
+        string time = Format(Remaining);
 
-        UiText.Set(display, displayTmp, Format(Remaining));
+        UiText.Set(display, displayTmp, time);
+
+        foreach (TimerDisplay screen in screens)
+            if (screen != null) screen.Show(time);
     }
 
     /// <summary>

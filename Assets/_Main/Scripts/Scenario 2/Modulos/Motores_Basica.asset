@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: motores
   moduleName: Motores
-  problem: "Los motores no encienden: el tanque de combustible est\xE1 vac\xEDo."
+  problem: Los motores hacen ruido pero no arrancan.
   options:
   - label: Agregar agua
     isCorrect: 0

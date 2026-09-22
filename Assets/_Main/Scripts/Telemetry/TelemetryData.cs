@@ -149,6 +149,15 @@ public class LoopAttemptRecord
     /// <summary>Veces que se repite la fila.</summary>
     public int repetitions;
 
+    /// <summary>
+    /// Con qué tipo se corrió el programa: "Barril" o "Caja".
+    ///
+    /// Es el argumento que el niño puso en el socket aparte, y sin él dos ejecuciones con la
+    /// misma secuencia y las mismas repeticiones serían indistinguibles pese a ser tareas
+    /// distintas. Vacío en un escenario que no use argumento.
+    /// </summary>
+    public string itemType;
+
     public int solved;
 
     /// <summary>Mismo criterio que AttemptRecord.durationSeconds: tiempo de preparación.</summary>
@@ -170,21 +179,17 @@ public class Scenario3Record : BlockScenarioRecord
 /// <summary>
 /// Una ficha colocada en un hueco del panel del Escenario 4.
 ///
-/// Guarda los lados de ambos lados de la comparación, no solo el acierto: en dificultad
-/// intermedia el emparejamiento es por número de lados, y saber qué creyó equivalente el
-/// jugador dice mucho más que un simple 0/1.
+/// Guarda qué figura fue a qué hueco, no solo el acierto: con figuras abstractas que se
+/// parecen entre sí, saber cuál confundió con cuál dice mucho más que un simple 0/1.
 /// </summary>
 [Serializable]
 public class PlacementRecord
 {
-    /// <summary>Id del hueco: "estrella", "circulo", "triangulo".</summary>
+    /// <summary>Id del hueco. Por defecto, el nombre del recorte que espera.</summary>
     public string socket;
 
     /// <summary>Id de la figura que se intentó colocar.</summary>
     public string chip;
-
-    public int chipSides;
-    public int expectedSides;
 
     /// <summary>0/1, mismo criterio que el resto de escenarios.</summary>
     public int correct;
@@ -193,14 +198,11 @@ public class PlacementRecord
 }
 
 /// <summary>
-/// Escenario 4 — Patrones. Emparejamiento por atributo, sin cadena ni ejecución.
+/// Escenario 4 — Patrones. Encontrar la figura idéntica, sin cadena ni ejecución.
 /// </summary>
 [Serializable]
 public class Scenario4Record : ScenarioRecord
 {
-    /// <summary>"forma" o "lados". Se guarda porque cambia por completo qué mide el escenario.</summary>
-    public string matchMode;
-
     /// <summary>Colocaciones incorrectas acumuladas.</summary>
     public int wrongPlacements;
 

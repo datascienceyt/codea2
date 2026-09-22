@@ -6,18 +6,28 @@ using UnityEngine.Events;
 /// Conecta el Escenario 3 con el Director y con la telemetría, igual que sus equivalentes de
 /// los escenarios 1 y 2.
 ///
-/// El escenario se completa cuando todos los objetos han llegado a destinationSlot.
+/// El escenario se completa cuando cada tipo está entero en su destino: barriles a un
+/// lado, cajas al otro. Hacen falta al menos dos ejecuciones, una por tipo.
 /// </summary>
 public class Scenario3Controller : MonoBehaviour, IStepAction
 {
-    [Header("Meta")]
-    [Tooltip("Posición que empieza bloqueando el paso: el montón de barriles a trasladar. " +
-             "Solo se usa para calcular cuántos objetos hay que mover, no para revisar la meta.")]
-    [SerializeField] private ArmSlot slotToClear;
+    [System.Serializable]
+    public class SortingGoal
+    {
+        [Tooltip("Tipo que hay que clasificar.")]
+        public ArmItemType type = ArmItemType.Barril;
 
-    [Tooltip("Adónde deben llegar los objetos. La meta se cumple cuando aquí hay tantos " +
-             "objetos como al principio sumaban origen + destino.")]
-    [SerializeField] private ArmSlot destinationSlot;
+        [Tooltip("Dónde tienen que acabar todos los objetos de ese tipo.")]
+        public ArmSlot destination;
+
+        /// <summary>Cuántos hay de este tipo en toda la escena. Se calcula en Start.</summary>
+        [System.NonSerialized] public int required;
+    }
+
+    [Header("Meta")]
+    [Tooltip("Un destino por tipo: barriles a la izquierda, cajas a la derecha. El escenario " +
+             "se completa cuando TODOS los tipos están clasificados.")]
+    [SerializeField] private SortingGoal[] goals;
 
     [Tooltip("Si queda vacío se resuelve solo con FindAnyObjectByType.")]
     [SerializeField] private RoboticArm arm;
@@ -38,6 +48,11 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
              "aquí además lo duplicaría.")]
     public UnityEvent OnAttemptFailed;
 
+    [Tooltip("Se dispara cuando una ejecución SÍ clasificó objetos pero aún falta trabajo: " +
+             "típicamente al terminar con un tipo y quedar el otro. Solo para el aviso visual; " +
+             "el botón de ejecutar ya se rearma desde código.")]
+    public UnityEvent OnAttemptAdvanced;
+
     [Header("Telemetría")]
     [SerializeField] private string challengeId = "escenario3";
 
@@ -51,11 +66,11 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     private bool scenarioFinished;
 
     /// <summary>
-    /// Objetos que tienen que terminar en destinationSlot. Se calcula UNA vez en Start, con
-    /// el montaje inicial de la escena, y no se toca en los resets: es un dato del nivel, no
-    /// del estado de la partida.
+    /// Objetos ya bien clasificados al terminar la última ejecución. Es lo que permite
+    /// distinguir "esta pasada no sirvió de nada" de "esta pasada avanzó pero aún falta el
+    /// otro tipo", que con dos pasadas son cosas muy distintas.
     /// </summary>
-    private int requiredCount;
+    private int lastDeliveredTotal;
 
     private void Awake()
     {
@@ -65,6 +80,10 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
         {
             arm.OnActionCompleted += CheckCompletion;
             arm.OnInvalidAction += HandleInvalidAction;
+
+            // El brazo necesita saber adónde va cada tipo para el bloque "Girar al destino" de
+            // la básica, y esa tabla es esta: se le presta en vez de copiarla en su inspector.
+            arm.SetDestinationResolver(DestinationFor);
         }
         else
         {
@@ -93,9 +112,21 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     {
         if (startChallengeOnStart) StartScenario();
 
-        int fromOrigin = slotToClear != null ? slotToClear.Count : 0;
-        int fromDestination = destinationSlot != null ? destinationSlot.Count : 0;
-        requiredCount = fromOrigin + fromDestination;
+        // Cuántos hay de cada tipo en TODAS las posiciones del brazo, no solo en el montón de
+        // origen: así da igual que el decorado reparta los barriles entre varios sitios, y el
+        // dato sigue siendo del nivel y no del estado de la partida.
+        foreach (SortingGoal goal in goals)
+        {
+            if (goal == null) continue;
+
+            goal.required = arm != null ? arm.CountOf(goal.type) : 0;
+
+            if (goal.destination == null)
+                Debug.LogError($"[Escenario3] El objetivo '{goal.type}' no tiene destino " +
+                               "asignado: nunca se dará por clasificado.", this);
+        }
+
+        lastDeliveredTotal = DeliveredTotal();
     }
 
     /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
@@ -121,6 +152,30 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
         // llegar aquí el estado ya es definitivo.
         if (scenarioFinished) return;
 
+        // El criterio de fallo NO puede ser "el escenario no está completo".
+        //
+        // Hacen falta al menos dos ejecuciones, una por tipo, así que la pasada de barriles
+        // perfecta terminaría con las cajas sin mover y se contaría como fallida: failedAttempts
+        // saldría inflado midiendo el diseño del reto en vez del error del niño. Falla la pasada
+        // que no clasificó NADA; la que avanzó y se quedó corta es simplemente menos óptima, y
+        // eso ya se lee en el número de intentos y sus repeticiones.
+        int delivered = DeliveredTotal();
+        bool progressed = delivered > lastDeliveredTotal;
+
+        lastDeliveredTotal = delivered;
+
+        if (progressed)
+        {
+            // Red de seguridad, no el mecanismo principal: lo que de verdad permite las varias
+            // pasadas es 'allowRepeatedRuns' en el ProgramTrigger. Esto cubre el caso de que
+            // alguien lo deje sin marcar, porque entonces el botón se quedaría muerto a mitad
+            // de partida y el escenario sin salida.
+            if (runner != null) runner.ResetRunner();
+
+            OnAttemptAdvanced?.Invoke();
+            return;
+        }
+
         // El registro va ANTES de la espera, y desde código, por las dos razones de siempre:
         // una corrutina muere si el Director desactiva la estación durante retryDelay, y
         // cablearlo por UnityEvent significa que olvidarlo rompe los datos en silencio.
@@ -128,6 +183,27 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
             TelemetryManager.Instance.RegisterFailedAttempt();
 
         StartCoroutine(NotifyFailureAfterDelay());
+    }
+
+    /// <summary>Adónde va ese tipo. Null si nadie lo ha declarado en goals.</summary>
+    private ArmSlot DestinationFor(ArmItemType type)
+    {
+        foreach (SortingGoal goal in goals)
+            if (goal != null && goal.type == type) return goal.destination;
+
+        return null;
+    }
+
+    /// <summary>Objetos ya colocados en el destino que les toca, sumando todos los tipos.</summary>
+    private int DeliveredTotal()
+    {
+        int total = 0;
+
+        foreach (SortingGoal goal in goals)
+            if (goal != null && goal.destination != null)
+                total += goal.destination.CountOf(goal.type);
+
+        return total;
     }
 
     private IEnumerator NotifyFailureAfterDelay()
@@ -141,20 +217,29 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     }
 
     /// <summary>
-    /// Se mide por destinationSlot, no por slotToClear.IsEmpty: Take() saca el objeto de la
-    /// pila en el propio Recoger, así que el origen queda "vacío" con el objeto todavía en la
-    /// pinza. Medir por el destino evita completar el nivel antes de que el Soltar final
-    /// ocurra de verdad.
+    /// Se mide contando lo que hay EN CADA DESTINO, no lo que falta en el origen: Take() saca
+    /// el objeto de la pila en el propio Recoger, así que el montón de salida queda "vacío" con
+    /// el objeto todavía en la pinza. Medir por el destino evita completar el nivel antes de que
+    /// el Soltar final ocurra de verdad.
     /// </summary>
     private void CheckCompletion()
     {
-        if (scenarioFinished || destinationSlot == null || requiredCount <= 0) return;
-        if (destinationSlot.Count < requiredCount) return;
+        if (scenarioFinished || goals == null || goals.Length == 0) return;
+
+        int total = 0;
+
+        foreach (SortingGoal goal in goals)
+        {
+            if (goal == null || goal.destination == null) return;
+            if (goal.destination.CountOf(goal.type) < goal.required) return;
+
+            total += goal.required;
+        }
 
         scenarioFinished = true;
 
-        Debug.Log($"[Escenario 3] COMPLETADO · '{destinationSlot.name}' con {requiredCount} objeto(s) · " +
-                  $"challengeId '{challengeId}'", this);
+        Debug.Log($"[Escenario 3] COMPLETADO · {total} objeto(s) clasificados en " +
+                  $"{goals.Length} destino(s) · challengeId '{challengeId}'", this);
 
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.CompleteChallenge(challengeId);
@@ -178,5 +263,8 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
         scenarioFinished = false;
 
         if (arm != null) arm.ResetArm();
+
+        // Después del reset, no antes: DeliveredTotal lee el estado ya devuelto a su sitio.
+        lastDeliveredTotal = DeliveredTotal();
     }
 }

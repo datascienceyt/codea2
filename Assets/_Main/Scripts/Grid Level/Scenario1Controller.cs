@@ -82,6 +82,16 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
     {
         levelFinished = true;
 
+        // Desde código, como sus tres hermanos, y no solo cableado en el Director.
+        //
+        // CompleteChallenge es lo que marca el último intento como resuelto y congela la
+        // duración del escenario. Dejarlo únicamente en un UnityEvent significaba que
+        // reordenar un paso, o saltarlo, perdía el intento ganador sin que nada avisara: el
+        // JSON diría que el niño nunca resolvió el escenario que sí resolvió. Es idempotente,
+        // así que la llamada del Director puede quedarse donde está.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.CompleteChallenge(challengeId);
+
         // Antes de invocar el evento: si algo cableado ahí falla, la traza ya se vio.
         Debug.Log($"[Escenario 1] COMPLETADO · challengeId '{challengeId}'", this);
 

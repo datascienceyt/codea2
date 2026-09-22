@@ -61,6 +61,13 @@ public class Narrator : MonoBehaviour, IStepAction
     [SerializeField] private List<NarrationList> lists = new List<NarrationList>();
     [SerializeField] private int listIndex = 0;
 
+    [Header("Frases de error")]
+    [Tooltip("Banco de frases genéricas para cuando el jugador se equivoca: '¿Seguro que es " +
+             "eso?', 'Vuelve a leer el problema'...\n\n" +
+             "Va aparte de los tramos a propósito: se reproducen SIN avanzar la narración " +
+             "principal, porque equivocarse no hace progresar la historia.")]
+    [SerializeField] private NarrationList errorLines = new NarrationList();
+
     [Header("Voz")]
     [SerializeField] private AudioSource audioSource;
 
@@ -97,6 +104,9 @@ public class Narrator : MonoBehaviour, IStepAction
     private readonly List<NarrativeLine> lines = new List<NarrativeLine>();
     private NarrationList currentList;
     private int index;
+
+    /// <summary>Última frase de error dicha, para no repetirla seguida. -1 = ninguna todavía.</summary>
+    private int lastErrorIndex = -1;
     private bool skipRequested;
 
     public bool IsTyping { get; private set; }
@@ -166,6 +176,55 @@ public class Narrator : MonoBehaviour, IStepAction
         index++;
 
         yield return PlayEntry(entry);
+    }
+
+    /// <summary>
+    /// Suelta una frase de error al azar. Cablear al OnWrongOption del módulo, o a cualquier
+    /// evento de fallo.
+    ///
+    /// No avanza el recorrido de la narración principal: equivocarse no hace progresar la
+    /// historia, y si lo hiciera, un niño que falla mucho se saltaría medio guion.
+    ///
+    /// Si ya hay una línea sonando NO la corta y no dice nada. Pisar la narración para regañar
+    /// sería doblemente malo: se pierde la instrucción que quizá explicaba cómo acertar.
+    /// </summary>
+    [ContextMenu("Probar frase de error")]
+    public void PlayErrorLine()
+    {
+        if (errorLines == null || errorLines.entries == null || errorLines.entries.Count == 0)
+        {
+            Debug.LogWarning($"[Narrator] '{name}' no tiene frases de error cargadas.", this);
+            return;
+        }
+
+        if (IsTyping || (audioSource != null && audioSource.isPlaying)) return;
+
+        StartCoroutine(PlayEntry(errorLines.entries[PickErrorIndex()]));
+    }
+
+    /// <summary>
+    /// Al azar, pero nunca la misma dos veces seguidas: con tres o cuatro frases, repetir la
+    /// anterior se nota enseguida y delata que es una lista corta.
+    /// </summary>
+    private int PickErrorIndex()
+    {
+        int count = errorLines.entries.Count;
+        if (count == 1) return 0;
+
+        // La primera vez no hay nada que evitar y se sortea entre todas. Sin este caso, el
+        // desplazamiento de abajo sobre lastErrorIndex = -1 dejaba la frase 0 inalcanzable.
+        if (lastErrorIndex < 0)
+        {
+            lastErrorIndex = UnityEngine.Random.Range(0, count);
+            return lastErrorIndex;
+        }
+
+        // Se sortea entre count-1 huecos y se salta el ocupado por la anterior.
+        int pick = UnityEngine.Random.Range(0, count - 1);
+        if (pick >= lastErrorIndex) pick++;
+
+        lastErrorIndex = pick;
+        return pick;
     }
 
     /// <summary>Reproduce una entrada concreta, sin tocar el recorrido.</summary>

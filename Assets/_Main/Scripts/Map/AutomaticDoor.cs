@@ -1,12 +1,26 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Puerta que se abre sola, en vertical.
+///
+/// Con un solo panel sube entero. Con dos, se parten: door1 baja y door2 sube, como una
+/// compuerta de nave. Los dos recorren la misma openingDistance, así que el hueco que dejan es
+/// el doble.
+/// </summary>
 [RequireComponent(typeof(AudioSource))]
 public class AutomaticDoor : MonoBehaviour, IStepAction
 {
+    [Tooltip("Con dos paneles, este es el que BAJA.")]
     [SerializeField] GameObject door1;
+
+    [Tooltip("Opcional. El panel que SUBE. Sin él, door1 sube entero en vez de bajar.")]
     [SerializeField] GameObject door2;
+
     [SerializeField, Min(0.01f)] float openingSpeed = 2f;
+
+    [Tooltip("Cuánto recorre cada panel, en vertical. Con un solo panel tiene que ser al menos " +
+             "su altura, o la puerta se queda a medio abrir.")]
     [SerializeField, Min(0f)] float openingDistance = 1f;
     [SerializeField] AudioClip openingSound;
     [SerializeField] AudioClip closingSound;
@@ -31,13 +45,15 @@ public class AutomaticDoor : MonoBehaviour, IStepAction
         }
 
         door1ClosedPosition = door1.transform.localPosition;
+
+        // Solo: sube. En pareja: baja, y door2 sube contra él.
         float door1Direction = door2 == null ? 1f : -1f;
-        door1OpenPosition = door1ClosedPosition + Vector3.right * door1Direction * openingDistance;
+        door1OpenPosition = door1ClosedPosition + Vector3.up * door1Direction * openingDistance;
 
         if (door2 != null)
         {
             door2ClosedPosition = door2.transform.localPosition;
-            door2OpenPosition = door2ClosedPosition + Vector3.right * openingDistance;
+            door2OpenPosition = door2ClosedPosition + Vector3.up * openingDistance;
         }
     }
 
