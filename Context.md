@@ -22,7 +22,7 @@ supervisor fija la dificultad antes de empezar y exporta los datos al terminar.
 |---|---|
 | Ing. Víctor Echeverría | Desarrollador principal |
 | Ph.D. Erick Cuenca | Director del proyecto |
-| Gabriela Galarza, Rolando Armas | Evaluación técnica |
+| Equipo evaluador | Evaluación técnica |
 
 Repositorio `github.com/datascienceyt/codea2`, rama `dev`.
 

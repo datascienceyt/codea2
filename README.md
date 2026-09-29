@@ -217,8 +217,7 @@ Docs/
 |---|---|
 | Ing. Víctor Echeverría | Técnico Especialista (Desarrollador principal) |
 | Ph.D. Erick Cuenca | Director del Proyecto |
-| Gabriela Cajamarca | Evaluadora técnica |
-| Rolando Armas | Evaluador técnico |
+| Equipo evaluador | Evaluación técnica |
 
 ## Licencia
 
