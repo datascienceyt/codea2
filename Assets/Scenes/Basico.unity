@@ -32216,8 +32216,8 @@ MonoBehaviour:
   socketPrefab: {fileID: 4348773760286218061, guid: 43a9015b8c6072e48a1aab0c6038a58b, type: 3}
   socketsQuantity: 4
   socketOrientation: {fileID: 2115978001}
-  repetitions: 1
-  minRepetitions: 1
+  repetitions: 0
+  minRepetitions: 0
   maxRepetitions: 9
   repetitionsLabel: {fileID: 956393861}
   repetitionsLabelTmp: {fileID: 0}
@@ -37943,18 +37943,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 60525831594256941afb68a18babbf36, type: 2}
     - target: {fileID: 6092180595146884567, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
-      propertyPath: optionButtons.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6092180595146884567, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
-      propertyPath: 'optionButtons.Array.data[2]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 6092180595146884567, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
-      propertyPath: 'optionButtons.Array.data[3]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 6092180595146884567, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
       propertyPath: OnWrongOption.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1195506163}
@@ -38083,9 +38071,7 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 937436035}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 257216644725718905, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
-    - {fileID: 6652120793906304096, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4335384278304277900, guid: bf8508461f48f8a469bacc19d243684d, type: 3}
@@ -38249,18 +38235,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 60e68d50c79fc0d4696a482ae698c600, type: 2}
     - target: {fileID: 3030325728639217563, guid: fb267ffcd308354478679a64e20469b3, type: 3}
-      propertyPath: optionButtons.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3030325728639217563, guid: fb267ffcd308354478679a64e20469b3, type: 3}
-      propertyPath: 'optionButtons.Array.data[2]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 3030325728639217563, guid: fb267ffcd308354478679a64e20469b3, type: 3}
-      propertyPath: 'optionButtons.Array.data[3]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 3030325728639217563, guid: fb267ffcd308354478679a64e20469b3, type: 3}
       propertyPath: OnWrongOption.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1195506163}
@@ -38317,9 +38291,7 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 1911289334160912074, guid: fb267ffcd308354478679a64e20469b3, type: 3}
-    - {fileID: 4288597040527941231, guid: fb267ffcd308354478679a64e20469b3, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 8554189083515719662, guid: fb267ffcd308354478679a64e20469b3, type: 3}
@@ -38403,18 +38375,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 36e90ab00e88b7040a7420709678787e, type: 2}
     - target: {fileID: 6679766964194082242, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
-      propertyPath: optionButtons.Array.size
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6679766964194082242, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
-      propertyPath: 'optionButtons.Array.data[2]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 6679766964194082242, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
-      propertyPath: 'optionButtons.Array.data[3]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 6679766964194082242, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
       propertyPath: OnWrongOption.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1195506163}
@@ -38427,9 +38387,7 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1894423709}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 4600199608075933407, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
-    - {fileID: 9147152318378804416, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5118914223830674967, guid: 1bd5b9465d3c8734c96e1735be0744a8, type: 3}

@@ -81,6 +81,10 @@ public class ProgramTrigger : MonoBehaviour
         return null;
     }
 
+    /// <summary>Si esta condición veta la ejecución de este botón.</summary>
+    public bool HasPrecondition(MonoBehaviour candidate) =>
+        preconditions != null && System.Array.IndexOf(preconditions, candidate) >= 0;
+
     private bool CanRun()
     {
         if (preconditions == null) return true;

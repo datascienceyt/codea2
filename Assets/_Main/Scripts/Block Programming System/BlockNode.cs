@@ -94,6 +94,9 @@ public abstract class BlockNode : MonoBehaviour
     /// bloque a su sitio: si no, al volver a agarrarlo vaciaría su socket anterior,
     /// expulsando al bloque que lo hubiera ocupado mientras tanto.
     /// </summary>
+    public bool IsAttached => currentSocket != null;
+    public bool IsGrabbed => isGrabbed;
+
     public void ForgetSocket() => currentSocket = null;
 
     /// <summary>

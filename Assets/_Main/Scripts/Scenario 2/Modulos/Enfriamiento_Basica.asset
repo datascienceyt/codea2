@@ -18,5 +18,9 @@ MonoBehaviour:
   options:
   - label: Agregar gasolina
     isCorrect: 0
+  - label: "Conectar una bater\xEDa cargada"
+    isCorrect: 0
   - label: Agregar agua
     isCorrect: 1
+  - label: Agregar aceite
+    isCorrect: 0

@@ -78,7 +78,11 @@ public class Narrator : MonoBehaviour, IStepAction
     [Tooltip("Igual, pero en TextMeshPro. Rellena solo el que uses.")]
     [SerializeField] private TMP_Text displayTmp;
 
-    [Tooltip("Caracteres por segundo. 25-35 se lee cómodo en VR.")]
+    [Tooltip("Desactivado (por defecto): la frase aparece entera de golpe y dura lo que dure " +
+             "la voz. Activado: se escribe letra a letra a la velocidad de abajo.")]
+    [SerializeField] private bool revealProgressively = false;
+
+    [Tooltip("Caracteres por segundo, si se escribe letra a letra. 25-35 se lee cómodo en VR.")]
     [SerializeField] private float charactersPerSecond = 28f;
 
     [Tooltip("Escribe el resto en transparente en vez de recortar la cadena. Evita que el " +
@@ -271,7 +275,11 @@ public class Narrator : MonoBehaviour, IStepAction
 
         float delay = charactersPerSecond > 0f ? 1f / charactersPerSecond : 0f;
 
-        for (int i = 1; i <= full.Length; i++)
+        // Sin escritura progresiva el bucle no corre: la frase se pinta entera justo debajo y
+        // tampoco suenan las teclas, que sin retardo se dispararían todas en el mismo frame.
+        int first = revealProgressively && delay > 0f ? 1 : full.Length + 1;
+
+        for (int i = first; i <= full.Length; i++)
         {
             if (skipRequested) break;
 

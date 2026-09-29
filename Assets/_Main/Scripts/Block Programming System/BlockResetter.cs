@@ -67,6 +67,15 @@ public class BlockResetter : MonoBehaviour
 
         // Al agarrarlo, BlockNode lo desparenta; al soltarlo sobre un socket lo
         // cuelga de este. Por eso hay que reparentarlo antes de la pose local.
+        // Una ficha con física puede volver cayendo o girando: se congela antes de moverla,
+        // o seguiría con la inercia de la caída desde su sitio de origen.
+        if (home.block.TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.isKinematic = true;
+        }
+
         home.block.SetParent(transform);
         home.block.localPosition = home.localPosition;
         home.block.localRotation = home.localRotation;

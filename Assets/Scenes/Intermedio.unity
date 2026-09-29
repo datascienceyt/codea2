@@ -31286,8 +31286,8 @@ MonoBehaviour:
   socketPrefab: {fileID: 4348773760286218061, guid: 43a9015b8c6072e48a1aab0c6038a58b, type: 3}
   socketsQuantity: 4
   socketOrientation: {fileID: 2115978001}
-  repetitions: 1
-  minRepetitions: 1
+  repetitions: 0
+  minRepetitions: 0
   maxRepetitions: 9
   repetitionsLabel: {fileID: 956393861}
   repetitionsLabelTmp: {fileID: 0}

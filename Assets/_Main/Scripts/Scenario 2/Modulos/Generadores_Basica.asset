@@ -16,7 +16,11 @@ MonoBehaviour:
   moduleName: "Sistema de energ\xEDa"
   problem: "Las luces est\xE1n apagadas y ning\xFAn bot\xF3n funciona."
   options:
-  - label: "Conectar una bater\xEDa cargada"
-    isCorrect: 1
   - label: Agregar agua
     isCorrect: 0
+  - label: Encender el ventilador
+    isCorrect: 0
+  - label: Agregar gasolina
+    isCorrect: 0
+  - label: "Conectar una bater\xEDa cargada"
+    isCorrect: 1

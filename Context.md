@@ -170,7 +170,7 @@ conjunto seleccionado coincide **exactamente** con el correcto: ni de menos ni d
 
 | | Opciones | Correctas |
 |---|---|---|
-| Básica | 2 | 1 |
+| Básica | 4 | 1 |
 | Intermedia | 4 | 2 |
 
 La dificultad vive en los **datos** (`ModuleData`), no en código, y se cambia **cargando otra
@@ -243,6 +243,8 @@ huecos en medio de una secuencia ya montada.
 la que salió y se registra un error de lógica. Dejarlo caer obligaría a rescatarlo, y ese
 rescate no es el ejercicio.
 
+**Al poner la ficha de tipo, las repeticiones vuelven a 0**, y con 0 tampoco se ejecuta: cambiar de tipo es preparar otra pasada. La fila del esc. 3 tiene `minRepetitions: 0`; el socket la encuentra por el `ProgramTrigger` que lo lista en `preconditions`.
+
 **Sin ficha de tipo el programa no se ejecuta.** `ArmTypeSocket` implementa `IRunPrecondition`,
 que `ProgramTrigger` consulta **antes de registrar el intento**: un programa sin su argumento no
 probó ninguna solución y no debe contar como intento.
@@ -291,6 +293,8 @@ Ficha y hueco traen un hijo llamado `Sprite` con el `SpriteRenderer`, y ambos ex
 el fallo invisible: un hueco cuya figura no la lleva ninguna ficha deja el escenario
 irresoluble y el Director esperando para siempre.
 
+**Hueco resuelto:** la figura del hueco pasa a `solvedColor`, suena `solvedSound` y se dispara `OnSolved`. **Física:** soltada fuera de un hueco la ficha cae con gravedad; si queda más de `fallenBelow` por debajo de su sitio durante `returnDelay` s, su `BlockResetter` la devuelve.
+
 Hacen falta **fichas distractoras de sobra**. Con tantas fichas como huecos, el último se
 resuelve por eliminación sin llegar a comparar.
 
@@ -311,6 +315,8 @@ acciones a esperar (componentes `IStepAction`).
 
 Implementan `IStepAction`: `Waiter`, `Fader`, `Narrator`, `VRInteractionEvent`, `AutomaticDoor`
 y los cuatro `ScenarioNController`.
+
+**El texto aparece entero de golpe** (`revealProgressively` desactivado por defecto), decidido en la reunión del 29/09.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV

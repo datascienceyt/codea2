@@ -44,10 +44,104 @@ public class ShapeChip : BlockNode
 
     public override string InstructionLabel => ShapeId;
 
+    [Header("Física")]
+    [Tooltip("Soltada fuera de un hueco, la ficha cae con gravedad en vez de quedarse flotando.")]
+    [SerializeField] private bool usePhysics = true;
+
+    [Tooltip("Metros por debajo de su sitio de origen a partir de los que se considera caída " +
+             "al suelo y se devuelve sola.")]
+    [SerializeField] private float fallenBelow = 0.3f;
+
+    [Tooltip("Segundos en el suelo antes de volver a su sitio. Da tiempo a recogerla a mano.")]
+    [SerializeField] private float returnDelay = 4f;
+
+    private Rigidbody body;
+    private BlockResetter resetter;
+    private float homeY;
+    private Coroutine looseRoutine;
+
     protected override void Awake()
     {
         base.Awake();
+
+        // Se toma antes de que nada la mueva: al arrancar, la ficha está en su sitio de origen.
+        body = GetComponent<Rigidbody>();
+        resetter = GetComponentInParent<BlockResetter>();
+        homeY = transform.position.y;
+
+        VRGrabEvents grab = GetComponent<VRGrabEvents>();
+        grab.onGrabbed.AddListener(StopLoose);
+        grab.onReleased.AddListener(HandleReleased);
+
         ApplyShape();
+    }
+
+    // --- Física: caer al soltarla fuera de un hueco, y volver sola si acaba en el suelo ---
+
+    private void HandleReleased()
+    {
+        if (!usePhysics || body == null) return;
+
+        StopLoose();
+        looseRoutine = StartCoroutine(Loose());
+    }
+
+    private void StopLoose()
+    {
+        if (looseRoutine != null) StopCoroutine(looseRoutine);
+        looseRoutine = null;
+    }
+
+    private IEnumerator Loose()
+    {
+        // Se espera un paso de física: el Grabbable devuelve el Rigidbody a su estado original
+        // (cinemático) al soltar, y si esto corriera antes, lo pisaría. El acople al hueco, en
+        // cambio, ya ocurrió: BlockNode escucha el mismo evento y se suscribió primero.
+        //
+        // Encajada, se congela antes y después de esa espera: una ficha que ya había caído
+        // vuelve a ser dinámica al soltarla, y en el hueco se caería de él.
+        if (IsAttached) body.isKinematic = true;
+
+        yield return new WaitForFixedUpdate();
+        yield return null;
+
+        if (IsAttached)
+        {
+            body.isKinematic = true;
+            looseRoutine = null;
+            yield break;
+        }
+
+        if (IsGrabbed) yield break;
+
+        body.isKinematic = false;
+        body.useGravity = true;
+
+        float onFloorSince = -1f;
+
+        // Termina también si alguien la congela: BlockResetter la devuelve cinemática.
+        while (!IsAttached && !IsGrabbed && !body.isKinematic)
+        {
+            bool fallen = transform.position.y < homeY - fallenBelow;
+
+            if (!fallen) onFloorSince = -1f;
+            else if (onFloorSince < 0f) onFloorSince = Time.time;
+            else if (Time.time - onFloorSince >= returnDelay) break;
+
+            yield return null;
+        }
+
+        looseRoutine = null;
+
+        // Recogida a mano, encajada o devuelta mientras tanto: nada que hacer.
+        if (IsAttached || IsGrabbed || body.isKinematic) yield break;
+
+        if (resetter == null || !resetter.ReturnBlock(this))
+        {
+            Debug.LogWarning($"[Escenario4] '{name}' se cayó y no hay BlockResetter del que " +
+                             "cuelgue para devolverla.", this);
+            body.isKinematic = true;
+        }
     }
 
     /// <summary>

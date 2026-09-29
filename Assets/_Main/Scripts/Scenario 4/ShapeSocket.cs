@@ -25,6 +25,19 @@ public class ShapeSocket : MonoBehaviour
     [Tooltip("Id para telemetría. Si queda vacío se usa el nombre del sprite esperado.")]
     [SerializeField] private string socketId;
 
+    [Header("Resuelto")]
+    [Tooltip("Color al que pasa la figura del hueco al encajar la ficha correcta. Es el aviso de " +
+             "que ese hueco ya está: con fichas tan parecidas, sin él el niño no sabe si acertó.")]
+    [SerializeField] private Color solvedColor = new Color(0.3f, 1f, 0.4f);
+
+    [Tooltip("Opcional. Suena en el hueco al resolverse.")]
+    [SerializeField] private AudioClip solvedSound;
+
+    [Tooltip("Al encajar la ficha correcta: partículas, luz...")]
+    public UnityEngine.Events.UnityEvent OnSolved;
+
+    private Color originalColor = Color.white;
+
     private Socket socket;
 
     /// <summary>Hueco, ficha colocada, si encajaba.</summary>
@@ -49,7 +62,12 @@ public class ShapeSocket : MonoBehaviour
             socket.OnOccupied -= HandleOccupied;
     }
 
-    private void Start() => Refresh();
+    private void Start()
+    {
+        if (shapeImage != null) originalColor = shapeImage.color;
+
+        Refresh();
+    }
 
     /// <summary>Pinta en el hueco la figura que espera.</summary>
     public void Refresh()
@@ -128,6 +146,11 @@ public class ShapeSocket : MonoBehaviour
         {
             IsSolved = true;
             chip.SetInteractable(false);
+
+            if (shapeImage != null) shapeImage.color = solvedColor;
+            if (solvedSound != null) AudioSource.PlayClipAtPoint(solvedSound, transform.position);
+
+            OnSolved?.Invoke();
         }
 
         OnChipEvaluated?.Invoke(this, chip, correct);
@@ -139,6 +162,8 @@ public class ShapeSocket : MonoBehaviour
     public void ResetSocket()
     {
         IsSolved = false;
+
+        if (shapeImage != null && Application.isPlaying) shapeImage.color = originalColor;
 
         if (socket != null)
         {

@@ -16,7 +16,11 @@ MonoBehaviour:
   moduleName: Motores
   problem: Los motores hacen ruido pero no arrancan.
   options:
-  - label: Agregar agua
+  - label: Encender el ventilador
     isCorrect: 0
   - label: Agregar gasolina
     isCorrect: 1
+  - label: Agregar agua
+    isCorrect: 0
+  - label: "Reparar circuitos el\xE9ctricos"
+    isCorrect: 0
