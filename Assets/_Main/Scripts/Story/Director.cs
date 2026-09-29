@@ -63,6 +63,22 @@ public class Director : MonoBehaviour
                   $"paso {currentStepIndex}", this);
     }
 
+    /// <summary>
+    /// Corta el recorrido para siempre: no se ejecuta ni un paso más. Para el tiempo agotado.
+    ///
+    /// A diferencia del salto, aquí sí se abandonan las acciones en curso, porque no hay un
+    /// paso siguiente al que dejarle estados a medias: después viene el cierre de la sesión.
+    /// Las acciones esperadas corren dentro de las corrutinas del Director y mueren con ellas;
+    /// lo que otro componente arrancó por su cuenta (la voz del Narrator) hay que pararlo aparte.
+    /// </summary>
+    [ContextMenu("Stop")]
+    public void Stop()
+    {
+        StopAllCoroutines();
+
+        Debug.Log($"[Director] Detenido · escenario {currentScenarioIndex} · paso {currentStepIndex}", this);
+    }
+
     IEnumerator Run()
     {
         while (currentScenarioIndex < scenarios.Count)

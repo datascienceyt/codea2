@@ -147,7 +147,39 @@ public class JSONUploader : MonoBehaviour
     /// </summary>
     public void UploadFile(string filePath)
     {
-        StartCoroutine(UploadCoroutine(filePath, 0));
+        StartCoroutine(TrackedUpload(filePath));
+    }
+
+    /// <summary>
+    /// Subidas en vuelo entre todos los uploaders. SceneLoader espera a que llegue a cero antes
+    /// de cambiar de escena: descargarla destruye este componente y mata la corrutina a mitad
+    /// de la petición, y el JSON de la sesión que acaba de terminar no llegaba nunca.
+    /// </summary>
+    public static int PendingUploads { get; private set; }
+
+    // Sin recarga de dominio al entrar en Play, el estático arrastraría la cuenta de la vez anterior.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics() => PendingUploads = 0;
+
+    /// <summary>Las de este componente, para descontarlas si se destruye con ellas en vuelo.</summary>
+    private int inFlight;
+
+    private IEnumerator TrackedUpload(string filePath)
+    {
+        inFlight++;
+        PendingUploads++;
+
+        yield return UploadCoroutine(filePath, 0);
+
+        inFlight--;
+        PendingUploads--;
+    }
+
+    private void OnDestroy()
+    {
+        // Una corrutina cortada por la destrucción no llega a descontarse sola.
+        PendingUploads = Mathf.Max(0, PendingUploads - inFlight);
+        inFlight = 0;
     }
 
     private IEnumerator UploadCoroutine(string filePath, int attempt)
@@ -194,7 +226,10 @@ public class JSONUploader : MonoBehaviour
             {
                 Debug.Log($"[Upload] Reintentando ({attempt + 1}/{maxRetries})...");
                 yield return new WaitForSeconds(2f);
-                StartCoroutine(UploadCoroutine(filePath, attempt + 1));
+
+                // Anidado y no con StartCoroutine: así el reintento cuenta dentro de la misma
+                // subida pendiente y nadie cambia de escena entre un intento y el siguiente.
+                yield return UploadCoroutine(filePath, attempt + 1);
             }
             else
             {

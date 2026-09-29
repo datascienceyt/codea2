@@ -375,6 +375,23 @@ public class Narrator : MonoBehaviour, IStepAction
         if (audioSource != null) audioSource.Stop();
     }
 
+    /// <summary>
+    /// Corta en seco la línea en curso, voz y texto, y deja el narrador libre.
+    ///
+    /// StopAudio solo calla la voz: el texto seguiría escribiéndose y PlayEntry seguiría
+    /// esperándolo, así que una línea nueva se mezclaría con la vieja en la misma pantalla.
+    /// </summary>
+    public void Interrupt()
+    {
+        StopAllCoroutines();
+        StopAudio();
+
+        IsTyping = false;
+        skipRequested = false;
+
+        UiText.Set(display, displayTmp, string.Empty);
+    }
+
     [ContextMenu("Limpiar pantalla")]
     public void Clear()
     {

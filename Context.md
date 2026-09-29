@@ -3,7 +3,7 @@
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
 el sistema completo sin leer los 5.570 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **23/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **29/09/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
@@ -112,10 +112,11 @@ dependencia:
 | `Tools/ScreenTeleporter.cs` | Manda la pantalla de narración a la pose de un Transform, pasado como argumento |
 | `Session/SessionSetup.cs` | Pantalla del supervisor: PIN + dificultad, y lanza la escena (RI-03) |
 | `Session/PinEntry.cs` | Teclado numérico del PIN. `AppendDigit`, borrar, siguiente correlativo |
-| `Session/SceneLoader.cs` | Carga una escena cerrando antes la run. Para volver con el siguiente niño |
+| `Session/SceneLoader.cs` | Carga una escena cerrando antes la run y esperando a que acabe la subida. Para volver con el siguiente niño |
+| `Session/TimeUpSequence.cs` | Tiempo agotado: para Director y narración, cierra y sube la run, dice la frase y vuelve |
 | `Session/DifficultyScene.cs` | Declara la dificultad de su escena y la impone si no coincide |
 | `Telemetry/TelemetryData.cs` | Modelo serializable del JSON |
-| `Telemetry/TelemetryManager.cs` | Singleton persistente. Captura, escritura diferida, pruebas |
+| `Telemetry/TelemetryManager.cs` | Singleton **por escena**, sin `DontDestroyOnLoad` (los `UnityEvent` de la escena apuntan al suyo). Captura, escritura diferida, pruebas |
 | `Telemetry/JSONUploader.cs` | Sube el JSON de la sesión por POST multipart, con reintentos |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
@@ -182,7 +183,6 @@ lubricación, energía de electricidad, enfriamiento de temperatura. Así no se 
 reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar agua"*
 aparece en los tres módulos y solo es correcta en uno.
 
-cat > /tmp/e2.md <<'EOF'
 Estado visual por icono y luz roja/verde; el problema se mantiene textual, y la pantalla lleva
 además el **título del sistema**, que sale de `ModuleData.moduleName`.
 
@@ -266,7 +266,8 @@ necesita su `ArmItem`. Prefabs: `ArmBlock`, `ArmTypeChipBlock`, `ArmSocketTipo`.
 Fichas con figuras abstractas que encajan en huecos. Varias se parecen mucho entre sí y solo
 una es idéntica a la del hueco: el reto es de **discriminación visual**, comparar el detalle en
 vez de reconocer una forma conocida. Las figuras salen de un pliego recortado en `Multiple`,
-`Scripts/Scenario 4/Figuras/symbols.png` (34 recortes).
+`Scripts/Scenario 4/Figuras/symbols.png` (34 recortes, nombrados `<exterior>_<interior>` o
+`<familia>_<variante>`: `circulo_rombo`, `persona_cuadrado_ovalo`, `tresenraya_x1_o9`...).
 
 **La figura ES el sprite.** No hay asset intermedio: `ShapeChip.shape` y
 `ShapeSocket.expectedShape` son campos `Sprite`, y encajar es `chip.Shape == expectedShape`, o
@@ -442,12 +443,14 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
 | `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()` |
 | `ShapeSocket` | `Refresh()`, `ResetSocket()`, `ApplyShapeToChild()` |
-| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
+| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
 | `SessionSetup` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)`, `StartSession()` |
 | `PinEntry` | `AppendDigit(int)`, `DeleteLast()`, `Clear()`, `UseNextPin()`, `SetPin(int)` |
 | `SceneLoader` | `Load()`, `Load(string)` |
+| `TimeUpSequence` | `Begin()` |
+| `Director` | `Play()`, `Stop()` |
 | `Tools` | `SetActive(GameObject)`, `SetInactive(GameObject)`, `DestroyObject(GameObject)` |
 
 ## 9. Decisiones no obvias — el porqué
@@ -541,6 +544,14 @@ de la pila equivocada sin que nada avisara.
 el reto.** Donde el reto se resuelve en varias pasadas, exigir un reinicio entre ellas deja el
 botón muerto a mitad de partida y sin nada que explique por qué.
 
+**`TelemetryManager` es uno por escena, sin `DontDestroyOnLoad`.** Lo tuvo, y desde el segundo
+niño se perdían datos: al recargar la escena sobrevivía el anterior y el nuevo se autodestruía,
+pero los `UnityEvent` de la escena apuntan al de *su* escena, y Unity se salta en silencio las
+llamadas a un objeto destruido. La run se cierra en su `OnDestroy`.
+
+**`SceneLoader` espera a la subida antes de cargar.** La corrutina de subida vive en la escena
+que se descarga; cargar a mitad la cortaba y el JSON de la sesión recién terminada no llegaba.
+
 **El informe de integridad corre en `EndRun()`.** Esta telemetría no falla reventando: falla
 saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. Ver sección 7.
 
@@ -561,28 +572,28 @@ saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. V
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 23/09/2026
+## 11. Estado voluble — 29/09/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
 **La escena se partió por dificultad.** Ya no hay `Main.unity`: son `Assets/Scenes/Basico.unity`
 e `Intermedio.unity`, cada una con su Director, sus cuatro controladores, su `TelemetryManager`
-y su `JSONUploader`. Las dos están en Build Settings. Quedan además `Main 2.unity` y
-`Tests.unity`, que no son escenas activas, y 7 respaldos en `_Recovery/` que aparecen en las
-búsquedas y confunden.
+y su `JSONUploader`. Quedan además `Main 2.unity` y `Tests.unity`, que no son escenas activas,
+y 7 respaldos en `_Recovery/` que aparecen en las búsquedas y confunden.
 
 | Subsistema | Estado |
 |---|---|
 | Escenario 1 | ✅ Verificado en visor |
-| Escenario 2 | 🟡 Montado en las dos dificultades. Enunciados reescritos; falta cablear `OnWrongOption` y grabar las frases de error |
-| Escenario 3 | 🟡 Reescrito entero (pilas por tipo, ficha de argumento, dos destinos). Montado y cableado. Sin probar en visor |
-| Escenario 4 | 🟡 4 huecos y 18 fichas sobre `symbols.png`, `chipResetter` asignado. Sin probar en visor |
-| Director | ✅ Recorre los cinco tramos, cierra la run y sube el JSON |
-| Narrativa | ✅ Funcional. Faltan las frases de error por grabar |
-| Telemetría | ✅ Los cuatro escenarios registran. Informe de integridad en cada `EndRun()` |
+| Escenario 2 | 🟡 Montado en las dos dificultades. `OnWrongOption` sin cablear; `errorLines` con una sola frase provisional |
+| Escenario 3 | 🟡 Reescrito entero. Montado; falta `OnAttemptFailed → ResetArm`. Sin probar en visor |
+| Escenario 4 | 🟡 4 huecos y 18 fichas; recortes de `symbols.png` ya renombrados. Sin probar en visor |
+| Director | ✅ Recorre los cinco tramos, cierra la run y sube el JSON. `Stop()` para el tiempo agotado |
+| Narrativa | 🟡 Funcional. Faltan las frases de error y la de tiempo agotado |
+| Telemetría | ✅ Un `TelemetryManager` por escena. Informe de integridad en cada `EndRun()` |
 | Servidor | ✅ Funcionando. `~/Services/JSONServer` en la Pi |
-| Temporizador | 🟡 `TimerDisplay` en 5 pantallas. Sin `alerts` ni `OnTimeUp`: RF-06 a medias |
-| Selección de dificultad, PIN (RF-01), HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
+| Temporizador | 🟡 `TimerDisplay` en 5 pantallas. `TimeUpSequence` escrito, sin poner en escena |
+| PIN + dificultad (RF-01) | 🟡 Código listo (`SessionSetup`, `PinEntry`, `SceneLoader`). Falta la escena `Setup` |
+| HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
 **Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**, no
 intercambiando datos en caliente.
@@ -590,36 +601,42 @@ intercambiando datos en caliente.
 **Decidido el 15/09/2026:** los retos los abre **siempre el Director**. Mientras tanto, la
 atribución de telemetría depende de que cada paso llame a `StartScenario()`.
 
-**Pendiente inmediato, por orden de daño:**
+**Decidido el 29/09/2026:** PIN y dificultad se eligen en una escena `Setup` propia, en el
+visor, antes de pasárselo al niño. No dentro de la escena de juego: allí la run se abre en
+`Awake` con el PIN anterior, y elegir la otra dificultad obligaría a cargar la otra escena igual.
 
-- **Añadir un `DifficultyScene` a `Basico` y a `Intermedio`.** No está en ninguna de las dos, así
-  que `difficulty` sale de `PlayerPrefs` —o sea, de la última sesión— y abrir una escena desde el
-  editor produce un JSON que miente sin que nada lo detecte. `TelemetryManager` ya avisa al
-  arrancar
-- **El `pin` no está implementado.** Sin `SessionSetup` ni `PinEntry` en escena y sin
-  `IncrementPin` cableado, todas las runs salen con `pin: "0000"`. Los archivos no se pisan
-  porque el `sessionId` incrementa, pero **no hay forma de saber qué niño fue cuál**: si se
-  recogen datos antes de montar la pantalla del supervisor, hay que apuntar en papel la
-  correspondencia `sessionId` → participante
+**Pendiente inmediato, por orden de daño** (revisado contra las escenas el 29/09/2026):
+
+- **`Intermedio` está desactivada en Build Settings** (`enabled: 0`). No entra en el APK y
+  `SessionSetup` la rechaza. Marcar su casilla
+- **Montar la escena `Setup`** con `SessionSetup` + `PinEntry` (sin `TelemetryManager`), primera
+  en Build Settings. Hasta entonces todas las runs salen con el PIN guardado y **no hay forma de
+  saber qué niño fue cuál**: apuntar en papel `sessionId` → participante
+- **Volver a `Setup` al terminar:** un `SceneLoader` tras el paso "Subir JSON" del Director, en
+  las dos escenas. Espera solo a que acabe la subida
+- **Añadir un `DifficultyScene` a `Basico` (Básica) y a `Intermedio` (Avanzada).** Sin él,
+  `difficulty` sale de `PlayerPrefs`, o sea, de la última sesión
+- **Tiempo agotado:** poner `TimeUpSequence` en las dos escenas (Director, Narrator, frase,
+  uploader, `SceneLoader`), cablear `Timer.OnTimeUp → Begin()` y `Timer.Pause()` en el último
+  paso del Director. Hoy `OnTimeUp` está vacío y el tiempo sigue contando tras terminar
 - **Escenario 3: cablear `OnAttemptFailed` → `RoboticArm.ResetArm()`.** En intermedia, una
-  secuencia que recoge sin soltar deja el objeto en la pinza para siempre y el escenario sin
-  salida. En básica no puede pasar. Es un solo arrastre
-- Escenario 2: cablear `OnWrongOption` → `Narrator.PlayErrorLine()` en los tres módulos, y
-  cargar el banco `errorLines`
+  secuencia que recoge sin soltar deja el objeto en la pinza para siempre
+- Escenario 2: cablear `OnWrongOption` → `Narrator.PlayErrorLine()` en los 3 módulos de cada
+  escena, y cargar el banco `errorLines` (hoy una sola entrada, sin texto)
+- Temporizador: `alerts` vacíos (RF-06 pide avisos a 15, 10 y 5 minutos)
 - Escenario 3: verificar en el inspector qué `action` tiene cada bloque. `BloqueRotarI` y
   `BloqueRotarD` conservan los nombres viejos, y el rótulo visible es un `Text` hijo puesto a
   mano que no se actualiza solo
 - Puertas: las tres quedaron con `openingDistance: 2` y ahora el movimiento es vertical.
   Comprobar en Play que los paneles despejan el hueco sin meterse en el suelo ni el techo
-- Temporizador: `alerts` y `OnTimeUp` vacíos, y no hay ningún `Stop`/`Pause`. Sigue contando
-  tras `EndRun`
-- Escenario 4: renombrar los 34 recortes de `symbols.png` antes de recoger datos — el id de
-  telemetría es el nombre del recorte
-- Escenario 4: `ShapeChip.prefab` conserva en `shape` el guid de un asset borrado
+- Escenario 4: `ShapeChip.prefab` conserva en `shape` el guid de un asset borrado. Inofensivo
+  si cada ficha de escena lo sobreescribe, pero una ficha nueva nacería con figura rota
 - Las cuatro salas están activas desde el arranque: hay 3 `SetInactive` y un solo `SetActive`,
   que además es redundante
-- Borrar los `* 1.asset` de respaldo del Escenario 2: tienen el **mismo `moduleId`** que los
-  originales, y si alguno acabara asignado por error la telemetría no lo delataría
+
+Hecho el 29/09/2026: borrados los `* 1.asset` duplicados del Escenario 2; renombrados los 34
+recortes de `symbols.png`; arreglada la pérdida de telemetría a partir de la segunda sesión
+(`DontDestroyOnLoad`) y el corte de la subida al cambiar de escena.
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.

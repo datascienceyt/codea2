@@ -21,11 +21,11 @@ public class SessionSetup : MonoBehaviour
 
     [Header("Escenas de destino")]
     [Tooltip("Deben estar añadidas en File > Build Settings, o LoadScene falla.")]
-    [SerializeField] private string basicSceneName = "Basica";
+    [SerializeField] private string basicSceneName = "Basico";
 
     [Tooltip("Si un día unificas las dos dificultades en una sola escena, pon aquí el mismo " +
              "nombre que arriba: la dificultad se seguirá registrando bien.")]
-    [SerializeField] private string intermediateSceneName = "Intermedia";
+    [SerializeField] private string intermediateSceneName = "Intermedio";
 
     [Header("Transición")]
     [Tooltip("Margen antes de cargar, para que dé tiempo al fundido o al sonido del botón.")]
@@ -160,9 +160,9 @@ public class SessionSetup : MonoBehaviour
     /// anterior y cerrarse enseguida, que dejaría un JSON vacío en disco por cada sesión.
     /// Por eso esta pantalla NO necesita un TelemetryManager propio.
     ///
-    /// Pero si alguien pone uno igualmente, es DontDestroyOnLoad: sobrevive al cambio de
-    /// escena, el de la escena de juego se autodestruye y manda el de aquí, que ya abrió su
-    /// run en Awake con el PIN viejo. Por eso, si existe, se le aplica también en caliente.
+    /// Si alguien pone uno igualmente, ya habrá abierto su run en Awake con el PIN viejo. Se le
+    /// aplica también en caliente para que ese archivo al menos no mienta; al cargar la escena
+    /// de juego se cierra con esta, y la run buena la abre el de allí.
     /// </summary>
     private void ApplySession()
     {

@@ -88,25 +88,29 @@ public class TelemetryManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        // Uno por escena, y SIN DontDestroyOnLoad. Lo hubo, y rompía la segunda sesión: al
+        // volver a cargar la escena de juego sobrevivía el de la sesión anterior y el nuevo se
+        // autodestruía, pero los UnityEvent de la escena (StartChallenge, CompleteChallenge,
+        // EndRun...) apuntan al de SU escena. Unity se salta en silencio las llamadas a un
+        // objeto destruido, así que desde el segundo niño esos datos no llegaban nunca.
+        //
+        // Solo se descarta el duplicado de la MISMA escena. Uno de otra escena es el de la
+        // que se está descargando: se le releva y su OnDestroy ya no tocará Instance.
+        if (Instance != null && Instance != this && Instance.gameObject.scene == gameObject.scene)
         {
+            Debug.LogWarning($"[Telemetry] Hay dos TelemetryManager en '{gameObject.scene.name}'. " +
+                             "Se descarta este.", this);
             Destroy(gameObject);
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
 
         // La run se abre en Awake, no en Start: Scenario1Controller.StartChallenge() corre
         // en su propio Start() y el orden entre dos Start() no está garantizado. Si la run
         // no existiera todavía, el reto se registraría contra null y se perdería en silencio.
 
-        // ID secuencial persistido: sigue subiendo aunque la app se cierre o el headset se reinicie
-        _sessionId = PlayerPrefs.GetInt(SessionCounterKey, 0) + 1;
-        PlayerPrefs.SetInt(SessionCounterKey, _sessionId);
-
         // Dificultad: configuración fija de la sesión, no varía por reto
         _currentDifficulty = (Difficulty)PlayerPrefs.GetInt(DifficultyPrefKey, (int)Difficulty.Basica);
-        PlayerPrefs.Save();
 
         BeginRun(PlayerPrefs.GetInt(PinCounterKey, 0).ToString("D4"));
     }
@@ -136,6 +140,13 @@ public class TelemetryManager : MonoBehaviour
     /// </summary>
     private void BeginRun(string pin)
     {
+        // ID secuencial persistido: sigue subiendo aunque la app se cierre o el headset se
+        // reinicie. Va aquí y no en Awake para que cada run tenga el suyo, también las que
+        // abre SetPin: con el mismo sessionId, repetir un PIN pisaría el archivo anterior.
+        _sessionId = PlayerPrefs.GetInt(SessionCounterKey, 0) + 1;
+        PlayerPrefs.SetInt(SessionCounterKey, _sessionId);
+        PlayerPrefs.Save();
+
         _run = new RunRecord
         {
             pin = pin,
@@ -747,6 +758,20 @@ public class TelemetryManager : MonoBehaviour
     {
         EndRun();
         Flush();
+    }
+
+    /// <summary>
+    /// La run pertenece a su escena: al descargarla se cierra con ella. SceneLoader ya lo hace
+    /// antes de cambiar, pero cualquier otro camino (un LoadScene suelto) perdería lo diferido.
+    /// </summary>
+    private void OnDestroy()
+    {
+        if (Instance != this) return;
+
+        Flush();
+        EndRun();
+
+        Instance = null;
     }
 
     public string GetCurrentFilePath() => _filePath;

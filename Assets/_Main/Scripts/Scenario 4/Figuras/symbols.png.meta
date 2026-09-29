@@ -110,7 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: symbols_0
+      name: palanca_centro
       rect:
         serializedVersion: 2
         x: 0
@@ -132,7 +132,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_1
+      name: palanca_extremo
       rect:
         serializedVersion: 2
         x: 256
@@ -154,7 +154,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_2
+      name: palanca_diagonal_centro
       rect:
         serializedVersion: 2
         x: 512
@@ -176,7 +176,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_3
+      name: palanca_diagonal_extremo
       rect:
         serializedVersion: 2
         x: 768
@@ -198,7 +198,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_4
+      name: flecha_cuadrado_1punta
       rect:
         serializedVersion: 2
         x: 1024
@@ -220,7 +220,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_5
+      name: flecha_circulo_2puntas
       rect:
         serializedVersion: 2
         x: 1280
@@ -242,7 +242,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_6
+      name: flecha_cuadrado_3puntas
       rect:
         serializedVersion: 2
         x: 1536
@@ -264,7 +264,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_7
+      name: flecha_sola
       rect:
         serializedVersion: 2
         x: 1792
@@ -286,7 +286,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_8
+      name: tresenraya_x1_o9
       rect:
         serializedVersion: 2
         x: 0
@@ -308,7 +308,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_9
+      name: tresenraya_o1_x3
       rect:
         serializedVersion: 2
         x: 256
@@ -330,7 +330,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_10
+      name: tresenraya_x2_o4
       rect:
         serializedVersion: 2
         x: 512
@@ -352,7 +352,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_11
+      name: tresenraya_x5_o7
       rect:
         serializedVersion: 2
         x: 768
@@ -374,7 +374,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_12
+      name: circulo_punto_borde
       rect:
         serializedVersion: 2
         x: 1024
@@ -396,7 +396,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_13
+      name: circulo_punto_dentro
       rect:
         serializedVersion: 2
         x: 1280
@@ -418,7 +418,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_14
+      name: circulo_punto_fuera
       rect:
         serializedVersion: 2
         x: 1536
@@ -440,7 +440,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_15
+      name: cuadrado_punto
       rect:
         serializedVersion: 2
         x: 1792
@@ -462,7 +462,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_16
+      name: triangulo_cuadrado_relleno
       rect:
         serializedVersion: 2
         x: 0
@@ -484,7 +484,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_17
+      name: trianguloinv_trianguloinv_relleno
       rect:
         serializedVersion: 2
         x: 256
@@ -506,7 +506,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_18
+      name: persona_circulo_palo
       rect:
         serializedVersion: 2
         x: 512
@@ -528,7 +528,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_19
+      name: persona_cuadrado_ovalo
       rect:
         serializedVersion: 2
         x: 768
@@ -550,7 +550,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_20
+      name: persona_triangulo_rectangulo
       rect:
         serializedVersion: 2
         x: 1024
@@ -572,7 +572,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_21
+      name: persona_cuadrado_rectangulo
       rect:
         serializedVersion: 2
         x: 1280
@@ -594,7 +594,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_22
+      name: persona_triangulo_palo
       rect:
         serializedVersion: 2
         x: 1536
@@ -616,7 +616,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_23
+      name: persona_circulo_ovalo
       rect:
         serializedVersion: 2
         x: 1792
@@ -638,7 +638,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_24
+      name: cuadrado_cuadrado
       rect:
         serializedVersion: 2
         x: 0
@@ -660,7 +660,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_25
+      name: circulo_cuadrado
       rect:
         serializedVersion: 2
         x: 256
@@ -682,7 +682,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_26
+      name: cuadrado_rombo
       rect:
         serializedVersion: 2
         x: 512
@@ -704,7 +704,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_27
+      name: triangulo_circulo
       rect:
         serializedVersion: 2
         x: 768
@@ -726,7 +726,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_28
+      name: cuadrado_circulo
       rect:
         serializedVersion: 2
         x: 1024
@@ -748,7 +748,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_29
+      name: circulo_triangulo
       rect:
         serializedVersion: 2
         x: 1280
@@ -770,7 +770,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_30
+      name: circulo_rombo
       rect:
         serializedVersion: 2
         x: 1536
@@ -792,7 +792,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_31
+      name: cuadrado_trianguloinv
       rect:
         serializedVersion: 2
         x: 1792
@@ -814,7 +814,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_32
+      name: circulo_circulo
       rect:
         serializedVersion: 2
         x: 0
@@ -836,7 +836,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: symbols_33
+      name: triangulo_cuadrado
       rect:
         serializedVersion: 2
         x: 256
@@ -873,41 +873,41 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":8.0,"y":8.0},"gridSpriteSize":{"x":256.0,"y":256.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":1,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      symbols_0: 2020411499
-      symbols_1: 2064227915
-      symbols_10: 1601160004
-      symbols_11: 260125775
-      symbols_12: -1555214740
-      symbols_13: -1127539768
-      symbols_14: 357070111
-      symbols_15: -1337378449
-      symbols_16: 547148161
-      symbols_17: 975885998
-      symbols_18: 967046999
-      symbols_19: 724691337
-      symbols_2: -1416096834
-      symbols_20: 2112105327
-      symbols_21: -478941162
-      symbols_22: 421301602
-      symbols_23: -1836198451
-      symbols_24: 1834104340
-      symbols_25: -1257132185
-      symbols_26: -1480462496
-      symbols_27: 995666250
-      symbols_28: -100504426
-      symbols_29: -813502489
-      symbols_3: 279526759
-      symbols_30: -1597900731
-      symbols_31: 1541955196
-      symbols_32: 211273640
-      symbols_33: -1361413706
+      palanca_centro: 2020411499
+      palanca_extremo: 2064227915
+      tresenraya_x2_o4: 1601160004
+      tresenraya_x5_o7: 260125775
+      circulo_punto_borde: -1555214740
+      circulo_punto_dentro: -1127539768
+      circulo_punto_fuera: 357070111
+      cuadrado_punto: -1337378449
+      triangulo_cuadrado_relleno: 547148161
+      trianguloinv_trianguloinv_relleno: 975885998
+      persona_circulo_palo: 967046999
+      persona_cuadrado_ovalo: 724691337
+      palanca_diagonal_centro: -1416096834
+      persona_triangulo_rectangulo: 2112105327
+      persona_cuadrado_rectangulo: -478941162
+      persona_triangulo_palo: 421301602
+      persona_circulo_ovalo: -1836198451
+      cuadrado_cuadrado: 1834104340
+      circulo_cuadrado: -1257132185
+      cuadrado_rombo: -1480462496
+      triangulo_circulo: 995666250
+      cuadrado_circulo: -100504426
+      circulo_triangulo: -813502489
+      palanca_diagonal_extremo: 279526759
+      circulo_rombo: -1597900731
+      cuadrado_trianguloinv: 1541955196
+      circulo_circulo: 211273640
+      triangulo_cuadrado: -1361413706
       symbols_34: -486247125
       symbols_35: 358899728
       symbols_36: 762410331
       symbols_37: -1489833645
       symbols_38: -769432146
       symbols_39: 1349922608
-      symbols_4: -1324672641
+      flecha_cuadrado_1punta: -1324672641
       symbols_40: -2022791686
       symbols_41: 1199504815
       symbols_42: 1812554876
@@ -918,7 +918,7 @@ TextureImporter:
       symbols_47: -1630709641
       symbols_48: -1580756319
       symbols_49: -1349221352
-      symbols_5: 1302297168
+      flecha_circulo_2puntas: 1302297168
       symbols_50: -1408076960
       symbols_51: -233851451
       symbols_52: 1586158951
@@ -929,10 +929,10 @@ TextureImporter:
       symbols_57: 1429271119
       symbols_58: 1394681233
       symbols_59: 1993594067
-      symbols_6: -539053095
-      symbols_7: 1019007795
-      symbols_8: -1397688809
-      symbols_9: 2077734288
+      flecha_cuadrado_3puntas: -539053095
+      flecha_sola: 1019007795
+      tresenraya_x1_o9: -1397688809
+      tresenraya_o1_x3: 2077734288
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

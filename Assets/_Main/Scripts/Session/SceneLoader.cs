@@ -24,6 +24,11 @@ public class SceneLoader : MonoBehaviour
              "la escena. Desactívalo solo si cargas otra escena a mitad de la misma sesión.")]
     [SerializeField] private bool closeRunBeforeLoading = true;
 
+    [Tooltip("Segundos máximos esperando a que termine la subida del JSON antes de cargar. " +
+             "Cargar a mitad la corta, porque la subida vive en esta escena. Si se agota la " +
+             "espera el archivo no se pierde: se queda en el visor.")]
+    [SerializeField] private float maxUploadWait = 20f;
+
     [Header("Eventos")]
     [Tooltip("Justo antes de cargar: fundido, sonido...")]
     public UnityEvent OnLoading;
@@ -70,6 +75,17 @@ public class SceneLoader : MonoBehaviour
     private IEnumerator LoadAfterDelay(string scene)
     {
         yield return new WaitForSeconds(loadDelay);
+
+        float waitUntil = Time.unscaledTime + maxUploadWait;
+
+        if (JSONUploader.PendingUploads > 0)
+            Debug.Log("[Escenas] Esperando a que termine la subida del JSON...", this);
+
+        yield return new WaitUntil(() => JSONUploader.PendingUploads == 0 || Time.unscaledTime >= waitUntil);
+
+        if (JSONUploader.PendingUploads > 0)
+            Debug.LogWarning("[Escenas] La subida no terminó a tiempo; se carga igual. " +
+                             "El JSON sigue en el visor.", this);
 
         SceneManager.LoadScene(scene);
     }

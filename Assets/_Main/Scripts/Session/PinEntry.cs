@@ -29,6 +29,10 @@ public class PinEntry : MonoBehaviour
     [Tooltip("Con qué se dibujan las cifras que faltan por teclear.")]
     [SerializeField] private string emptyChar = "_";
 
+    [Tooltip("Al abrir la pantalla, deja puesto el PIN siguiente al último usado. El " +
+             "supervisor solo tiene que confirmarlo, o borrarlo y teclear otro.")]
+    [SerializeField] private bool proposeNextPinOnStart = true;
+
     [Header("Eventos")]
     [Tooltip("Cada vez que cambia lo tecleado: sonido de tecla, refrescar el botón de empezar...")]
     public UnityEvent OnChanged;
@@ -52,7 +56,11 @@ public class PinEntry : MonoBehaviour
         digits = Mathf.Clamp(digits, 1, 9);
     }
 
-    private void Start() => Refresh();
+    private void Start()
+    {
+        if (proposeNextPinOnStart) UseNextPin();
+        else Refresh();
+    }
 
     /// <summary>Cablear aquí cada tecla del 0 al 9, con su cifra como argumento.</summary>
     public void AppendDigit(int digit)
