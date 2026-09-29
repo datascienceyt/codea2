@@ -3,7 +3,7 @@
 > Documento para el equipo de evaluación. Describe **qué registra el juego** en cada escenario
 > y qué permite observar cada variable.
 >
-> Estado verificado contra el código el **26/08/2026**.
+> Estado verificado contra el código el **23/09/2026**.
 
 ---
 
@@ -24,8 +24,8 @@ Esto es importante para no planificar un análisis sobre datos que aún no exist
 |---|---|---|
 | 1 — Secuencialidad | ✅ Completo | ✅ Sí, verificado en visor |
 | 2 — Condicionales | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
-| 3 — Bucles | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
-| 4 — Patrones | ✅ Completo | ❌ **No. Falta montarlo en escena** |
+| 3 — Bucles y parámetros | ✅ Completo, **rediseñado** | 🟡 Montado en escena, **pendiente de probar** |
+| 4 — Patrones | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
 
 Las variables de los escenarios 2, 3 y 4 **están implementadas en código**, pero ese código
 todavía no se ha ejecutado en una sesión real. Son un compromiso firme de qué se va a
@@ -39,7 +39,9 @@ recoger, no datos disponibles hoy.
 - Se guarda en el visor y se conserva siempre, aunque no haya red
 - El supervisor lo envía al servidor con un botón dedicado (no es automático)
 - Todas las marcas de tiempo son **ISO-8601 en UTC**
-- Los booleanos se guardan como **0 / 1** para facilitar el volcado a tabla
+- Los indicadores por registro (`solved`, `correct`, `selected`) se guardan como **0 / 1** para
+  facilitar el volcado a tabla. Excepción: `started` y `completed` son booleanos de verdad,
+  `true` / `false`
 
 ---
 
@@ -55,9 +57,10 @@ Se registran una vez por participante.
 | `startedUtc` | fecha | Inicio de la sesión |
 | `endedUtc` | fecha | Cierre de la sesión |
 
-> `pin` **no es un nombre de usuario**. El SRS contempla pedir un username al jugador, pero
-> eso todavía no está implementado. Hoy la identificación depende de que el supervisor anote
-> qué PIN corresponde a qué participante.
+> `pin` **no es un nombre de usuario**, y **hoy todavía no se asigna**: la pantalla del
+> supervisor no está montada, así que todas las sesiones salen con `pin: "0000"`. Los archivos
+> no se pisan porque `sessionId` sí cambia en cada arranque, pero **el emparejamiento con cada
+> niño depende de que el supervisor anote qué `sessionId` corresponde a quién**.
 
 ## Variables comunes de cada escenario
 
@@ -65,8 +68,8 @@ Presentes en los cuatro.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `started` | 0/1 | Si el participante llegó a este escenario |
-| `completed` | 0/1 | Si lo resolvió |
+| `started` | `true`/`false` | Si el participante llegó a este escenario |
+| `completed` | `true`/`false` | Si lo resolvió |
 | `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve |
 | `startedUtc` / `endedUtc` | fecha | Permiten reconstruir el ritmo de la sesión completa |
 
@@ -119,8 +122,9 @@ ver cómo evoluciona la estrategia.
 
 **Pilares de diseño:** reconocimiento de patrones, diseño de algoritmos.
 
-Tres módulos averiados de la nave. Cada uno enuncia un problema en texto (*"Los motores no
-encienden: el tanque de combustible está vacío"*) y ofrece varias acciones. Los botones
+Tres módulos averiados de la nave. Cada uno describe en texto **lo que se observa**, no la
+causa (*"Los motores hacen ruido pero no arrancan. Su tanque está vacío"*), y ofrece varias
+acciones: el niño tiene que deducir qué falta. Los botones
 **alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el conjunto
 elegido coincide **exactamente** con el correcto: ni de menos ni de más. Se puede reintentar
 sin límite.
@@ -171,41 +175,73 @@ gracias a `selected`, distinguir a quien duda y se corrige de quien acierta a la
 
 ---
 
-# Escenario 3 — Bucles
+# Escenario 3 — Bucles y parámetros
 
-**Pilares de diseño:** reconocimiento de patrones, abstracción.
+**Pilares de diseño:** reconocimiento de patrones, abstracción, parametrización.
 
-El niño programa un brazo robótico con un bloque **Repetir** que envuelve un ciclo del tipo
-"Recoger, Girar, Soltar, Girar". Hay pocos bloques sueltos, así que resolverlo sin el bucle
-no es viable.
+El niño programa un brazo robótico que tiene que **clasificar** una pila mezclada: los barriles
+rojos a la izquierda y las cajas azules a la derecha. La fila de instrucciones entera es el
+bucle, y un contador dice cuántas veces se repite.
 
-- **Básica:** solo define cuántas repeticiones.
-- **Intermedia:** además tiene que ordenar bien las instrucciones dentro del bucle.
+Además hay un **hueco aparte** donde se pone una ficha —barril o caja— que decide qué recoge el
+brazo. No es una instrucción: es el **dato** con el que se ejecuta el programa. La misma
+secuencia sirve para los dos tipos cambiando solo esa ficha, y eso es lo que el escenario
+enseña.
+
+Hacen falta **al menos dos ejecuciones**, una por tipo. Se puede resolver en más —muchas
+ejecuciones con pocas repeticiones— pero es menos eficiente, y eso queda registrado.
+
+- **Básica:** elige las repeticiones y la ficha. La fila viene hecha y no se puede tocar; el
+  giro hacia el lado correcto lo resuelve el propio bloque *"Girar al destino"*.
+- **Intermedia:** además tiene que **ordenar** las instrucciones, con giros explícitos a
+  izquierda y derecha. Entre una pasada y otra el sentido cambia, así que la fila también.
+
+Sin ficha puesta el programa **no se ejecuta** y tampoco cuenta como intento: se registra solo
+como error de lógica.
 
 ## Variables del escenario
 
-Las mismas que el Escenario 1 (`resets`, `blocksGrabbed`, `blocksReleased`, contadores de
-error), porque también se resuelve manipulando bloques.
+| Variable | Tipo | Qué permite observar |
+|---|---|---|
+| `failedAttempts` | entero | Ejecuciones que **no clasificaron ningún objeto**. Una pasada que mueve algunos pero no todos no cuenta como fallida: es menos óptima, no errónea |
+| `blocksGrabbed` / `blocksReleased` | entero | Manipulación de bloques **y de fichas de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
+| `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha |
+| `errorCollisionBot`, `errorIncompleteSequence` | entero | No se usan en este escenario. Siempre 0 |
+
+Soltar un objeto en el lado equivocado **no se consuma**: el objeto vuelve a su pila y solo se
+registra el error. Así el niño ve la consecuencia sin tener que rescatar el objeto.
 
 ## Variables por intento
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `sequence` | lista de textos | **Las instrucciones del bucle, en orden.** La fila entera es el ciclo que se repite |
+| `itemType` | texto | **Con qué ficha se ejecutó**: `"Barril"` o `"Caja"` |
+| `sequence` | lista de textos | **Las instrucciones del bucle, en orden** |
 | `repetitions` | entero | **Cuántas repeticiones eligió** |
-| `solved` | 0/1 | Si resolvió |
+| `solved` | 0/1 | 1 solo en la ejecución que completó el escenario |
 | `durationSeconds` | decimal | Tiempo de preparación del intento |
 | `timestamp` | fecha | Cuándo |
 
-**`repetitions` y `sequence` son las dos variables clave del escenario**, y miden cosas
-distintas:
+Las tres primeras son las claves del escenario y miden cosas distintas:
 
-- `repetitions` → reconocimiento de patrones: ¿identificó *cuántas veces* se repite el ciclo?
-- `sequence` → abstracción: ¿identificó *cuál* es la unidad que se repite, y en qué orden?
+- `repetitions` → reconocimiento de patrones: ¿identificó **cuántas veces** hay que repetir?
+- `sequence` → abstracción: ¿identificó **cuál** es la unidad que se repite, y en qué orden?
+  En básica es siempre la misma; solo es informativa en intermedia.
+- `itemType` → parametrización: ¿entendió que el **mismo programa** sirve para otro caso
+  cambiando solo el dato?
 
-Un niño puede acertar una y fallar la otra, y eso es información pedagógica valiosa. La
-secuencia de `repetitions` a lo largo de los intentos también revela si converge por
-aproximación sistemática o probando al azar.
+Sin `itemType`, dos intentos con la misma secuencia y las mismas repeticiones serían
+indistinguibles siendo tareas distintas.
+
+**Patrones que vale la pena buscar:**
+
+- **Dos intentos, uno por tipo, con `repetitions` igual al número de objetos de cada uno:** la
+  solución óptima. Entendió el bucle y el parámetro a la vez
+- **Muchos intentos con `repetitions: 1`:** resuelve, pero no está usando el bucle
+- **El mismo `itemType` dos veces seguidas, con el segundo fallido:** ejecutó otra vez sobre
+  una pila ya vacía. No relacionó que ya había terminado con ese tipo
+- **`errorInvalidCommand` alto con `repetitions` mayor que los objetos:** se pasa de vueltas.
+  Cuenta mal, o no relaciona el número con la cantidad de objetos
 
 ---
 
@@ -250,6 +286,8 @@ Estas no se guardan, pero se calculan directamente desde lo anterior:
 | **Distancia entre intentos** | Comparar `sequence` de intentos consecutivos | Distingue corrección **sistemática** de ensayo-error aleatorio |
 | **Tasa de error por módulo** | Agrupar `selections` por `module` | Validar el efecto del *fading* (Esc. 2) |
 | **Convergencia del bucle** | Serie de `repetitions` por intento | Estrategia de aproximación (Esc. 3) |
+| **Eficiencia de pasadas** | Nº de intentos del Esc. 3 frente al óptimo de 2, uno por `itemType` | Si usa el bucle o lo sustituye por ejecuciones repetidas (Esc. 3) |
+| **Transferencia del parámetro** | Comparar la `sequence` de los intentos con distinto `itemType` | Si entiende que el mismo programa sirve cambiando el dato (Esc. 3, intermedia) |
 | **Matriz de confusión de figuras** | Cruzar `chip` × `socket` en los fallos | Qué equivalencias falsas construye (Esc. 4) |
 
 La de **distancia entre intentos** merece atención especial: comparar la secuencia del intento
@@ -268,7 +306,8 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
    estaba mal". **Es una decisión pedagógica pendiente**, y si os interesa esa distinción hay
    que definirla antes de recoger datos.
 
-2. **No hay identificación nominal.** Solo `pin`. El emparejamiento con encuestas u otros
+2. **No hay identificación nominal, y el `pin` aún no se asigna.** Todas las sesiones salen
+   con `"0000"` y solo las distingue `sessionId`. El emparejamiento con encuestas u otros
    instrumentos depende de un registro externo que lleve el supervisor.
 
 3. **`blocksGrabbed` / `blocksReleased` miden manipulación, no colocaciones válidas.** Incluyen
@@ -339,16 +378,13 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario3": {
         "started": true,
         "completed": true,
-        "totalSeconds": 96.4,
-        "resets": 1,
+        "totalSeconds": 121.7,
+        "failedAttempts": 1,
+        "errorInvalidCommand": 3,
         "attempts": [
-            {
-                "sequence": ["Repetir x3"],
-                "loopBody": ["Recoger", "Girar Derecha", "Soltar", "Girar Izquierda"],
-                "repetitions": 3,
-                "solved": 1,
-                "timestamp": "..."
-            }
+            { "itemType": "Caja",   "repetitions": 7, "solved": 0, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Caja",   "repetitions": 3, "solved": 0, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Barril", "repetitions": 3, "solved": 1, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." }
         ]
     },
 
@@ -368,9 +404,14 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
 }
 ```
 
-En ese fragmento se lee de un vistazo lo que mide el escenario: confundió `glifo_12` con
+En el Escenario 4 se lee de un vistazo lo que mide el escenario: confundió `glifo_12` con
 `glifo_11` y acertó al segundo intento. Ese par concreto es lo que interesa, porque señala qué
 dos figuras resultaron demasiado parecidas.
+
+En el Escenario 3 se lee la historia de las tres ejecuciones: movió las 7 cajas de una pasada,
+**volvió a ejecutar con caja** sobre una pila ya vacía —los 3 `Recoger` fallaron, de ahí
+`errorInvalidCommand: 3` y el intento fallido—, y después cambió la ficha a barril y terminó.
+Solución casi óptima, con un error concreto: no relacionó que ya había acabado con ese tipo.
 
 ---
 

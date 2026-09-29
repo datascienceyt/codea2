@@ -118,37 +118,53 @@
         "startedUtc": "2026-09-15T14:08:14.2260000Z",
         "endedUtc": "2026-09-15T14:10:15.9370000Z",
         "failedAttempts": 1,
-        "blocksGrabbed": 6,
-        "blocksReleased": 6,
+        "blocksGrabbed": 3,
+        "blocksReleased": 3,
         "errorCollisionBot": 0,
         "errorIncompleteSequence": 0,
-        "errorInvalidCommand": 1,
+        "errorInvalidCommand": 3,
         "attempts": [
             {
                 "difficulty": 1,
                 "sequence": [
                     "Recoger",
+                    "Girar al destino",
                     "Soltar",
-                    "Girar Derecha",
-                    "Girar Izquierda"
+                    "Volver"
                 ],
-                "repetitions": 4,
+                "repetitions": 7,
+                "itemType": "Caja",
                 "solved": 0,
-                "durationSeconds": 52.4,
-                "timestamp": "2026-09-15T14:09:06.6310000Z"
+                "durationSeconds": 38.2,
+                "timestamp": "2026-09-15T14:08:52.4260000Z"
             },
             {
                 "difficulty": 1,
                 "sequence": [
                     "Recoger",
-                    "Girar Derecha",
+                    "Girar al destino",
                     "Soltar",
-                    "Girar Izquierda"
+                    "Volver"
                 ],
-                "repetitions": 4,
+                "repetitions": 3,
+                "itemType": "Caja",
+                "solved": 0,
+                "durationSeconds": 6.1,
+                "timestamp": "2026-09-15T14:09:31.0170000Z"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar al destino",
+                    "Soltar",
+                    "Volver"
+                ],
+                "repetitions": 3,
+                "itemType": "Barril",
                 "solved": 1,
-                "durationSeconds": 41.8,
-                "timestamp": "2026-09-15T14:10:01.4650000Z"
+                "durationSeconds": 12.4,
+                "timestamp": "2026-09-15T14:09:52.2380000Z"
             }
         ]
     },
