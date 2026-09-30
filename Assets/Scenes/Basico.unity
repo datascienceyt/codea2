@@ -8866,6 +8866,18 @@ MonoBehaviour:
               m_StringArgument: 
               m_BoolArgument: 0
             m_CallState: 2
+          - m_Target: {fileID: 2022672421}
+            m_TargetAssemblyTypeName: Scenario2Controller, Assembly-CSharp
+            m_MethodName: StartScenario
+            m_Mode: 0
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: 
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
       waitActions:
       - {fileID: 1195506162}
       - {fileID: 1195506162}
@@ -9039,7 +9051,19 @@ MonoBehaviour:
       completionType: 2
       instantEvents:
         m_PersistentCalls:
-          m_Calls: []
+          m_Calls:
+          - m_Target: {fileID: 1693037009}
+            m_TargetAssemblyTypeName: Scenario3Controller, Assembly-CSharp
+            m_MethodName: StartScenario
+            m_Mode: 0
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: 
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
       waitActions:
       - {fileID: 1195506162}
       - {fileID: 1195506162}
@@ -9147,7 +9171,19 @@ MonoBehaviour:
       completionType: 2
       instantEvents:
         m_PersistentCalls:
-          m_Calls: []
+          m_Calls:
+          - m_Target: {fileID: 53769888}
+            m_TargetAssemblyTypeName: Scenario4Controller, Assembly-CSharp
+            m_MethodName: StartScenario
+            m_Mode: 0
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: 
+              m_IntArgument: 0
+              m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
       waitActions:
       - {fileID: 1195506162}
       - {fileID: 1195506162}
@@ -9210,6 +9246,18 @@ MonoBehaviour:
               m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
               m_IntArgument: 0
               m_FloatArgument: 0
+              m_StringArgument: 
+              m_BoolArgument: 0
+            m_CallState: 2
+          - m_Target: {fileID: 759612287}
+            m_TargetAssemblyTypeName: Waiter, Assembly-CSharp
+            m_MethodName: SetSeconds
+            m_Mode: 4
+            m_Arguments:
+              m_ObjectArgument: {fileID: 0}
+              m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+              m_IntArgument: 0
+              m_FloatArgument: 10
               m_StringArgument: 
               m_BoolArgument: 0
             m_CallState: 2

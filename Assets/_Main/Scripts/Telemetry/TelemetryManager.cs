@@ -305,22 +305,22 @@ public class TelemetryManager : MonoBehaviour
         // El escenario activo se recuerda siempre, aunque todavía no tenga métricas:
         // así los overloads sin argumentos saben a quién dirigirse cuando las tenga.
         _currentChallengeId = challengeId;
+
+        ScenarioRecord scenario = GetScenario(challengeId);
+
+        // Idempotente: la PRIMERA llamada fija el inicio y las siguientes no lo tocan. El reto
+        // se abre al llegar a la sala, antes de la narración, y el controlador vuelve a
+        // abrirlo al terminar esta. Antes la segunda llamada reiniciaba el cronómetro, y como
+        // el niño ya manipula durante la narración, el primer intento quedaba ANTES del
+        // inicio del escenario y totalSeconds no contaba ese tiempo.
+        if (scenario != null && scenario.started && !scenario.completed) return;
+
         _challengeStartTimes[challengeId] = Time.time;
 
         // El primer intento se cronometra desde el arranque del escenario.
         _attemptCycleStart = Time.time;
 
-        ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null) return;
-
-        // Volver a iniciar un escenario ya iniciado le pisa la hora de inicio y el cronómetro:
-        // totalSeconds acabaría midiendo solo desde la última llamada, no desde que el niño
-        // empezó de verdad. Pasa al cablear StartChallenge en varios pasos, o junto a un
-        // StartScenario del controlador que ya lo llama por su cuenta.
-        if (scenario.started && !scenario.completed)
-            Debug.LogWarning($"[Telemetry] '{challengeId}' ya estaba iniciado; se reinicia su " +
-                             "hora de inicio y su cronómetro. ¿Está StartChallenge cableado en " +
-                             "más de un sitio, o junto a un StartScenario que ya lo llama?");
 
         scenario.started = true;
         scenario.startedUtc = NowUtc();

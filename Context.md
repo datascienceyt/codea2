@@ -168,11 +168,35 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 | | Archivo | Solución | Paleta · huecos |
 |---|---|---|---|
 | Básica | `reto.json` (6×5) | 8 bloques: Avanzar · Girar Der · Avanzar 2 · Avanzar · Girar Der · Avanzar 2 · Girar Izq · Usar | 8 · 8, sin sobrantes |
-| Intermedia | `escenario1_intermedio.json` (7×5) | 9 bloques: Girar Izq · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Usar | 12 · 10, con 3 sobrantes |
+| Intermedia | `escenario1_intermedio.json` (6×5) | Un camino de 11 y un distractor de 14; ver abajo | 13 · 11 |
 
-El robot empieza mirando **abajo** (`direction: 2` del prefab). En intermedia eso es una pared:
-el primer bloque tiene que ser un giro. Los peligros están justo donde acaba cada tramo, para
-castigar pasarse de largo. La paleta y los huecos de intermedia están por montar.
+**Los dos niveles comparten la geometría de la sala**: 6×5, Salida en **(0,1)**, que es donde
+está el botón verde físico (la casilla Salida solo es lógica; el botón es decorado), y robot en
+**(4,2) mirando abajo** (`direction: 2` del prefab; la frase 5 dice que se ve a la derecha).
+Un nivel con otra geometría deja la meta lógica lejos del botón. Pasó con la primera versión
+del intermedio.
+
+**El botón solo se usa de frente:** desde **(1,1) mirando a la izquierda**. Está en una pared,
+así que llegar a (0,0) o (0,2) y girarse hacia la Salida no vale aunque el código lo aceptara.
+Los dos niveles terminan siempre con el robot en (1,1).
+
+```
+   0 1 2 3 4 5        Intermedia (diseño del 30/09/2026). S = salida · R = robot · ! = peligro
+0    ! ! · · ·
+1  S · · · █ ·        (1,1) = la casilla de enfrente del botón
+2    · █ █ R ·
+3    · · · █ ·
+4    ! ! · · ·
+```
+
+Simétrico arriba y abajo, verificado por búsqueda exhaustiva:
+
+- **Por arriba (la solución, 11 bloques):** Girar Izq · Avanzar · Girar Izq · Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar 2 · Usar
+- **Por abajo (el distractor, 14 bloques):** llega también a (1,1), pero no cabe en los **11 huecos** de la fila
+
+Paleta de 13 (Girar Izq ×4, Girar Der ×2, Avanzar 2 ×4, Avanzar ×2, Usar ×1): los 11 de la
+solución más un Girar Derecha y un Avanzar 2 de sobra. Huecos y paleta están en
+`CodeaSceneTools` (`IntermediateSockets`, `IntermediatePalette`).
 
 ### Escenario 2 — Condicionales *(montado, sin probar en visor)*
 
@@ -416,7 +440,7 @@ análisis sin tener que jugar una sesión entera.
 
 | Dato | Dónde |
 |---|---|
-| Inicio / fin de escenario | `ScenarioNController`, **desde código** en los cuatro. El Director lo repite por evento; es idempotente |
+| Inicio / fin de escenario | Escenarios 2–4: el **primer paso** de su escenario en el Director llama a `StartScenario`, antes de la narración, porque el niño manipula mientras escucha. El controlador lo repite después; `StartChallenge` es idempotente y **gana la primera llamada**. Escenario 1: arranca con el temporizador. `totalSeconds` incluye por tanto la narración de la sala |
 | Intento (secuencia + repeticiones + tipo) | `ProgramTrigger.OnPlayPressed`. El `itemType` lo aporta la `IRunPrecondition`, así que sin el socket de tipo en `preconditions` sale vacío |
 | Piezas agarradas / soltadas | `BlockNode.OnGrabbed` / `OnReleased`, **desde código**. Enruta a `blocksGrabbed` (esc. 1 y 3) o a `chipsGrabbed` (esc. 4) según el reto activo |
 | Colisión / comando inválido | `LevelManager.ValidMovementInGrid`, `Bot.Use` (esc. 1) · `RoboticArm.OnInvalidAction` y `ArmTypeSocket.CanRun` (esc. 3) |
@@ -639,10 +663,12 @@ respaldos en `_Recovery/`, que no son escenas activas.
 |---|---|
 | Escena `Setup` | ✅ Montada con la herramienta: 15 teclas cableadas, sin `TelemetryManager` |
 | Sesión en `Basico` | ✅ `DifficultyScene`, `SceneLoader`, `TimeUpSequence` (frase `20`) y paso final "Volver a Setup" |
-| Escenario 1 | ✅ Verificado en visor. Nivel intermedio escrito (`escenario1_intermedio.json`), sin montar |
-| Escenario 2 | ✅ 4 opciones en básica, `OnWrongOption → PlayErrorLine` en los 3 módulos. Sin probar en visor |
-| Escenario 3 | ✅ `preconditions` corregida (apuntaba a las fichas), pinza arreglada, repeticiones a 0 al poner la ficha. Sin probar en visor |
-| Escenario 4 | ✅ Fichas con física, rechazo con empujón (`rejectSpeed` 4) y sonido, reinicio que respeta las acertadas, sonido de motores al completar. Sin probar en visor |
+| Escenario 1 | ✅ Verificado en visor. Nivel intermedio definitivo (`escenario1_intermedio.json`, 11 huecos, paleta 13); la herramienta 3 lo monta |
+| Escenario 2 | ✅ 4 opciones en básica, `OnWrongOption → PlayErrorLine` en los 3 módulos. Probado en APK (`0101`, `0102`) |
+| Escenario 3 | ✅ `preconditions` corregida, pinza arreglada, repeticiones a 0 al poner la ficha. Probado en APK: `itemType` se registra |
+| Escenario 4 | ✅ Fichas con física, rechazo con empujón (`rejectSpeed` 4) y sonido, reinicio que respeta las acertadas, sonido de motores. Probado en APK |
+| Retos 2–4 | 🟡 Se abrían al acabar la narración (desfase en `0101`/`0102`). Corregido en código y en la herramienta 2; falta ejecutarla en `Basico` y recompilar |
+| Repositorio | ✅ De `Build/` solo se versiona `app.apk` (Git LFS, ~160 MB); el resto de la carpeta está en `.gitignore` |
 | Narrativa | ✅ CSV y audios nuevos, listas Básica/Intermedia de 19 frases, 5 frases de error. El Director espera al Narrator exactamente 19 veces |
 | Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup` |
 | Servidor | ✅ `~/Services/JSONServer` en la Pi |
@@ -684,6 +710,11 @@ añade o quita una frase del CSV, hay que rehacer esta tabla:
   (`TimeUpSequence → Probar tiempo agotado`) y después en visor
 - Verificar en visor: manos (agarrar y pulsar), título y botones del Escenario 2, bloques y
   rótulos del Escenario 3 (`BloqueRotarI`/`BloqueRotarD`), física y rechazo del Escenario 4
+- **Volver a ejecutar `Tools → Codea → 2` en `Basico` y recompilar el APK**: abre los retos
+  2–4 al llegar a la sala. En las pruebas `0101`/`0102` del 30/09 se abrían al terminar la
+  narración: un intento del esc. 3 quedó registrado antes del inicio del escenario y un agarre
+  de ficha del esc. 4 se contó en el esc. 3 (`blocksGrabbed` 12 frente a 11 soltados;
+  `chipsGrabbed` 16 frente a 17)
 - Probar el APK en el visor siguiendo **"Prueba del APK"** (sección 14)
 - Escenario 3, visual (reunión del 29/09): encerrar los bloques, poner título a las
   instrucciones y hacer más intuitivo el socket de tipo. Para luz o sonido ya existen
@@ -696,11 +727,23 @@ añade o quita una frase del CSV, hay que rehacer esta tabla:
   es la que pide pulsarlo; `alerts` del temporizador (no hay frases de aviso grabadas); sprite
   roto en `ShapeChip.prefab`; salas activas desde el arranque
 
-**Después, al generar `Intermedio`:** duplicar `Basico`, ejecutar `Tools → Codea → 2`, y
-cambiar solo: `listIndex` 2; módulos del esc. 2 a `*_Intermedia`; esc. 1 con
-`escenario1_intermedio.json`, 10 huecos y paleta de 12 (Girar Izq ×3, Girar Der ×2,
-Avanzar 2 ×4, Avanzar ×2, Usar ×1); esc. 3 con `editable` y los bloques Recoger · Girar Izq ·
-Soltar · Girar Der sueltos; esc. 4 con el juego de figuras denso.
+**Después, al generar `Intermedio`:**
+
+1. Borrar `Intermedio.unity`, duplicar `Basico` (Ctrl+D), renombrar a `Intermedio` y abrirla
+2. `Tools → Codea → 2`: `DifficultyScene` en Avanzada (lo deduce del nombre)
+3. `Tools → Codea → 3 - Convertir escena abierta a Intermedia` (se niega si el nombre no
+   contiene "Intermed"). Hace:
+   - Narrador: `listIndex` 2
+   - Esc. 2: los 3 módulos a `*_Intermedia`
+   - Esc. 1: `escenario1_intermedio.json`, 11 huecos y paleta de 13 (Girar Izq ×4, Girar
+     Der ×2, Avanzar 2 ×4, Avanzar ×2, Usar ×1). Los que faltan se **duplican** de uno con la
+     misma acción, así heredan rótulo y eventos, y salen **apilados encima del original**
+   - Esc. 3: fila `editable`; "Girar al destino" → "Girar Izquierda" y "Volver" → "Girar
+     Derecha" (acción y rótulo); la fila arranca **desordenada**: Soltar · Girar Der ·
+     Recoger · Girar Izq. El niño la reordena, y para el otro tipo, invierte los giros
+4. A mano: colocar en la mesa los 4 bloques nuevos del esc. 1, y las figuras densas del esc. 4
+   (sprite de huecos y fichas; `ApplyShapeToChild` y "Comprobar figuras del panel")
+5. Build Settings: comprobar que `Intermedio` sigue marcada tras borrarla y recrearla
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.

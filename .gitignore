@@ -80,6 +80,11 @@ mono_crash.*
 *.unitypackage.meta
 *.app
 
+# Carpeta Build: solo se versiona el APK para instalar en el visor (va por Git LFS).
+# Las carpetas de respaldo y de depuración que genera Unity no se distribuyen.
+/Build/*
+!/Build/app.apk
+
 # Crashlytics generated file
 crashlytics-build.properties
 

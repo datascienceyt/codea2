@@ -310,6 +310,9 @@ public static class CodeaSceneTools
         if (director != null && timer != null)
             AddReturnStep(director, timer, loader, log);
 
+        if (director != null)
+            StartChallengesOnArrival(director, log);
+
         Scenario3Controller scenario3 = Object.FindAnyObjectByType<Scenario3Controller>(FindObjectsInactive.Include);
         RoboticArm arm = Object.FindAnyObjectByType<RoboticArm>(FindObjectsInactive.Include);
 
@@ -417,6 +420,284 @@ public static class CodeaSceneTools
 
             if (changed) so.ApplyModifiedProperties();
         }
+    }
+
+    /// <summary>
+    /// Abre los retos 2, 3 y 4 en el PRIMER paso de su escenario del Director, antes de la
+    /// narración. El niño ya manipula mientras escucha, y con el reto abierto al acabar la
+    /// narración (como estaba) lo que hacía antes se perdía o se atribuía a la sala anterior:
+    /// en las pruebas del 30/09 un intento del esc. 3 quedó antes del inicio del escenario y
+    /// un agarre del esc. 4 se contó en el 3. La llamada de después no hace nada:
+    /// StartChallenge es idempotente. El 1 no se toca: arranca con el temporizador.
+    /// </summary>
+    private static void StartChallengesOnArrival(Director director, StringBuilder log)
+    {
+        var starts = new (string scenario, MonoBehaviour controller, UnityAction start)[]
+        {
+            ("Escenario 2", Object.FindAnyObjectByType<Scenario2Controller>(FindObjectsInactive.Include), null),
+            ("Escenario 3", Object.FindAnyObjectByType<Scenario3Controller>(FindObjectsInactive.Include), null),
+            ("Escenario 4", Object.FindAnyObjectByType<Scenario4Controller>(FindObjectsInactive.Include), null),
+        };
+
+        foreach (var (scenarioName, controller, _) in starts)
+        {
+            if (controller == null) continue;
+
+            Scenario scenario = director.scenarios.Find(s => s.name == scenarioName);
+            if (scenario == null || scenario.steps.Count == 0)
+            {
+                log.AppendLine($"  ⚠ No hay escenario '{scenarioName}' en el Director");
+                continue;
+            }
+
+            Step first = scenario.steps[0];
+            if (first.instantEvents == null) first.instantEvents = new UnityEvent();
+
+            UnityAction action = controller switch
+            {
+                Scenario2Controller c => c.StartScenario,
+                Scenario3Controller c => c.StartScenario,
+                Scenario4Controller c => c.StartScenario,
+                _ => null,
+            };
+
+            if (action != null && AddOnce(director, first.instantEvents, controller, "StartScenario", action))
+                log.AppendLine($"  {scenarioName}: el reto se abre al llegar, en '{first.message}'");
+        }
+    }
+
+    // --- 3. Conversión a intermedia ---
+
+    private const string IntermediateLevel = "Assets/_Main/Levels/escenario1_intermedio.json";
+
+    /// <summary>Huecos de la fila del escenario 1 en intermedia: los 11 de la solución.</summary>
+    private const int IntermediateSockets = 11;
+
+    /// <summary>
+    /// Paleta del escenario 1 en intermedia: 13 bloques. Los 11 de la solución (el camino de
+    /// arriba) y un Girar Derecha y un Avanzar 2 de sobra, que tientan hacia el camino de
+    /// abajo: simétrico al bueno, pero de 14 bloques, así que no cabe en la fila.
+    /// </summary>
+    private static readonly Dictionary<GridActionType, int> IntermediatePalette = new Dictionary<GridActionType, int>
+    {
+        { GridActionType.RotateLeft, 4 },
+        { GridActionType.RotateRight, 2 },
+        { GridActionType.MoveForwardTwice, 4 },
+        { GridActionType.MoveForward, 2 },
+        { GridActionType.Use, 1 },
+    };
+
+    /// <summary>
+    /// Deja la escena abierta (una copia de Basico) en dificultad intermedia: todo lo que
+    /// cambia entre las dos salvo las figuras del escenario 4, que son una elección de diseño.
+    /// Repetible: lo que ya está en intermedia no se toca.
+    /// </summary>
+    [MenuItem("Tools/Codea/3 - Convertir escena abierta a Intermedia")]
+    private static void ConvertToIntermediate()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+
+        // Protección: convertir Basico por error la dejaría en intermedia sin avisar.
+        if (!scene.name.ToLowerInvariant().Contains("intermed"))
+        {
+            EditorUtility.DisplayDialog("Convertir a Intermedia",
+                $"La escena abierta es '{scene.name}'. Solo se convierte una escena cuyo nombre " +
+                "contenga 'Intermed'. Duplica Basico, renómbrala a Intermedio y ábrela.", "Vale");
+            return;
+        }
+
+        if (!EditorUtility.DisplayDialog("Convertir a Intermedia",
+                $"Se va a pasar '{scene.name}' a dificultad intermedia:\n\n" +
+                "• Narrador: lista 2\n• Esc. 2: módulos *_Intermedia\n" +
+                "• Esc. 1: nivel intermedio, 11 huecos y paleta de 13 bloques\n" +
+                "• Esc. 3: fila editable con los bloques desordenados\n\n" +
+                "Las figuras del escenario 4 se cambian a mano.", "Convertir", "Cancelar"))
+            return;
+
+        StringBuilder log = new StringBuilder($"[Codea] Convirtiendo '{scene.name}' a intermedia:\n");
+
+        Narrator narrator = Object.FindAnyObjectByType<Narrator>(FindObjectsInactive.Include);
+        if (narrator != null)
+        {
+            SetInt(narrator, "listIndex", 2);
+            log.AppendLine("  Narrador: lista 2 (Intermedia)");
+        }
+
+        ConvertModules(log);
+        ConvertScenario1(log);
+        ConvertScenario3(log);
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+
+        log.AppendLine("  Escena guardada.");
+        log.AppendLine("  ⚠ Falta a mano: las figuras del escenario 4 (huecos y fichas) y colocar en la " +
+                       "mesa los bloques nuevos del escenario 1, que salen apilados sobre su original.");
+        Debug.Log(log.ToString());
+    }
+
+    private static void ConvertModules(StringBuilder log)
+    {
+        foreach (SystemModule module in Object.FindObjectsByType<SystemModule>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            SerializedObject so = new SerializedObject(module);
+            SerializedProperty data = so.FindProperty("data");
+            if (data == null || data.objectReferenceValue == null) continue;
+
+            string path = AssetDatabase.GetAssetPath(data.objectReferenceValue);
+            if (!path.Contains("_Basica")) continue;
+
+            string intermediatePath = path.Replace("_Basica", "_Intermedia");
+            ModuleData intermediate = AssetDatabase.LoadAssetAtPath<ModuleData>(intermediatePath);
+            if (intermediate == null)
+            {
+                log.AppendLine($"  ⚠ Esc. 2: no existe {intermediatePath}");
+                continue;
+            }
+
+            data.objectReferenceValue = intermediate;
+            so.ApplyModifiedProperties();
+            log.AppendLine($"  Esc. 2: {module.name} → {intermediate.name}");
+        }
+    }
+
+    private static void ConvertScenario1(StringBuilder log)
+    {
+        ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario1Id);
+        if (trigger != null && trigger.socketRow != null)
+        {
+            SetInt(trigger.socketRow, "socketsQuantity", IntermediateSockets);
+            log.AppendLine($"  Esc. 1: {IntermediateSockets} huecos en la fila");
+        }
+
+        LevelLoader loader = Object.FindAnyObjectByType<LevelLoader>(FindObjectsInactive.Include);
+        TextAsset level = AssetDatabase.LoadAssetAtPath<TextAsset>(IntermediateLevel);
+        if (loader != null && level != null)
+        {
+            SetField(loader, "levelJson", level);
+            log.AppendLine($"  Esc. 1: nivel {level.name}");
+        }
+
+        // Los bloques nuevos se duplican de uno de la misma acción: así heredan el rótulo, el
+        // prefab y los eventos, y cuelgan del mismo BlockResetter que los devuelve a su sitio.
+        List<GridBlock> blocks = Object.FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
+
+        foreach (KeyValuePair<GridActionType, int> wanted in IntermediatePalette)
+        {
+            List<GridBlock> same = blocks.Where(b => b.action == wanted.Key).ToList();
+            if (same.Count == 0)
+            {
+                log.AppendLine($"  ⚠ Esc. 1: no hay ningún bloque '{wanted.Key}' que duplicar");
+                continue;
+            }
+
+            for (int copy = 0; same.Count < wanted.Value; copy++)
+            {
+                GridBlock source = same[0];
+
+                Selection.activeGameObject = source.gameObject;
+                Unsupported.DuplicateGameObjectsUsingPasteboard();
+                GameObject duplicate = Selection.activeGameObject;
+
+                if (duplicate == null || duplicate == source.gameObject) break;
+
+                duplicate.transform.position = source.transform.position + Vector3.up * (0.08f * (copy + 1));
+                same.Add(duplicate.GetComponent<GridBlock>());
+                log.AppendLine($"  Esc. 1: añadido bloque '{source.InstructionLabel}'");
+            }
+        }
+    }
+
+    private static void ConvertScenario3(StringBuilder log)
+    {
+        ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario3Id);
+        if (trigger == null || trigger.socketRow == null)
+        {
+            log.AppendLine("  ⚠ Esc. 3: no encuentro su ProgramTrigger o su fila");
+            return;
+        }
+
+        SerializedObject row = new SerializedObject(trigger.socketRow);
+        row.FindProperty("editable").boolValue = true;
+
+        SerializedProperty initial = row.FindProperty("initialBlocks");
+        List<ArmBlock> armBlocks = new List<ArmBlock>();
+
+        for (int i = 0; i < initial.arraySize; i++)
+            if (initial.GetArrayElementAtIndex(i).FindPropertyRelative("block").objectReferenceValue is ArmBlock armBlock)
+                armBlocks.Add(armBlock);
+
+        // Los giros automáticos de básica pasan a giros literales: en intermedia el niño decide
+        // hacia dónde gira el brazo. Se cambia también el rótulo, que es un texto puesto a mano.
+        foreach (ArmBlock block in armBlocks)
+        {
+            ArmActionType before = block.action;
+            if (before == ArmActionType.RotateToDestination) SetArmAction(block, ArmActionType.RotateLeft);
+            if (before == ArmActionType.RotateToOrigin) SetArmAction(block, ArmActionType.RotateRight);
+
+            if (block.action != before)
+                log.AppendLine($"  Esc. 3: bloque '{block.name}' pasa a '{block.InstructionLabel}'");
+        }
+
+        // Desordenada a propósito: la solución de una pasada es Recoger · Girar · Soltar · Girar
+        // de vuelta, y el niño tiene que encontrar ese orden.
+        ArmActionType[] shuffled = { ArmActionType.Drop, ArmActionType.RotateRight, ArmActionType.Pick, ArmActionType.RotateLeft };
+        List<ArmBlock> ordered = shuffled
+            .Select(a => armBlocks.FirstOrDefault(b => b.action == a))
+            .Where(b => b != null)
+            .ToList();
+
+        if (ordered.Count == armBlocks.Count)
+        {
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                SerializedProperty element = initial.GetArrayElementAtIndex(i);
+                element.FindPropertyRelative("block").objectReferenceValue = ordered[i];
+                element.FindPropertyRelative("fixedInPlace").boolValue = false;
+            }
+
+            log.AppendLine("  Esc. 3: fila editable, bloques desordenados (Soltar · Girar Der · Recoger · Girar Izq)");
+        }
+        else
+        {
+            log.AppendLine("  ⚠ Esc. 3: la fila no tiene los 4 bloques esperados; solo se marcó editable");
+        }
+
+        row.ApplyModifiedProperties();
+    }
+
+    private static void SetArmAction(ArmBlock block, ArmActionType action)
+    {
+        SerializedObject so = new SerializedObject(block);
+        so.FindProperty("action").enumValueIndex = (int)action;
+        so.ApplyModifiedProperties();
+
+        string label = block.InstructionLabel;
+
+        foreach (TMP_Text text in block.GetComponentsInChildren<TMP_Text>(true))
+        {
+            Undo.RecordObject(text, "Rótulo");
+            text.text = label;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(text);
+        }
+
+        foreach (UnityEngine.UI.Text text in block.GetComponentsInChildren<UnityEngine.UI.Text>(true))
+        {
+            Undo.RecordObject(text, "Rótulo");
+            text.text = label;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(text);
+        }
+    }
+
+    private static ProgramTrigger FindTrigger(string challengeId) =>
+        Object.FindObjectsByType<ProgramTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+              .FirstOrDefault(t => t.ChallengeId == challengeId);
+
+    private static void SetInt(Object owner, string field, int value)
+    {
+        SerializedObject so = new SerializedObject(owner);
+        so.FindProperty(field).intValue = value;
+        so.ApplyModifiedProperties();
     }
 
     // --- Utilidades ---
