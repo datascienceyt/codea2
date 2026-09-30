@@ -20,8 +20,10 @@ public class NarrationEntry
     [Tooltip("Opcional. Sin clip, la línea solo se escribe en pantalla.")]
     public AudioClip clip;
 
-    [Tooltip("ID_Texto del CSV. 0 = esta línea no tiene texto, solo voz.")]
-    public int textId;
+    // Texto y no número: el CSV tiene variantes por dificultad como "9.1" y "9.2", que como
+    // entero no existían y se saltaban sin avisar.
+    [Tooltip("ID_Texto del CSV, tal cual: \"4\", \"9.1\"... Vacío o 0 = solo voz, sin texto.")]
+    public string textId;
 }
 
 /// <summary>Un tramo de narración, por ejemplo el de un escenario.</summary>
@@ -50,7 +52,7 @@ public class Narrator : MonoBehaviour, IStepAction
     [Serializable]
     private class NarrativeLine
     {
-        public int id;
+        public string id;
         public string text;
     }
 
@@ -330,7 +332,10 @@ public class Narrator : MonoBehaviour, IStepAction
     public void CompleteInstantly() => skipRequested = true;
 
     /// <summary>Muestra una línea del CSV por su ID_Texto, sin audio.</summary>
-    public void ShowLineById(int id)
+    public void ShowLineById(int id) => ShowLineById(id.ToString());
+
+    /// <summary>Igual, con ID de texto: para las variantes como "9.1".</summary>
+    public void ShowLineById(string id)
     {
         string text = FindText(id);
 
@@ -411,9 +416,10 @@ public class Narrator : MonoBehaviour, IStepAction
 
     // --- CSV ---
 
-    private string FindText(int id)
+    private string FindText(string id)
     {
-        if (id <= 0) return null;
+        id = id?.Trim();
+        if (string.IsNullOrEmpty(id) || id == "0") return null;
 
         NarrativeLine line = lines.Find(l => l.id == id);
         return line?.text;
@@ -436,13 +442,63 @@ public class Narrator : MonoBehaviour, IStepAction
             // Filas vacías al final del archivo, habituales al exportar desde Excel.
             if (row.Count == 1 && string.IsNullOrWhiteSpace(row[0])) continue;
 
-            if (!int.TryParse(Field(row, 0).Trim(), out int id)) continue;
+            string id = Field(row, 0).Trim();
+            if (id.Length == 0) continue;
 
             lines.Add(new NarrativeLine { id = id, text = Field(row, 1) });
         }
 
         Debug.Log($"[Narrator] {lines.Count} líneas de texto cargadas de '{csv.name}'.", this);
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Pone a cada entrada el textId que dice el nombre de su clip: "9.1.wav" → "9.1". Los
+    /// audios se nombran con el ID_Texto del CSV, así que escribirlos a mano era repetir el
+    /// dato, y en cuanto se colaba una línea nueva todas las siguientes quedaban desplazadas.
+    /// Los clips sin línea en el CSV (errores, pruebas) se dejan como están y se listan.
+    /// </summary>
+    [ContextMenu("Asignar textId por nombre del clip")]
+    private void AssignTextIdsFromClipNames()
+    {
+        LoadCsv();
+
+        if (lines.Count == 0)
+        {
+            Debug.LogError("[Narrator] Asigna primero el CSV: no hay líneas con las que comparar.", this);
+            return;
+        }
+
+        UnityEditor.Undo.RecordObject(this, "Asignar textId");
+
+        System.Text.StringBuilder log = new System.Text.StringBuilder();
+        int assigned = 0;
+
+        for (int l = 0; l < lists.Count; l++)
+        {
+            foreach (NarrationEntry entry in lists[l].entries)
+            {
+                if (entry == null || entry.clip == null) continue;
+
+                string id = entry.clip.name.Trim();
+
+                if (lines.Exists(line => line.id == id))
+                {
+                    entry.textId = id;
+                    assigned++;
+                }
+                else
+                {
+                    log.AppendLine($"  lista {l} '{lists[l].name}': '{entry.clip.name}' no está en el CSV");
+                }
+            }
+        }
+
+        UnityEditor.EditorUtility.SetDirty(this);
+
+        Debug.Log($"[Narrator] {assigned} textId asignados desde '{csv.name}'.\n{log}", this);
+    }
+#endif
 
     private static string Field(List<string> row, int i) => i < row.Count ? row[i] : string.Empty;
 

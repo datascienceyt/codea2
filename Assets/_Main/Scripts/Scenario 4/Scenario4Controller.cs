@@ -25,11 +25,28 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     [Tooltip("Margen antes de devolver la ficha, para que el jugador vea que no encajó.")]
     [SerializeField] private float rejectDelay = 0.6f;
 
+    [Tooltip("Velocidad (m/s) con la que sale disparada la ficha rechazada. 0 = cae sin más.")]
+    [SerializeField] private float rejectSpeed = 4f;
+
+    [Tooltip("Hacia dónde sale, en ejes del hueco. Si la ficha sale hacia dentro del panel en " +
+             "vez de hacia el jugador, invierte el signo (0,0,1 ↔ 0,0,-1). Un poco de Y la hace " +
+             "saltar en arco.")]
+    [SerializeField] private Vector3 rejectLocalDirection = new Vector3(0f, 0.5f, -1f);
+
     [Header("Telemetría")]
     [SerializeField] private string challengeId = "escenario4";
 
     [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento.")]
     [SerializeField] private bool startChallengeOnStart = false;
+
+    [Header("Al completar")]
+    [Tooltip("Sonido al completar el panel: el encendido de los motores, que es lo que cuenta " +
+             "la narración de este escenario.")]
+    [SerializeField] private AudioClip completedSound;
+
+    [Tooltip("Opcional. Dónde suena. Vacío: suena en la posición de este objeto. Asigna uno " +
+             "propio si quieres controlar volumen, mezcla o que se oiga igual en toda la sala.")]
+    [SerializeField] private AudioSource completedSource;
 
     [Header("Eventos")]
     public UnityEvent OnCorrectPlacement;
@@ -121,11 +138,26 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     {
         yield return new WaitForSeconds(rejectDelay);
 
-        socket.ResetSocket();
+        // Si el niño la sacó él mismo durante la espera, ya no hay nada que rechazar: soltarla
+        // ahora se la arrancaría de la mano.
+        if (!socket.Holds(chip)) yield break;
 
-        if (chipResetter == null || !chipResetter.ReturnBlock(chip))
-            Debug.LogWarning($"[Escenario4] No se pudo devolver '{chip.name}' a su sitio: " +
-                             "¿cuelga del objeto con BlockResetter?", chip);
+        // Con el sonido de desconexión del socket, igual que al sacarla a mano.
+        socket.Eject();
+
+        // Se suelta ahí mismo con un pequeño empujón hacia fuera del panel y cae con su física,
+        // en vez de volver a su sitio de origen: así se ve que no encajó, y la ficha queda a
+        // mano para probar en otro hueco.
+        Vector3 direction = socket.transform.TransformDirection(rejectLocalDirection.normalized);
+        chip.DropInPlace(direction * rejectSpeed);
+    }
+
+    private void PlayCompletedSound()
+    {
+        if (completedSound == null) return;
+
+        if (completedSource != null) completedSource.PlayOneShot(completedSound);
+        else AudioSource.PlayClipAtPoint(completedSound, transform.position);
     }
 
     private void CheckCompletion()
@@ -142,6 +174,8 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
 
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.CompleteChallenge(challengeId);
+
+        PlayCompletedSound();
 
         OnScenarioFinished?.Invoke();
     }

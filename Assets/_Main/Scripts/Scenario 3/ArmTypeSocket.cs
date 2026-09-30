@@ -54,22 +54,36 @@ public class ArmTypeSocket : MonoBehaviour, IRunPrecondition
 
     private void Start()
     {
-        // El socket vive en un prefab y la fila en la escena: un prefab no puede guardar esa
-        // referencia (trampa 1), así que se busca la del botón que consulta este socket.
-        if (repetitionsRow == null)
-        {
-            foreach (ProgramTrigger trigger in FindObjectsByType<ProgramTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            {
-                if (!trigger.HasPrecondition(this)) continue;
+        // El socket vive en un prefab y el botón en la escena: un prefab no puede guardar esa
+        // referencia (trampa 1). Así que el socket busca su botón y se registra en él, en vez
+        // de depender de que alguien lo arrastre a la lista del inspector. Esa lista ya acabó
+        // apuntando a las fichas, y el escenario perdió el veto, itemType y el reinicio a 0.
+        ProgramTrigger trigger = FindTrigger();
 
-                repetitionsRow = trigger.socketRow;
-                break;
-            }
+        if (trigger == null)
+        {
+            Debug.LogError($"[Escenario3] '{name}' no encuentra el ProgramTrigger del escenario 3: " +
+                           "el programa correrá sin ficha e itemType no se registrará.", this);
+            return;
         }
 
-        if (repetitionsRow == null)
-            Debug.LogWarning($"[Escenario3] '{name}' no encuentra su SocketRow: las " +
-                             "repeticiones no volverán a 0 al poner la ficha.", this);
+        trigger.AddPrecondition(this);
+
+        if (repetitionsRow == null) repetitionsRow = trigger.socketRow;
+    }
+
+    /// <summary>El botón que ya lo lista, o si no, el del reto del escenario 3.</summary>
+    private ProgramTrigger FindTrigger()
+    {
+        ProgramTrigger[] triggers = FindObjectsByType<ProgramTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        foreach (ProgramTrigger trigger in triggers)
+            if (trigger.HasPrecondition(this)) return trigger;
+
+        foreach (ProgramTrigger trigger in triggers)
+            if (trigger.ChallengeId == TelemetryManager.Scenario3Id) return trigger;
+
+        return null;
     }
 
     private void OnDestroy()

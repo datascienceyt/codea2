@@ -318,6 +318,42 @@ public class RoboticArm : MonoBehaviour
         pivot.localRotation = Quaternion.Euler(0f, targetYaw, 0f);
     }
 
+    /// <summary>
+    /// Devuelve a su pila de origen lo que haya en la pinza. Lo llama Scenario3Controller al
+    /// terminar cada ejecución.
+    ///
+    /// Sin esto, una secuencia que recoge y no suelta (posible en intermedia, donde el niño
+    /// ordena los bloques) dejaba el objeto en la pinza para siempre: el siguiente Recoger se
+    /// rechaza por tener la pinza ocupada, y el escenario quedaba sin salida.
+    ///
+    /// No es ResetArm: aquel devuelve TODAS las pilas al inicio y borraría lo ya clasificado
+    /// en pasadas anteriores. Aquí solo se deshace el objeto a medio mover.
+    /// </summary>
+    public bool ReturnHeldToOrigin()
+    {
+        if (held == null) return false;
+
+        Transform item = held;
+        ArmSlot origin = heldOrigin;
+
+        held = null;
+        heldOrigin = null;
+
+        if (origin != null && origin.Put(item))
+        {
+            Debug.Log($"[Escenario3] La secuencia terminó con '{item.name}' en la pinza: " +
+                      "vuelve a su pila.", this);
+            return true;
+        }
+
+        // Sin pila de origen válida no hay dónde dejarlo sin inventar un sitio: se reinicia
+        // todo, que es peor para el niño pero deja el escenario jugable.
+        Debug.LogWarning($"[Escenario3] '{item.name}' no tiene pila de origen a la que volver. " +
+                         "Se reinicia el brazo entero.", this);
+        ResetArm();
+        return true;
+    }
+
     /// <summary>Devuelve brazo y pilas al estado inicial. Para el botón de reinicio.</summary>
     [ContextMenu("Reset Arm")]
     public void ResetArm()

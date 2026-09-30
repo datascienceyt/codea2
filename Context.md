@@ -1,9 +1,9 @@
 # Context — Codea VR 2
 
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
-el sistema completo sin leer los 5.570 líneas de código ni depender de conversaciones previas.
+el sistema completo sin leer las ~8.800 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **29/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **30/09/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
@@ -49,7 +49,7 @@ dependencia:
 
 ## 3. Mapa de archivos
 
-54 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
+62 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
 
 ### `Scripts/Block Programming System/` — núcleo compartido por escenarios 1, 3 y 4
 
@@ -121,6 +121,7 @@ dependencia:
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
+| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara `Basico`/`Intermedio` (dificultad, tiempo agotado, vuelta a `Setup`). Repetibles |
 
 ## 4. Sistema de bloques
 
@@ -162,7 +163,18 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 `OnAttemptFailed` tras `retryDelay` segundos. Ahí se cablean `RegisterFailedAttempt`,
 `ReloadLevel`, `ResetLevel` y `ResetRunner`. El niño no pulsa nada para reintentar.
 
-### Escenario 2 — Condicionales *(básica montada, sin probar)*
+**Niveles** en `Assets/_Main/Levels/`, asignados en `LevelLoader.levelJson`:
+
+| | Archivo | Solución | Paleta · huecos |
+|---|---|---|---|
+| Básica | `reto.json` (6×5) | 8 bloques: Avanzar · Girar Der · Avanzar 2 · Avanzar · Girar Der · Avanzar 2 · Girar Izq · Usar | 8 · 8, sin sobrantes |
+| Intermedia | `escenario1_intermedio.json` (7×5) | 9 bloques: Girar Izq · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Usar | 12 · 10, con 3 sobrantes |
+
+El robot empieza mirando **abajo** (`direction: 2` del prefab). En intermedia eso es una pared:
+el primer bloque tiene que ser un giro. Los peligros están justo donde acaba cada tramo, para
+castigar pasarse de largo. La paleta y los huecos de intermedia están por montar.
+
+### Escenario 2 — Condicionales *(montado, sin probar en visor)*
 
 Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Los
 botones **alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el
@@ -243,7 +255,14 @@ huecos en medio de una secuencia ya montada.
 la que salió y se registra un error de lógica. Dejarlo caer obligaría a rescatarlo, y ese
 rescate no es el ejercicio.
 
-**Al poner la ficha de tipo, las repeticiones vuelven a 0**, y con 0 tampoco se ejecuta: cambiar de tipo es preparar otra pasada. La fila del esc. 3 tiene `minRepetitions: 0`; el socket la encuentra por el `ProgramTrigger` que lo lista en `preconditions`.
+**Al poner la ficha de tipo, las repeticiones vuelven a 0**, y con 0 tampoco se ejecuta: cambiar de tipo es preparar otra pasada. La fila del esc. 3 tiene `minRepetitions: 0`.
+
+**El socket se registra solo en su botón** (`ProgramTrigger.AddPrecondition`), buscando el que
+tiene `challengeId: escenario3`, y de ahí toma la fila. No depende de la lista `preconditions`
+del inspector: en `Basico` esa lista apuntaba a las dos **fichas**, que no son condiciones, y
+se ignoraban sin avisar. Mientras duró, el programa corría sin ficha, **`itemType` salía vacío
+en todos los intentos** y las repeticiones no volvían a 0. `ProgramTrigger` avisa ahora de
+cualquier entrada que no sea una condición, y `Tools → Codea → 2` limpia la lista.
 
 **Sin ficha de tipo el programa no se ejecuta.** `ArmTypeSocket` implementa `IRunPrecondition`,
 que `ProgramTrigger` consulta **antes de registrar el intento**: un programa sin su argumento no
@@ -257,13 +276,18 @@ incompleto — si no, la pasada de barriles perfecta se contaría como fallo por
 cajas. La que avanzó y se quedó corta dispara `OnAttemptAdvanced` y rearma el runner. El fallo
 se registra **desde código**; no cablees `RegisterFailedAttempt` en `OnAttemptFailed`.
 
+**Objeto olvidado en la pinza:** al terminar cada ejecución, `Scenario3Controller` llama a
+`RoboticArm.ReturnHeldToOrigin()`, que devuelve a su pila lo que quede agarrado. **No cablees
+`ResetArm` en `OnAttemptFailed`**: devuelve *todas* las pilas al inicio y borraría lo ya
+clasificado en pasadas anteriores. La herramienta `Tools → Codea → 2` lo quita si lo encuentra.
+
 **Montaje en escena:** raíz `Escenario (3)` con `Scenario3Controller` + `ProgramRunner` +
 `ProgramTrigger`. Tres `ArmSlot` en el array del brazo, **en orden [izquierda, frente, derecha]**
 con `startSlotIndex = 1` — el orden del array define la rotación, no los valores de `yaw`. El
 frente lleva dos `TypedStack` (una por tipo) y cada destino una sola. Cada barril y cada caja
 necesita su `ArmItem`. Prefabs: `ArmBlock`, `ArmTypeChipBlock`, `ArmSocketTipo`.
 
-### Escenario 4 — Patrones *(en montaje)*
+### Escenario 4 — Patrones *(montado, sin probar en visor)*
 
 Fichas con figuras abstractas que encajan en huecos. Varias se parecen mucho entre sí y solo
 una es idéntica a la del hueco: el reto es de **discriminación visual**, comparar el detalle en
@@ -293,7 +317,9 @@ Ficha y hueco traen un hijo llamado `Sprite` con el `SpriteRenderer`, y ambos ex
 el fallo invisible: un hueco cuya figura no la lleva ninguna ficha deja el escenario
 irresoluble y el Director esperando para siempre.
 
-**Hueco resuelto:** la figura del hueco pasa a `solvedColor`, suena `solvedSound` y se dispara `OnSolved`. **Física:** soltada fuera de un hueco la ficha cae con gravedad; si queda más de `fallenBelow` por debajo de su sitio durante `returnDelay` s, su `BlockResetter` la devuelve.
+**Hueco resuelto:** la figura del hueco pasa a `solvedColor`, suena `solvedSound` y se dispara `OnSolved`. **Panel completo:** `Scenario4Controller.completedSound` (el arranque de motores, coherente con la frase 18), en `completedSource` o, si está vacío, en la posición del controlador. **Física:** las 18 fichas son dinámicas y con gravedad desde el inicio, y los huecos tienen el collider en trigger. Al **encajar**, `BlockNode.AttachTo` la vuelve cinemática: un Rigidbody dinámico ignora a su padre y la gravedad la sacaba del hueco. Una ficha **incorrecta** se queda encajada `rejectDelay` s y después el hueco la expulsa (`ShapeSocket.Eject`, con el `clipOut` del socket) con un empujón de `rejectSpeed` m/s en la dirección `rejectLocalDirection` (ejes del hueco), y cae con su física: no vuelve a su sitio, para que se vea el rechazo y quede a mano para otro hueco.
+
+**El botón de reiniciar** del escenario llama a `BlockResetter.ResetBlocks`, que **solo devuelve las piezas que siguen siendo agarrables**: las fichas acertadas (bloqueadas al encajar) se quedan en su hueco. Antes las devolvía todas y el hueco quedaba resuelto pero vacío, sin forma de terminar. Esto vale también para los bloques fijos de la fila del Escenario 3. El reinicio completo es `Scenario4Controller.ResetScenario`, que desbloquea antes. Si el niño la saca él mismo durante la espera, no se toca. Al **devolverla** en un reinicio, `BlockResetter` le restaura el estado físico con el que empezó (antes la dejaba cinemática para siempre). Si queda más de `fallenBelow` por debajo de su sitio durante `returnDelay` s, vuelve sola.
 
 Hacen falta **fichas distractoras de sobra**. Con tantas fichas como huecos, el último se
 resuelve por eliminación sin llegar a comparar.
@@ -320,11 +346,24 @@ y los cuatro `ScenarioNController`.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`, 26 líneas en `Scripts/Story/Audios Narrativa.csv`; la 26 es la variante en
-plural del Escenario 2 para la escena de dificultad intermedia, **pendiente de grabar**).
+(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 20 IDs más 2 variantes
+por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el tiempo agotado.
 
-Degrada limpiamente: sin clip solo escribe, sin `Text` o sin CSV solo suena, `textId = 0`
-significa sin texto. **Ni el CSV ni el Text son obligatorios.**
+**`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
+existía y la línea se saltaba en silencio. Los audios se nombran con su ID
+(`Sounds/VoiceLines/Victor/9.1.wav`), y el menú contextual del Narrator **"Asignar textId por
+nombre del clip"** los rellena solos: escribirlos a mano ya dejó una vez toda la lista
+desplazada a partir de la primera variante.
+
+**Una lista por dificultad**, elegida con `listIndex`: `1` = `Victor (Basica)`, `2` =
+`Victor (Intermedia)`. La `0` (`Camila`) es la grabación anterior y no se usa. Las dos listas
+tienen **19 entradas en el mismo orden** y deben seguir así: el Director reproduce una por cada
+vez que un paso espera al Narrator, así que una lista con una línea de más desplaza todas las
+siguientes. El Director de `Basico` tiene que esperar al Narrator exactamente 19 veces.
+
+Degrada limpiamente: sin clip solo escribe, sin `Text` o sin CSV solo suena, `textId` vacío o
+`0` significa sin texto. **Ni el CSV ni el Text son obligatorios.** Las frases de error
+(`e1`–`e5.wav`) van en `errorLines` sin `textId`: no están en el CSV.
 
 > Exportar el CSV como **"CSV UTF-8"**, o los acentos llegan rotos. El parser propio respeta
 > comillas, comas internas y saltos de línea; un `Split(',')` partiría las frases.
@@ -445,11 +484,11 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `BlockResetter` | `ResetBlocks()` |
 | `LevelLoader` / `LevelManager` | `ReloadLevel()` · `ResetLevel()`, `CompleteLevel()` |
 | `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()`, `Refresh()` · `Press()` |
-| `RoboticArm` | `ResetArm()` |
+| `RoboticArm` | `ResetArm()`, `ReturnHeldToOrigin()` |
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
 | `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()` |
 | `ShapeSocket` | `Refresh()`, `ResetSocket()`, `ApplyShapeToChild()` |
-| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int)`, `CompleteInstantly()`, `Clear()` |
+| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
 | `SessionSetup` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)`, `StartSession()` |
@@ -558,6 +597,14 @@ llamadas a un objeto destruido. La run se cierra en su `OnDestroy`.
 **`SceneLoader` espera a la subida antes de cargar.** La corrutina de subida vive en la escena
 que se descarga; cargar a mitad la cortaba y el JSON de la sesión recién terminada no llegaba.
 
+**Lo que queda en la pinza vuelve a su pila al acabar cada ejecución; no se reinicia el
+brazo.** Una secuencia que recoge sin soltar bloqueaba todas las siguientes (pinza ocupada).
+`ResetArm` lo resolvía, pero devolviendo también lo ya clasificado: castigaba un error puntual
+borrando el trabajo bueno de pasadas anteriores.
+
+**`textId` es texto.** Las variantes por dificultad del CSV (`9.1`, `14.2`) no caben en un
+entero, y el parser las descartaba sin avisar.
+
 **El informe de integridad corre en `EndRun()`.** Esta telemetría no falla reventando: falla
 saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. Ver sección 7.
 
@@ -578,71 +625,73 @@ saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. V
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 29/09/2026
+## 11. Estado voluble — 30/09/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
-**La escena se partió por dificultad.** Ya no hay `Main.unity`: son `Assets/Scenes/Basico.unity`
-e `Intermedio.unity`, cada una con su Director, sus cuatro controladores, su `TelemetryManager`
-y su `JSONUploader`. Quedan además `Main 2.unity` y `Tests.unity`, que no son escenas activas,
-y 7 respaldos en `_Recovery/` que aparecen en las búsquedas y confunden.
+**Escenas:** `Setup` (pantalla del supervisor), `Basico` e `Intermedio`, las tres en Build
+Settings en ese orden. `Intermedio` es una copia antigua de `Basico` y **se va a regenerar
+duplicando `Basico`** cuando esta esté terminada: no tiene nada propio salvo los módulos del
+Escenario 2 con datos `*_Intermedia`. Quedan además `Main 2.unity`, `Tests.unity` y 7
+respaldos en `_Recovery/`, que no son escenas activas.
 
 | Subsistema | Estado |
 |---|---|
-| Escenario 1 | ✅ Verificado en visor |
-| Escenario 2 | 🟡 Montado en las dos dificultades. `OnWrongOption` sin cablear; `errorLines` con una sola frase provisional |
-| Escenario 3 | 🟡 Reescrito entero. Montado; falta `OnAttemptFailed → ResetArm`. Sin probar en visor |
-| Escenario 4 | 🟡 4 huecos y 18 fichas; recortes de `symbols.png` ya renombrados. Sin probar en visor |
-| Director | ✅ Recorre los cinco tramos, cierra la run y sube el JSON. `Stop()` para el tiempo agotado |
-| Narrativa | 🟡 Funcional. Faltan las frases de error y la de tiempo agotado |
-| Telemetría | ✅ Un `TelemetryManager` por escena. Informe de integridad en cada `EndRun()` |
-| Servidor | ✅ Funcionando. `~/Services/JSONServer` en la Pi |
-| Temporizador | 🟡 `TimerDisplay` en 5 pantallas. `TimeUpSequence` escrito, sin poner en escena |
-| PIN + dificultad (RF-01) | 🟡 Código listo (`SessionSetup`, `PinEntry`, `SceneLoader`). Falta la escena `Setup` |
+| Escena `Setup` | ✅ Montada con la herramienta: 15 teclas cableadas, sin `TelemetryManager` |
+| Sesión en `Basico` | ✅ `DifficultyScene`, `SceneLoader`, `TimeUpSequence` (frase `20`) y paso final "Volver a Setup" |
+| Escenario 1 | ✅ Verificado en visor. Nivel intermedio escrito (`escenario1_intermedio.json`), sin montar |
+| Escenario 2 | ✅ 4 opciones en básica, `OnWrongOption → PlayErrorLine` en los 3 módulos. Sin probar en visor |
+| Escenario 3 | ✅ `preconditions` corregida (apuntaba a las fichas), pinza arreglada, repeticiones a 0 al poner la ficha. Sin probar en visor |
+| Escenario 4 | ✅ Fichas con física, rechazo con empujón (`rejectSpeed` 4) y sonido, reinicio que respeta las acertadas, sonido de motores al completar. Sin probar en visor |
+| Narrativa | ✅ CSV y audios nuevos, listas Básica/Intermedia de 19 frases, 5 frases de error. El Director espera al Narrator exactamente 19 veces |
+| Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup` |
+| Servidor | ✅ `~/Services/JSONServer` en la Pi |
+| Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso en el CSV) |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
-**Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**, no
-intercambiando datos en caliente.
+**Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**.
 
-**Decidido el 15/09/2026:** los retos los abre **siempre el Director**. Mientras tanto, la
-atribución de telemetría depende de que cada paso llame a `StartScenario()`.
+**Decidido el 15/09/2026:** los retos los abre **siempre el Director**.
 
 **Decidido el 29/09/2026:** PIN y dificultad se eligen en una escena `Setup` propia, en el
-visor, antes de pasárselo al niño. No dentro de la escena de juego: allí la run se abre en
-`Awake` con el PIN anterior, y elegir la otra dificultad obligaría a cargar la otra escena igual.
+visor, antes de pasárselo al niño.
 
-**Pendiente inmediato, por orden de daño** (revisado contra las escenas el 29/09/2026):
+**Decidido el 29/09/2026 (reunión):** texto de narración completo de golpe; 4 opciones en las
+dos dificultades del Escenario 2 (1 correcta en básica, 2 en intermedia); repeticiones a 0 al
+poner la ficha del Escenario 3; física y aviso de acierto en el Escenario 4.
 
-- **`Intermedio` está desactivada en Build Settings** (`enabled: 0`). No entra en el APK y
-  `SessionSetup` la rechaza. Marcar su casilla
-- **Montar la escena `Setup`** con `SessionSetup` + `PinEntry` (sin `TelemetryManager`), primera
-  en Build Settings. Hasta entonces todas las runs salen con el PIN guardado y **no hay forma de
-  saber qué niño fue cuál**: apuntar en papel `sessionId` → participante
-- **Volver a `Setup` al terminar:** un `SceneLoader` tras el paso "Subir JSON" del Director, en
-  las dos escenas. Espera solo a que acabe la subida
-- **Añadir un `DifficultyScene` a `Basico` (Básica) y a `Intermedio` (Avanzada).** Sin él,
-  `difficulty` sale de `PlayerPrefs`, o sea, de la última sesión
-- **Tiempo agotado:** poner `TimeUpSequence` en las dos escenas (Director, Narrator, frase,
-  uploader, `SceneLoader`), cablear `Timer.OnTimeUp → Begin()` y `Timer.Pause()` en el último
-  paso del Director. Hoy `OnTimeUp` está vacío y el tiempo sigue contando tras terminar
-- **Escenario 3: cablear `OnAttemptFailed` → `RoboticArm.ResetArm()`.** En intermedia, una
-  secuencia que recoge sin soltar deja el objeto en la pinza para siempre
-- Escenario 2: cablear `OnWrongOption` → `Narrator.PlayErrorLine()` en los 3 módulos de cada
-  escena, y cargar el banco `errorLines` (hoy una sola entrada, sin texto)
-- Temporizador: `alerts` vacíos (RF-06 pide avisos a 15, 10 y 5 minutos)
-- Escenario 3: verificar en el inspector qué `action` tiene cada bloque. `BloqueRotarI` y
-  `BloqueRotarD` conservan los nombres viejos, y el rótulo visible es un `Text` hijo puesto a
-  mano que no se actualiza solo
-- Puertas: las tres quedaron con `openingDistance: 2` y ahora el movimiento es vertical.
-  Comprobar en Play que los paneles despejan el hueco sin meterse en el suelo ni el techo
-- Escenario 4: `ShapeChip.prefab` conserva en `shape` el guid de un asset borrado. Inofensivo
-  si cada ficha de escena lo sobreescribe, pero una ficha nueva nacería con figura rota
-- Las cuatro salas están activas desde el arranque: hay 3 `SetInactive` y un solo `SetActive`,
-  que además es redundante
+**Decidido el 30/09/2026:** la ficha rechazada del Escenario 4 sale disparada desde el hueco
+en vez de volver a su sitio, y el reinicio no mueve las fichas acertadas.
 
-Hecho el 29/09/2026: borrados los `* 1.asset` duplicados del Escenario 2; renombrados los 34
-recortes de `symbols.png`; arreglada la pérdida de telemetría a partir de la segunda sesión
-(`DontDestroyOnLoad`) y el corte de la subida al cambiar de escena.
+**Reparto de la narración en el Director de `Basico`** (verificado el 30/09/2026). Si se
+añade o quita una frase del CSV, hay que rehacer esta tabla:
+
+| Paso | Esperas al Narrator | Frases |
+|---|---|---|
+| Esc. 1 · Narrar | 6 | 1–6 |
+| Esc. 1 · Esperar a completar | 1 | 7 |
+| Esc. 2 · Narrar | 2 | 8, 9.x |
+| Esc. 2 · Teletransportar a panel 3 | 1 | 10 |
+| Esc. 3 · Narrar | 4 | 11, 12, 13, 14.x |
+| Esc. 3 · Esperar a completar | 1 | 15 |
+| Esc. 4 · Narrar | 2 | 16, 17 |
+| Esc. 4 · Esperar a completar | 1 | 18 |
+| Esc. 4 · Completar reto | 1 | 19 |
+
+**Pendiente en `Basico`:**
+
+- Partida completa en Play dos veces seguidas (`Setup → Basico → Setup`), tiempo agotado
+  (`TimeUpSequence → Probar tiempo agotado`) y después en visor
+- Verificar en visor: manos (agarrar y pulsar), título y botones del Escenario 2, bloques y
+  rótulos del Escenario 3 (`BloqueRotarI`/`BloqueRotarD`), física y rechazo del Escenario 4
+- Opcional: `solvedSound` del Escenario 4; mover "Iniciar temporizador" tras la frase 3, que
+  es la que pide pulsarlo; sprite roto en `ShapeChip.prefab`; salas activas desde el arranque
+
+**Después, al generar `Intermedio`:** duplicar `Basico`, ejecutar `Tools → Codea → 2`, y
+cambiar solo: `listIndex` 2; módulos del esc. 2 a `*_Intermedia`; esc. 1 con
+`escenario1_intermedio.json`, 10 huecos y paleta de 12 (Girar Izq ×3, Girar Der ×2,
+Avanzar 2 ×4, Avanzar ×2, Usar ×1); esc. 3 con `editable` y los bloques Recoger · Girar Izq ·
+Soltar · Girar Der sueltos; esc. 4 con el juego de figuras denso.
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.
@@ -652,7 +701,7 @@ recortes de `symbols.png`; arreglada la pérdida de telemetría a partir de la s
 |---|---|
 | `SecuenciaIncompleta` | Sin definición operativa que separe "faltaron instrucciones" de "el orden estaba mal". Siempre vale 0. Es criterio pedagógico |
 | `SessionResult` | Declarado pero sin campo en el JSON. Falta decidir qué dispara "abandonado" |
-| Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. **El PIN sigue sin implementarse**: hoy todas las runs salen con `0000` y se distinguen solo por `sessionId` |
+| Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. El PIN lo teclea el supervisor en la escena `Setup` |
 | Mecánica del brazo | Reescrita con ficha de argumento y dos destinos, sin probar en visor ni con niños. ¿Entienden los niños que la ficha es un parámetro y no una instrucción? |
 | Escenario 4 | ¿Necesita panel-ejemplo introductorio? Depende de los beta testers |
 | Tanteo con el contador de repeticiones | Cada pulsación de `+`/`−` del Escenario 3 no se registra; solo queda el valor final del intento. Añadirlo es una métrica nueva, no un arreglo: decisión pedagógica |
@@ -662,7 +711,7 @@ recortes de `symbols.png`; arreglada la pérdida de telemetría a partir de la s
 
 | Archivo | Para quién |
 |---|---|
-| `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano. **Pendiente**: documentar `itemType` del Escenario 3 |
+| `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
 | `Docs/Codea2_GDD.docx` | Game Design Document |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |

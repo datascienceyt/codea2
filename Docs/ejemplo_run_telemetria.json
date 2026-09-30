@@ -179,20 +179,20 @@
         "chipsReleased": 6,
         "placements": [
             {
-                "socket": "glifo_04",
-                "chip": "glifo_04",
+                "socket": "circulo_rombo",
+                "chip": "circulo_rombo",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:11:21.3370000Z"
             },
             {
-                "socket": "glifo_11",
-                "chip": "glifo_12",
+                "socket": "cuadrado_circulo",
+                "chip": "cuadrado_punto",
                 "correct": 0,
                 "timestamp": "2026-09-15T14:11:38.8120000Z"
             },
             {
-                "socket": "glifo_11",
-                "chip": "glifo_11",
+                "socket": "cuadrado_circulo",
+                "chip": "cuadrado_circulo",
                 "correct": 1,
                 "timestamp": "2026-09-15T14:11:52.6900000Z"
             },

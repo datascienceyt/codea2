@@ -86,6 +86,33 @@ public class ShapeChip : BlockNode
         looseRoutine = StartCoroutine(Loose());
     }
 
+    /// <summary>
+    /// Suelta la ficha de su hueco donde está y la deja caer con su física. Para el rechazo:
+    /// el hueco ya la liberó, y aquí se desengancha del padre y vuelve a ser dinámica. Si acaba
+    /// en el suelo, vuelve sola a su sitio como cualquier ficha caída.
+    /// </summary>
+    public void DropInPlace(Vector3 launchVelocity = default)
+    {
+        // Mantiene la posición en el mundo; cuelga otra vez del BlockResetter para que la
+        // jerarquía siga ordenada y el reinicio la encuentre donde espera.
+        transform.SetParent(resetter != null ? resetter.transform : null, true);
+
+        if (!usePhysics || body == null) return;
+
+        body.isKinematic = false;
+        body.useGravity = true;
+
+        // VelocityChange y no Impulse: el empujón no depende de la masa que tenga la ficha.
+        if (launchVelocity != Vector3.zero)
+            body.AddForce(launchVelocity, ForceMode.VelocityChange);
+
+        StopLoose();
+        looseRoutine = StartCoroutine(Loose());
+    }
+
+    // Devuelta a su sitio (reinicio o caída): ya no hay caída que vigilar.
+    public override void OnReturnedHome() => StopLoose();
+
     private void StopLoose()
     {
         if (looseRoutine != null) StopCoroutine(looseRoutine);

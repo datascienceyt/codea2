@@ -57,10 +57,11 @@ Se registran una vez por participante.
 | `startedUtc` | fecha | Inicio de la sesión |
 | `endedUtc` | fecha | Cierre de la sesión |
 
-> `pin` **no es un nombre de usuario**, y **hoy todavía no se asigna**: la pantalla del
-> supervisor no está montada, así que todas las sesiones salen con `pin: "0000"`. Los archivos
-> no se pisan porque `sessionId` sí cambia en cada arranque, pero **el emparejamiento con cada
-> niño depende de que el supervisor anote qué `sessionId` corresponde a quién**.
+> `pin` **no es un nombre de usuario**: es un número que el supervisor teclea en el visor antes
+> de entregárselo al niño. La pantalla propone el siguiente al último usado, así que en una
+> ronda de participantes basta con confirmarlo. `sessionId` cambia en cada sesión, de modo que
+> dos archivos nunca se pisan, ni siquiera repitiendo PIN. **Qué niño corresponde a cada PIN lo
+> registra el supervisor fuera del visor.**
 
 ## Variables comunes de cada escenario
 
@@ -133,7 +134,7 @@ La dificultad vive en los datos, no en el código:
 
 | Dificultad | Opciones | Correctas |
 |---|---|---|
-| Básica | 2 | 1 |
+| Básica | 4 | 1 |
 | Intermedia | 4 | 2 |
 
 Cada distractor es una acción **correcta en otro módulo** —motores trata de combustible y
@@ -205,7 +206,7 @@ como error de lógica.
 |---|---|---|
 | `failedAttempts` | entero | Ejecuciones que **no clasificaron ningún objeto**. Una pasada que mueve algunos pero no todos no cuenta como fallida: es menos óptima, no errónea |
 | `blocksGrabbed` / `blocksReleased` | entero | Manipulación de bloques **y de fichas de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
-| `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha |
+| `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha o con 0 repeticiones. Al poner la ficha las repeticiones vuelven a 0, así que ejecutar sin elegirlas cuenta aquí y **no** como intento |
 | `errorCollisionBot`, `errorIncompleteSequence` | entero | No se usan en este escenario. Siempre 0 |
 
 Soltar un objeto en el lado equivocado **no se consuma**: el objeto vuelve a su pila y solo se
@@ -306,9 +307,10 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
    estaba mal". **Es una decisión pedagógica pendiente**, y si os interesa esa distinción hay
    que definirla antes de recoger datos.
 
-2. **No hay identificación nominal, y el `pin` aún no se asigna.** Todas las sesiones salen
-   con `"0000"` y solo las distingue `sessionId`. El emparejamiento con encuestas u otros
-   instrumentos depende de un registro externo que lleve el supervisor.
+2. **No hay identificación nominal.** Cada sesión lleva el `pin` que tecleó el supervisor. El
+   emparejamiento con encuestas u otros instrumentos depende del registro PIN → participante
+   que lleve el supervisor. Las sesiones recogidas antes del 30/09/2026 salieron todas con
+   `"0000"` y solo las distingue `sessionId`.
 
 3. **`blocksGrabbed` / `blocksReleased` miden manipulación, no colocaciones válidas.** Incluyen
    agarrar un bloque y volver a dejarlo sin usarlo. Sirven como indicador de exploración o de
@@ -396,16 +398,16 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "chipsGrabbed": 6,
         "chipsReleased": 6,
         "placements": [
-            { "socket": "glifo_04", "chip": "glifo_04", "correct": 1, "timestamp": "..." },
-            { "socket": "glifo_11", "chip": "glifo_12", "correct": 0, "timestamp": "..." },
-            { "socket": "glifo_11", "chip": "glifo_11", "correct": 1, "timestamp": "..." }
+            { "socket": "circulo_rombo", "chip": "circulo_rombo", "correct": 1, "timestamp": "..." },
+            { "socket": "cuadrado_circulo", "chip": "cuadrado_punto", "correct": 0, "timestamp": "..." },
+            { "socket": "cuadrado_circulo", "chip": "cuadrado_circulo", "correct": 1, "timestamp": "..." }
         ]
     }
 }
 ```
 
-En el Escenario 4 se lee de un vistazo lo que mide el escenario: confundió `glifo_12` con
-`glifo_11` y acertó al segundo intento. Ese par concreto es lo que interesa, porque señala qué
+En el Escenario 4 se lee de un vistazo lo que mide el escenario: confundió `cuadrado_punto` con
+`cuadrado_circulo` y acertó al segundo intento. Ese par concreto es lo que interesa, porque señala qué
 dos figuras resultaron demasiado parecidas.
 
 En el Escenario 3 se lee la historia de las tres ejecuciones: movió las 7 cajas de una pasada,

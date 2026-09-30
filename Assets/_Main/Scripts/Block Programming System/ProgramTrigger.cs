@@ -68,29 +68,62 @@ public class ProgramTrigger : MonoBehaviour
         StartCoroutine(runner.Run(socketRow.FirstSocket, socketRow.Repetitions));
     }
 
+    public string ChallengeId => challengeId;
+
+    /// <summary>
+    /// Las condiciones que de verdad se consultan: las del inspector que implementan la
+    /// interfaz, más las que se registran solas con AddPrecondition.
+    ///
+    /// Existe porque la lista del inspector acepta cualquier MonoBehaviour. En Basico acabó
+    /// apuntando a las dos FICHAS en vez de al socket, y como no implementan la interfaz se
+    /// ignoraban sin avisar: el programa corría sin ficha, itemType salía vacío en todos los
+    /// intentos y las repeticiones no volvían a 0.
+    /// </summary>
+    private readonly List<IRunPrecondition> activePreconditions = new List<IRunPrecondition>();
+
+    private void Awake()
+    {
+        if (preconditions == null) return;
+
+        foreach (MonoBehaviour candidate in preconditions)
+        {
+            if (candidate == null) continue;
+
+            if (candidate is IRunPrecondition precondition)
+                AddPrecondition(precondition);
+            else
+                Debug.LogWarning($"[ProgramTrigger] '{name}': '{candidate.name}' ({candidate.GetType().Name}) " +
+                                 "está en preconditions pero no es una condición previa; se ignora. " +
+                                 "Ahí va el socket (ArmTypeSocket), no las fichas.", this);
+        }
+    }
+
+    /// <summary>Para que una condición se registre sola, sin depender del inspector.</summary>
+    public void AddPrecondition(IRunPrecondition precondition)
+    {
+        if (precondition != null && !activePreconditions.Contains(precondition))
+            activePreconditions.Add(precondition);
+    }
+
     /// <summary>Primer argumento que aporte alguna condición. Null si ninguna aporta.</summary>
     private string ReadArgument()
     {
-        if (preconditions == null) return null;
-
-        foreach (MonoBehaviour candidate in preconditions)
-            if (candidate is IRunPrecondition precondition &&
-                !string.IsNullOrEmpty(precondition.RunArgument))
+        foreach (IRunPrecondition precondition in activePreconditions)
+            if (!string.IsNullOrEmpty(precondition.RunArgument))
                 return precondition.RunArgument;
 
         return null;
     }
 
     /// <summary>Si esta condición veta la ejecución de este botón.</summary>
-    public bool HasPrecondition(MonoBehaviour candidate) =>
-        preconditions != null && System.Array.IndexOf(preconditions, candidate) >= 0;
+    public bool HasPrecondition(IRunPrecondition candidate) =>
+        activePreconditions.Contains(candidate) ||
+        (preconditions != null && System.Array.IndexOf(preconditions, candidate as MonoBehaviour) >= 0);
 
     private bool CanRun()
     {
-        if (preconditions == null) return true;
-
-        foreach (MonoBehaviour candidate in preconditions)
-            if (candidate is IRunPrecondition precondition && !precondition.CanRun())
+        foreach (IRunPrecondition precondition in activePreconditions)
+            if (!precondition.CanRun())
                 return false;
 
         return true;

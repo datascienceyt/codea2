@@ -156,6 +156,27 @@ public class ShapeSocket : MonoBehaviour
         OnChipEvaluated?.Invoke(this, chip, correct);
     }
 
+    /// <summary>
+    /// Expulsa la ficha encajada, con el sonido de desconexión del socket (clipOut). Para el
+    /// rechazo; ResetSocket libera en silencio porque se usa en reinicios.
+    /// </summary>
+    public void Eject()
+    {
+        IsSolved = false;
+
+        if (socket == null || socket.IsEmpty) return;
+
+        if (socket.CurrentBlock is ShapeChip chip)
+            chip.SetInteractable(true);
+
+        socket.Clear();
+
+        if (shapeImage != null && Application.isPlaying) shapeImage.color = originalColor;
+    }
+
+    /// <summary>Si esta ficha sigue encajada en este hueco.</summary>
+    public bool Holds(BlockNode block) => socket != null && block != null && socket.CurrentBlock == block;
+
     private bool Matches(ShapeChip chip) => expectedShape != null && chip.Shape == expectedShape;
 
     /// <summary>Vacía el hueco y lo devuelve a su estado inicial.</summary>

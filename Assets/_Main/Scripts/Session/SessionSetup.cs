@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
@@ -26,6 +27,10 @@ public class SessionSetup : MonoBehaviour
     [Tooltip("Si un día unificas las dos dificultades en una sola escena, pon aquí el mismo " +
              "nombre que arriba: la dificultad se seguirá registrando bien.")]
     [SerializeField] private string intermediateSceneName = "Intermedio";
+
+    [Header("Pantalla")]
+    [Tooltip("Opcional. Muestra la dificultad elegida y qué falta para poder empezar.")]
+    [SerializeField] private TMP_Text statusText;
 
     [Header("Transición")]
     [Tooltip("Margen antes de cargar, para que dé tiempo al fundido o al sonido del botón.")]
@@ -192,9 +197,24 @@ public class SessionSetup : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
+    private void RefreshStatus()
+    {
+        if (statusText == null) return;
+
+        string difficulty = !DifficultyChosen ? "sin elegir" :
+                            SelectedDifficulty == Difficulty.Basica ? "Básica" : "Intermedia";
+
+        string next = IsReady ? "Listo: pulsa EMPEZAR" :
+                      !DifficultyChosen ? "Elige la dificultad" : "Completa el PIN";
+
+        statusText.text = $"Dificultad: {difficulty}\n{next}";
+    }
+
     /// <summary>Avisa solo cuando el estado cambia, para no repetir sonidos ni parpadeos.</summary>
     private void RefreshReady()
     {
+        RefreshStatus();
+
         if (lastReady == IsReady) return;
 
         lastReady = IsReady;

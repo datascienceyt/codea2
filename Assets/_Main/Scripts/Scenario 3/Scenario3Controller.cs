@@ -148,6 +148,11 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     /// </summary>
     private void HandleRunFinished()
     {
+        // Lo primero, y antes de cualquier return: un objeto olvidado en la pinza bloquea
+        // todas las ejecuciones siguientes. Va en código y no cableado por la misma razón que
+        // el registro de fallos: olvidarlo deja el escenario sin salida.
+        if (arm != null) arm.ReturnHeldToOrigin();
+
         // El escenario se resuelve DENTRO de la ejecución, en el último Soltar, así que al
         // llegar aquí el estado ya es definitivo.
         if (scenarioFinished) return;

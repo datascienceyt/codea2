@@ -114,8 +114,13 @@ public abstract class BlockNode : MonoBehaviour
     }
 
     /// <summary>Permite o impide que el jugador agarre este bloque.</summary>
+    /// <summary>False si el juego la bloqueó (ficha acertada, bloque fijo de la fila).</summary>
+    public bool IsInteractable { get; private set; } = true;
+
     public void SetInteractable(bool value)
     {
+        IsInteractable = value;
+
         if (interactionRoot != null)
             interactionRoot.SetActive(value);
     }
@@ -170,8 +175,24 @@ public abstract class BlockNode : MonoBehaviour
         return best;
     }
 
+    /// <summary>
+    /// Lo llama BlockResetter al devolver el bloque a su sitio. Para que las piezas con
+    /// comportamiento propio al estar sueltas (la física de ShapeChip) dejen de vigilarlo.
+    /// </summary>
+    public virtual void OnReturnedHome() { }
+
     void AttachTo(Socket socket)
     {
+        // Encajado, el bloque no puede ser dinámico: un Rigidbody con física ignora al padre
+        // del que cuelga, y la gravedad lo sacaba del hueco en el siguiente paso de física.
+        // Pasó en el Escenario 4 al dar física a todas las fichas: parecían no encajar nunca.
+        if (TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.isKinematic = true;
+        }
+
         transform.SetPositionAndRotation(socket.transform.position, socket.transform.rotation);
         transform.SetParent(socket.transform);
         socket.Occupy(this);

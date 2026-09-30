@@ -17,6 +17,12 @@ public class BlockResetter : MonoBehaviour
         public BlockNode node;
         public Vector3 localPosition;
         public Quaternion localRotation;
+
+        // Estado físico de origen. Se restaura tal cual: las fichas del Escenario 4 empiezan
+        // dinámicas y con gravedad, y devolverlas cinemáticas las dejaba sin física para siempre.
+        public Rigidbody body;
+        public bool kinematic;
+        public bool gravity;
     }
 
     readonly List<BlockHome> homes = new List<BlockHome>();
@@ -25,12 +31,17 @@ public class BlockResetter : MonoBehaviour
     {
         foreach (Transform child in transform)
         {
+            Rigidbody body = child.GetComponent<Rigidbody>();
+
             homes.Add(new BlockHome
             {
                 block = child,
                 node = child.GetComponent<BlockNode>(),
                 localPosition = child.localPosition,
-                localRotation = child.localRotation
+                localRotation = child.localRotation,
+                body = body,
+                kinematic = body != null && body.isKinematic,
+                gravity = body != null && body.useGravity,
             });
         }
     }
@@ -38,8 +49,13 @@ public class BlockResetter : MonoBehaviour
     [ContextMenu("Reset Blocks")]
     public void ResetBlocks()
     {
+        // Lo que el juego bloqueó se queda donde está: una ficha acertada del Escenario 4 o un
+        // bloque fijo de la fila. Devolverla dejaba el hueco marcado como resuelto pero vacío,
+        // y el escenario ya no se podía terminar. Para un reinicio completo, quien lo pida
+        // desbloquea antes (Scenario4Controller.ResetScenario).
         foreach (BlockHome home in homes)
-            Restore(home);
+            if (home.node == null || home.node.IsInteractable)
+                Restore(home);
     }
 
     /// <summary>
@@ -67,13 +83,12 @@ public class BlockResetter : MonoBehaviour
 
         // Al agarrarlo, BlockNode lo desparenta; al soltarlo sobre un socket lo
         // cuelga de este. Por eso hay que reparentarlo antes de la pose local.
-        // Una ficha con física puede volver cayendo o girando: se congela antes de moverla,
-        // o seguiría con la inercia de la caída desde su sitio de origen.
-        if (home.block.TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        // Una ficha con física puede volver cayendo o girando: se le quita la inercia, o
+        // seguiría con la de la caída desde su sitio de origen.
+        if (home.body != null && !home.body.isKinematic)
         {
-            body.linearVelocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.isKinematic = true;
+            home.body.linearVelocity = Vector3.zero;
+            home.body.angularVelocity = Vector3.zero;
         }
 
         home.block.SetParent(transform);
@@ -84,5 +99,16 @@ public class BlockResetter : MonoBehaviour
         // aunque el bloque ya estuviera de vuelta en su sitio, y dejaba de admitir nada.
         if (home.node != null)
             home.node.DetachFromSocket();
+
+        // Después de desacoplar: al encajar, el bloque se congeló, y aquí recupera la física
+        // con la que empezó.
+        if (home.body != null)
+        {
+            home.body.isKinematic = home.kinematic;
+            home.body.useGravity = home.gravity;
+        }
+
+        if (home.node != null)
+            home.node.OnReturnedHome();
     }
 }

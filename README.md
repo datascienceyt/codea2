@@ -49,7 +49,7 @@ Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para a
 ## Estructura de la experiencia
 
 ```
-Selección de dificultad y PIN (supervisor)      <- pendiente de montar
+Escena Setup: PIN y dificultad (supervisor)
         │
         ▼
    Escenario 1: Secuencialidad
@@ -92,10 +92,10 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 
 Pipeline de persistencia local con exportación remota manual:
 
-1. **`TelemetryManager`** (singleton persistente) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
+1. **`TelemetryManager`** (uno por escena) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
 2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}.json` en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
 3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
-4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) **no es automática**: la activa un botón exclusivo del supervisor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local.
+4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local.
 5. Al cerrar la sesión se imprime un **informe de integridad** por escenario, que avisa de contadores sospechosamente a cero antes de dar los datos por buenos.
 
 Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 registra la secuencia de bloques de cada intento; el 3 además las repeticiones y **con qué tipo** se ejecutó; el 2 cada opción marcada y desmarcada; y el 4 qué figura se intentó encajar en qué hueco.
@@ -126,20 +126,20 @@ Documento formal bajo estándar **IEEE 830** (`Codea2_SRS.pdf`, dentro del Infor
 Puntos críticos abiertos en el SRS:
 
 - Taxonomía de errores lógicos (RF-04): `secuencia_incompleta` sigue sin definición operativa que distinga "faltaron instrucciones" de "el orden estaba mal".
-- Identificación del participante: el SRS pide **username** (RF-01) y el diseño usa un **PIN** asignado por el supervisor. El PIN **aún no está implementado**: hoy todas las sesiones se distinguen solo por `sessionId`.
+- Identificación del participante: el SRS pide **username** (RF-01) y el diseño usa un **PIN** asignado por el supervisor. El supervisor lo teclea en la escena `Setup` antes de entregar el visor.
 
 ## Estado del desarrollo
 
 | Subsistema | Estado |
 |---|---|
 | Escenario 1 — Secuencialidad | Funcional, verificado en visor |
-| Escenario 2 — Condicionales | Montado en ambas dificultades, pendiente de prueba en visor |
+| Escenario 2 — Condicionales | Montado (4 opciones en ambas dificultades), pendiente de prueba en visor |
 | Escenario 3 — Bucles y parámetros | Rediseñado y montado, pendiente de prueba en visor |
-| Escenario 4 — Patrones | Montado, pendiente de prueba en visor |
-| Sistema narrativo | Funcional |
+| Escenario 4 — Patrones | Montado con física en las fichas, pendiente de prueba en visor |
+| Sistema narrativo | Funcional, con CSV y voces nuevas por dificultad |
 | Telemetría JSON + subida | Funcional de punta a punta |
-| Temporizador visible en todas las salas | Implementado; faltan los avisos por umbral (RF-06) |
-| Selección de dificultad y PIN (RF-01) | Código completo, sin montar |
+| Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
+| Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | Sin implementar |
 
 **La documentación técnica completa está en [`Context.md`](Context.md)**: arquitectura,
