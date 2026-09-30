@@ -684,8 +684,17 @@ añade o quita una frase del CSV, hay que rehacer esta tabla:
   (`TimeUpSequence → Probar tiempo agotado`) y después en visor
 - Verificar en visor: manos (agarrar y pulsar), título y botones del Escenario 2, bloques y
   rótulos del Escenario 3 (`BloqueRotarI`/`BloqueRotarD`), física y rechazo del Escenario 4
+- Probar el APK en el visor siguiendo **"Prueba del APK"** (sección 14)
+- Escenario 3, visual (reunión del 29/09): encerrar los bloques, poner título a las
+  instrucciones y hacer más intuitivo el socket de tipo. Para luz o sonido ya existen
+  `ArmTypeSocket.OnTypePlaced` y `OnMissingRepetitions`
+- Escenario 2: comprobar en visor que el título grande se lee y que los 4 botones no se solapan
+- README: la sección "Descripción" cuenta la historia antigua (meteorito, robot uemy-26,
+  incendio). El guion vigente es el de `Narrativa.csv` y el GDD: tormenta espacial, Roki,
+  botón verde, regreso a la Tierra
 - Opcional: `solvedSound` del Escenario 4; mover "Iniciar temporizador" tras la frase 3, que
-  es la que pide pulsarlo; sprite roto en `ShapeChip.prefab`; salas activas desde el arranque
+  es la que pide pulsarlo; `alerts` del temporizador (no hay frases de aviso grabadas); sprite
+  roto en `ShapeChip.prefab`; salas activas desde el arranque
 
 **Después, al generar `Intermedio`:** duplicar `Basico`, ejecutar `Tools → Codea → 2`, y
 cambiar solo: `listIndex` 2; módulos del esc. 2 a `*_Intermedia`; esc. 1 con
@@ -720,6 +729,36 @@ Soltar · Girar Der sueltos; esc. 4 con el juego de figuras denso.
 | `README.md` | Presentación institucional del repositorio |
 
 ## 14. Comprobaciones rápidas
+
+### Prueba del APK
+
+Antes de compilar: `Setup` primera en Build Settings y las tres escenas marcadas. Con el visor
+conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON queda en
+`/sdcard/Android/data/<paquete>/files/{pin}_{sessionId}.json`.
+
+| # | Paso | Debe pasar | Si falla, mirar |
+|---|---|---|---|
+| 1 | Abrir la app | Arranca en `Setup`, con el PIN siguiente ya propuesto | Orden de Build Settings |
+| 2 | Teclear un PIN, borrar una cifra, "Siguiente" | La pantalla sigue cada tecla | Cableado de las teclas |
+| 3 | Pulsar EMPEZAR sin dificultad | No arranca; el estado pide la dificultad | `SessionSetup.statusText` |
+| 4 | Básica → EMPEZAR | Fundido y carga de `Basico` | Build Settings |
+| 5 | Introducción | Frases 1–3 con voz y texto completo a la vez; el reloj arranca con «Iniciar» | Listas del Narrator |
+| 6 | Esc. 1: fallar a propósito | Choca, frase de error, el nivel se rearma solo | `OnAttemptFailed` |
+| 7 | Esc. 1: resolver | Frase 7, puerta abierta, traslado | Director |
+| 8 | Esc. 2: opción incorrecta | Frase de error; deseleccionar no la repite | `OnWrongOption` |
+| 9 | Esc. 2: resolver los 3 módulos | Luces verdes, frase 10 | `ModuleData` |
+| 10 | Esc. 3: ejecutar sin ficha | No se mueve nada | `preconditions` |
+| 11 | Esc. 3: poner ficha | Contador a 0; ejecutar con 0 no hace nada | `ArmTypeSocket` |
+| 12 | Esc. 3: resolver en dos pasadas | Cada tipo a su lado, frase 15 | `SortingGoal` |
+| 13 | Esc. 4: ficha incorrecta | Sale disparada con sonido de desconexión | `rejectSpeed`, `rejectLocalDirection` |
+| 14 | Esc. 4: tirar una ficha al suelo | Vuelve sola a los 4 s | `fallenBelow`, collider del suelo |
+| 15 | Esc. 4: 2 aciertos + Reiniciar | Las acertadas no se mueven ni se agarran | `IsInteractable` |
+| 16 | Esc. 4: completar | Motores, frase 18, frase 19 | `completedSound`, Director |
+| 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |
+| 18 | Segunda partida seguida (otro PIN) | Todo igual que la primera | `TelemetryManager` por escena |
+| 19 | Tercera partida: dejar que se acabe el tiempo | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
+| 20 | Sacar los JSON del visor | Un archivo por partida, con su PIN, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
+| 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
 
 ```bash
 # Compilar sin abrir Unity. Necesita que Unity haya generado el .csproj al menos una vez:
