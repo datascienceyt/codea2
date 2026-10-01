@@ -762,6 +762,41 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
   es la que pide pulsarlo; `alerts` del temporizador; sprite roto en `ShapeChip.prefab`;
   salas activas desde el arranque
 
+**Pedidos de cambio recibidos el 01/10/2026 (por tratar en otra sesión, uno a uno):**
+
+| # | Pedido | Tipo | Notas |
+|---|---|---|---|
+| 1 | Esc. 1 · Depurar logs | Código | Plan listo, ver abajo |
+| 2 | Esc. 2 · Título "Sistema de motores" | Datos | `moduleName` de `Motores_Basica` y `Motores_Intermedia` (hoy "Motores") |
+| 3 | Esc. 2 · "Agregar combustible" | Datos | Hoy "Agregar gasolina" en los módulos donde aparece. Es un distractor en Enfriamiento y Generadores: cambiar el texto en todos los assets |
+| 4 | Esc. 2 · El botón se desactiva solo tras un error | Código | `SystemModule` / `ModuleOptionButton`. Decidir si se deselecciona y bloquea, y si vuelve a habilitarse |
+| 5 | Esc. 2 · No contar deselecciones en telemetría | Código + formato | `Scenario2Controller`. Contradice la decisión de la sección 9 ("registra también las deselecciones"): actualizarla y `VARIABLES_TELEMETRIA.md` |
+| 6 | Esc. 2 · Reducir el tamaño de los paneles | Escena / prefabs | Hoy no se ve el estado corregido / sin corregir. Revisar en visor qué queda fuera de vista |
+| 7 | Esc. 3 · Repeticiones a 0 al terminar cada ejecución | Código | `Scenario3Controller.HandleRunFinished` → `SocketRow.SetRepetitions(0)` |
+| 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Actualizar la guía de variables y el informe de integridad |
+| 9 | Esc. 3 · `solved=1` al terminar barriles o cajas | Código | **Pregunta abierta**, ver abajo |
+| 10 | Esc. 3 · Cantidad disponible por intento | Código + formato | Campo nuevo en `LoopAttemptRecord`: objetos de ese tipo que quedaban por clasificar al ejecutar. Actualizar ejemplo y guía |
+| 11 | Esc. 4 · Intermedia con el alfabeto Yachay en glifos cuadrados | Recursos + escena | Hacen falta las imágenes. Sustituye el pendiente de las "figuras densas" |
+| 12 | Tutorial · Botón, chip + socket | Diseño | **Pregunta abierta**, ver abajo |
+
+**Plan del punto 1 (depurar logs del esc. 1), listo para aplicar:**
+
+| Dónde | Hoy | Qué hacer |
+|---|---|---|
+| `LevelLoader.cs:196` y `LevelManager.cs:94` | Volcado del tablero entero al cargar y en cada reintento | Quitarlos, o dejarlos tras una casilla `Log Grid` desactivada por defecto |
+| `LevelManager.cs:45` y `:55` | `print("Out of grid...")`, `print("Ilegal move...")` | Un aviso en español con prefijo: `[Escenario1] Choque en (x,y)` |
+| `ProgramTrigger.cs:32` y `:41` | `"Programm is running"` / `"Programm has run"` | En español y con prefijo |
+| `StartBlock.cs:11` | `print("Iniciando.")` | Quitar |
+| Errores de configuración y `[Escenario 1] COMPLETADO` | — | No tocar: son las señales que usamos para verificar |
+
+**Preguntas abiertas para esa sesión:**
+
+- **Punto 9:** ¿`solved` debe valer 1 en la pasada que clasifica **todo su tipo** (todas las cajas o todos los barriles), en vez de solo en la que completa el escenario? Hoy solo la última pasada sale con `solved: 1`.
+- **Punto 12:** ¿el tutorial es una escena aparte o un paso previo al Escenario 1, donde el niño aprende a pulsar un botón y a encajar una ficha en un socket? ¿Lleva narración propia (frases nuevas en el CSV) y se registra en la telemetría?
+- **Punto 4:** al equivocarse, ¿el botón se deselecciona y queda bloqueado para siempre, o un tiempo? ¿Cuenta como error de la misma forma que hoy?
+- **Punto 6:** ¿qué es exactamente lo que no se ve: el icono, la luz o el texto "Sistema restablecido"? ¿Desde dónde mira el jugador?
+- **Punto 11:** ¿hay ya imágenes del alfabeto Yachay en glifos cuadrados? ¿Cuántos huecos y fichas tendrá la intermedia?
+
 **Regenerar `Intermedio`** (si `Basico` cambia de forma importante):
 
 1. Borrar `Intermedio.unity`, duplicar `Basico` (Ctrl+D), renombrar a `Intermedio` y abrirla
