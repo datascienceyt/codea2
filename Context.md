@@ -121,7 +121,7 @@ dependencia:
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
-| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara `Basico`/`Intermedio` (dificultad, tiempo agotado, vuelta a `Setup`). Repetibles |
+| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara `Basico`/`Intermedio` (dificultad, tiempo agotado, vuelta a `Setup`). **3** convierte una copia de `Basico` en `Intermedio`. Repetibles |
 
 ## 4. Sistema de bloques
 
@@ -502,16 +502,16 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 |---|---|
 | `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed/Released()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` |
 | `JSONUploader` | `UploadTelemetry()`, `UploadFile(string)` |
-| `ProgramTrigger` | `OnPlayPressed()` |
+| `ProgramTrigger` | `OnPlayPressed()`, `AddPrecondition(IRunPrecondition)` (desde código) |
 | `ProgramRunner` | `ResetRunner()` |
 | `SocketRow` | `IncreaseRepetitions()`, `DecreaseRepetitions()`, `SetRepetitions(int)`, `Lock()`, `Unlock()`, `SetEditable(bool)`, `ClearRow(bool)`, `PlaceInitialBlocks()` |
-| `BlockResetter` | `ResetBlocks()` |
+| `BlockResetter` | `ResetBlocks()` (no mueve las piezas bloqueadas), `ReturnBlock(BlockNode)` |
 | `LevelLoader` / `LevelManager` | `ReloadLevel()` · `ResetLevel()`, `CompleteLevel()` |
 | `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()`, `Refresh()` · `Press()` |
 | `RoboticArm` | `ResetArm()`, `ReturnHeldToOrigin()` |
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
-| `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()` |
-| `ShapeSocket` | `Refresh()`, `ResetSocket()`, `ApplyShapeToChild()` |
+| `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()`, `DropInPlace(Vector3)` |
+| `ShapeSocket` | `Refresh()`, `ResetSocket()`, `Eject()`, `ApplyShapeToChild()` |
 | `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
@@ -629,6 +629,22 @@ borrando el trabajo bueno de pasadas anteriores.
 **`textId` es texto.** Las variantes por dificultad del CSV (`9.1`, `14.2`) no caben en un
 entero, y el parser las descartaba sin avisar.
 
+**`StartChallenge` es idempotente y gana la primera llamada.** Antes, una segunda llamada
+reiniciaba la hora de inicio y el cronómetro. Con el reto abierto al acabar la narración, el
+niño —que ya manipula mientras escucha— dejaba intentos registrados *antes* del inicio de su
+escenario y agarres atribuidos a la sala anterior. Ahora el reto se abre al llegar y la
+llamada posterior no hace nada. Queda pendiente dejar un único punto de apertura (sección 11).
+
+**`ResetBlocks` no mueve lo que el juego bloqueó.** Una ficha acertada del Escenario 4 o un
+bloque fijo de la fila del Escenario 3 no son agarrables, y devolverlos a su sitio dejaba el
+hueco marcado como resuelto pero vacío: el escenario ya no se podía terminar. El reinicio
+completo desbloquea antes (`Scenario4Controller.ResetScenario`).
+
+**Encajar congela el Rigidbody; devolver restaura el que tenía.** Un Rigidbody dinámico ignora
+a su padre, así que una ficha con física encajada en un hueco se caía de él al siguiente paso
+de física. `BlockResetter` guarda en `Awake` si cada pieza era cinemática y con gravedad, y
+lo restaura al devolverla.
+
 **El informe de integridad corre en `EndRun()`.** Esta telemetría no falla reventando: falla
 saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. Ver sección 7.
 
@@ -649,30 +665,42 @@ saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. V
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 30/09/2026
+## 11. Estado voluble — 30/09/2026 (tarde, día de la presentación)
 
 > Esta sección caduca. Todo lo anterior es estable.
 
-**Escenas:** `Setup` (pantalla del supervisor), `Basico` e `Intermedio`, las tres en Build
-Settings en ese orden. `Intermedio` es una copia antigua de `Basico` y **se va a regenerar
-duplicando `Basico`** cuando esta esté terminada: no tiene nada propio salvo los módulos del
-Escenario 2 con datos `*_Intermedia`. Quedan además `Main 2.unity`, `Tests.unity` y 7
-respaldos en `_Recovery/`, que no son escenas activas.
+**Escenas:** `Setup` (pantalla del supervisor), `Basico` e `Intermedio`, las tres activas en
+Build Settings en ese orden. `Intermedio` se generó duplicando `Basico` y pasando las
+herramientas 2 y 3. `Main 2.unity` se borró; quedan `Tests.unity` y 7 respaldos en
+`_Recovery/`, que no son escenas activas.
+
+**Verificado contra las escenas el 30/09/2026 por la tarde:**
+
+| Qué | `Basico` | `Intermedio` |
+|---|---|---|
+| `DifficultyScene` | Básica | Avanzada |
+| Narrador | lista 1 · CSV `Narrativa.csv` · texto de golpe | lista 2 · igual |
+| Director | 19 esperas al Narrator | 19 esperas al Narrator |
+| Tiempo agotado | `Timer.OnTimeUp → Begin`, frase 20, vuelta a `Setup` | igual |
+| Esc. 1 · nivel | `reto.json` · 8 huecos · 8 bloques | `escenario1_intermedio.json` · 11 huecos · 13 bloques |
+| Esc. 2 · módulos | `*_Basica` | `*_Intermedia` |
+| Esc. 3 · fila | bloqueada: Recoger · Girar al destino · Soltar · Volver | editable y desordenada: Soltar · Girar Der · Recoger · Girar Izq |
+| Esc. 3 · condiciones | el socket de tipo (`ArmTypeSocket`) | igual |
+| Esc. 4 | `rejectSpeed` 4 · sonido de motores | igual · **mismas figuras que básica** |
+| `ResetArm` cableado / scripts perdidos | ninguno / ninguno | ninguno / ninguno |
 
 | Subsistema | Estado |
 |---|---|
-| Escena `Setup` | ✅ Montada con la herramienta: 15 teclas cableadas, sin `TelemetryManager` |
-| Sesión en `Basico` | ✅ `DifficultyScene`, `SceneLoader`, `TimeUpSequence` (frase `20`) y paso final "Volver a Setup" |
-| Escenario 1 | ✅ Verificado en visor. Nivel intermedio definitivo (`escenario1_intermedio.json`, 11 huecos, paleta 13); la herramienta 3 lo monta |
-| Escenario 2 | ✅ 4 opciones en básica, `OnWrongOption → PlayErrorLine` en los 3 módulos. Probado en APK (`0101`, `0102`) |
-| Escenario 3 | ✅ `preconditions` corregida, pinza arreglada, repeticiones a 0 al poner la ficha. Probado en APK: `itemType` se registra |
-| Escenario 4 | ✅ Fichas con física, rechazo con empujón (`rejectSpeed` 4) y sonido, reinicio que respeta las acertadas, sonido de motores. Probado en APK |
-| Retos 2–4 | 🟡 Se abrían al acabar la narración (desfase en `0101`/`0102`). Corregido en código y en la herramienta 2; falta ejecutarla en `Basico` y recompilar |
-| Repositorio | ✅ De `Build/` solo se versiona `app.apk` (Git LFS, ~160 MB); el resto de la carpeta está en `.gitignore` |
-| Narrativa | ✅ CSV y audios nuevos, listas Básica/Intermedia de 19 frases, 5 frases de error. El Director espera al Narrator exactamente 19 veces |
-| Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup` |
+| Escena `Setup` | ✅ 15 teclas cableadas, sin `TelemetryManager` |
+| Escenario 1 | ✅ Verificado en visor (básica). Intermedio montado, sin probar en visor |
+| Escenario 2 | ✅ Probado en APK (`0101`, `0102`) |
+| Escenario 3 | ✅ Probado en APK: `itemType` se registra, repeticiones a 0, pinza arreglada |
+| Escenario 4 | ✅ Probado en APK: física, rechazo con empujón y sonido, reinicio que respeta las acertadas, motores |
+| Narrativa | ✅ CSV y voces nuevas, dos listas de 19 frases, 5 frases de error |
+| Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup`, retos 2–4 abiertos al llegar |
+| Repositorio | ✅ De `Build/` solo se versiona `app.apk` (Git LFS, ~160 MB) |
 | Servidor | ✅ `~/Services/JSONServer` en la Pi |
-| Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso en el CSV) |
+| Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso grabadas) |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
 **Decidido el 08/09/2026:** las dificultades se cambian **cargando escenas distintas**.
@@ -687,10 +715,11 @@ dos dificultades del Escenario 2 (1 correcta en básica, 2 en intermedia); repet
 poner la ficha del Escenario 3; física y aviso de acierto en el Escenario 4.
 
 **Decidido el 30/09/2026:** la ficha rechazada del Escenario 4 sale disparada desde el hueco
-en vez de volver a su sitio, y el reinicio no mueve las fichas acertadas.
+en vez de volver a su sitio, y el reinicio no mueve las fichas acertadas. El nivel intermedio
+del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
-**Reparto de la narración en el Director de `Basico`** (verificado el 30/09/2026). Si se
-añade o quita una frase del CSV, hay que rehacer esta tabla:
+**Reparto de la narración en el Director** (igual en las dos escenas, verificado el
+30/09/2026). Si se añade o quita una frase del CSV, hay que rehacer esta tabla:
 
 | Paso | Esperas al Narrator | Frases |
 |---|---|---|
@@ -704,49 +733,54 @@ añade o quita una frase del CSV, hay que rehacer esta tabla:
 | Esc. 4 · Esperar a completar | 1 | 18 |
 | Esc. 4 · Completar reto | 1 | 19 |
 
-**Pendiente en `Basico`:**
+**Pendiente, por orden de importancia:**
 
-- Partida completa en Play dos veces seguidas (`Setup → Basico → Setup`), tiempo agotado
-  (`TimeUpSequence → Probar tiempo agotado`) y después en visor
-- Verificar en visor: manos (agarrar y pulsar), título y botones del Escenario 2, bloques y
-  rótulos del Escenario 3 (`BloqueRotarI`/`BloqueRotarD`), física y rechazo del Escenario 4
-- **Volver a ejecutar `Tools → Codea → 2` en `Basico` y recompilar el APK**: abre los retos
-  2–4 al llegar a la sala. En las pruebas `0101`/`0102` del 30/09 se abrían al terminar la
-  narración: un intento del esc. 3 quedó registrado antes del inicio del escenario y un agarre
-  de ficha del esc. 4 se contó en el esc. 3 (`blocksGrabbed` 12 frente a 11 soltados;
-  `chipsGrabbed` 16 frente a 17)
-- Probar el APK en el visor siguiendo **"Prueba del APK"** (sección 14)
-- Escenario 3, visual (reunión del 29/09): encerrar los bloques, poner título a las
-  instrucciones y hacer más intuitivo el socket de tipo. Para luz o sonido ya existen
+- **Los retos 2–4 se abren dos veces.** El primer paso de cada escenario del Director llama a
+  `StartScenario` al llegar a la sala (lo añadió `Tools → Codea → 2`), y el paso "Esperar
+  completar" lo vuelve a llamar al terminar la narración, porque el controlador es su acción
+  de espera. Hoy es inofensivo: `StartChallenge` es idempotente y gana la primera llamada.
+  Pero **debería haber un único punto de apertura**. Opciones: quitar la llamada del paso
+  "Esperar completar" (y la de "Teletransportar a panel 1" del esc. 2), o que `Execute()` del
+  controlador no abra el reto. En `Basico` e `Intermedio` hay 6 `StartScenario` en el
+  Director; deberían quedar 3. Hacerlo antes de recoger datos reales para no depender de la
+  idempotencia
+- **Figuras densas del Escenario 4 en `Intermedio`:** hoy usa las mismas 4 que básica
+  (`circulo_cuadrado`, `cuadrado_rombo`, `cuadrado_trianguloinv`, `triangulo_circulo`), así
+  que la dificultad no cambia en esa sala. Elegir recortes más parecidos entre sí (p. ej.
+  las familias `persona_*` o `tresenraya_*`), asignarlos a huecos y fichas, y pasar
+  "Comprobar figuras del panel"
+- **Rótulo del bloque "Volver" en `Basico`:** el texto visible dice "Regresar" pero
+  `InstructionLabel` (lo que va a la telemetría) dice "Volver". Unificar uno de los dos
+- Probar `Intermedio` en el visor con la tabla "Prueba del APK" (sección 14), en especial el
+  Escenario 1 (solución de 11 bloques) y el Escenario 3 (reordenar la fila)
+- Verificar en visor: manos (agarrar y pulsar) y que los 4 botones del Escenario 2 no se
+  solapan
+- Escenario 3, visual (reunión del 29/09): encerrar los bloques, titular las instrucciones y
+  hacer más intuitivo el socket de tipo. Para luz o sonido ya existen
   `ArmTypeSocket.OnTypePlaced` y `OnMissingRepetitions`
-- Escenario 2: comprobar en visor que el título grande se lee y que los 4 botones no se solapan
-- README: la sección "Descripción" cuenta la historia antigua (meteorito, robot uemy-26,
-  incendio). El guion vigente es el de `Narrativa.csv` y el GDD: tormenta espacial, Roki,
-  botón verde, regreso a la Tierra
 - Opcional: `solvedSound` del Escenario 4; mover "Iniciar temporizador" tras la frase 3, que
-  es la que pide pulsarlo; `alerts` del temporizador (no hay frases de aviso grabadas); sprite
-  roto en `ShapeChip.prefab`; salas activas desde el arranque
+  es la que pide pulsarlo; `alerts` del temporizador; sprite roto en `ShapeChip.prefab`;
+  salas activas desde el arranque
 
-**Después, al generar `Intermedio`:**
+**Regenerar `Intermedio`** (si `Basico` cambia de forma importante):
 
 1. Borrar `Intermedio.unity`, duplicar `Basico` (Ctrl+D), renombrar a `Intermedio` y abrirla
 2. `Tools → Codea → 2`: `DifficultyScene` en Avanzada (lo deduce del nombre)
 3. `Tools → Codea → 3 - Convertir escena abierta a Intermedia` (se niega si el nombre no
-   contiene "Intermed"). Hace:
+   contiene "Intermed"):
    - Narrador: `listIndex` 2
    - Esc. 2: los 3 módulos a `*_Intermedia`
    - Esc. 1: `escenario1_intermedio.json`, 11 huecos y paleta de 13 (Girar Izq ×4, Girar
      Der ×2, Avanzar 2 ×4, Avanzar ×2, Usar ×1). Los que faltan se **duplican** de uno con la
-     misma acción, así heredan rótulo y eventos, y salen **apilados encima del original**
+     misma acción y salen **apilados encima del original**
    - Esc. 3: fila `editable`; "Girar al destino" → "Girar Izquierda" y "Volver" → "Girar
-     Derecha" (acción y rótulo); la fila arranca **desordenada**: Soltar · Girar Der ·
-     Recoger · Girar Izq. El niño la reordena, y para el otro tipo, invierte los giros
-4. A mano: colocar en la mesa los 4 bloques nuevos del esc. 1, y las figuras densas del esc. 4
-   (sprite de huecos y fichas; `ApplyShapeToChild` y "Comprobar figuras del panel")
-5. Build Settings: comprobar que `Intermedio` sigue marcada tras borrarla y recrearla
+     Derecha" (acción y rótulo); la fila arranca **desordenada**
+4. A mano: colocar en la mesa los bloques nuevos del esc. 1 y las figuras densas del esc. 4
+5. Build Settings: comprobar que `Intermedio` sigue marcada (al recrearla cambia su guid)
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.
+
 ## 12. Decisiones abiertas
 
 | Qué | Por qué sigue abierto |
@@ -765,7 +799,8 @@ añade o quita una frase del CSV, hay que rehacer esta tabla:
 |---|---|
 | `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
-| `Docs/Codea2_GDD.docx` | Game Design Document |
+| `Docs/JSON Samples/` | Runs reales del APK (`0101`, `0102`, dificultad básica, 30/09/2026). Tienen el desfase de apertura de los retos 3 y 4 descrito en la sección 11 |
+| `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
 | `Docs/Investigaciones/` | Respaldo académico: *worked examples*, manipulativos físico-digitales |
@@ -802,6 +837,13 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 19 | Tercera partida: dejar que se acabe el tiempo | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
 | 20 | Sacar los JSON del visor | Un archivo por partida, con su PIN, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
 | 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
+| 22 | `Setup` → **Intermedia** → EMPEZAR | Carga `Intermedio`; en el JSON, `difficulty: 2` | `DifficultyScene`, Build Settings |
+| 23 | Intermedia · frases 9.2 y 14.2 | Suenan las variantes de intermedia | `listIndex` 2 |
+| 24 | Intermedia · Esc. 1 por abajo | No caben los bloques en los 11 huecos | Nivel `escenario1_intermedio.json` |
+| 25 | Intermedia · Esc. 1 por arriba (11 bloques) | Roki llega de frente al botón y la puerta se abre | Solución en la sección 5 |
+| 26 | Intermedia · Esc. 2 | Cada módulo pide 2 opciones | Módulos `*_Intermedia` |
+| 27 | Intermedia · Esc. 3 | La fila llega desordenada y se puede reordenar; cada color necesita sus giros | Herramienta 3 |
+| 28 | JSON: primer intento del esc. 3 | Su `timestamp` es posterior a `escenario3.startedUtc`; agarres ≈ sueltas en esc. 3 y 4 | Retos abiertos al llegar |
 
 ```bash
 # Compilar sin abrir Unity. Necesita que Unity haya generado el .csproj al menos una vez:

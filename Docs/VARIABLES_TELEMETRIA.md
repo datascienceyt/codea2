@@ -71,7 +71,7 @@ Presentes en los cuatro.
 |---|---|---|
 | `started` | `true`/`false` | Si el participante llegó a este escenario |
 | `completed` | `true`/`false` | Si lo resolvió |
-| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve |
+| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve. En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
 | `startedUtc` / `endedUtc` | fecha | Permiten reconstruir el ritmo de la sesión completa |
 
 ---

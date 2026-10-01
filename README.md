@@ -27,14 +27,14 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 
 ## Descripción
 
-El jugador despierta solo en una nave espacial dañada tras el impacto de un meteorito. Para llegar a su cápsula de escape debe atravesar **4 escenarios**, resolviendo en cada uno un problema mediante **programación por bloques**. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
+El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra en menos de 15 minutos. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
 
 | Escenario | Categoría | Pilar(es) de CT | Mecánica |
 |---|---|---|---|
-| 1 — Dormitorio | Secuencialidad | Diseño de algoritmos, Descomposición, Abstracción | Ordenar bloques de instrucciones para que el robot uemy-26 controle un incendio y abra la puerta |
-| 2 — Sala de sistemas | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Cada módulo describe **síntomas** (*"los motores hacen ruido pero no arrancan"*) y el jugador deduce qué acciones lo reparan. Hay que marcar exactamente las correctas: ni de menos ni de más |
-| 3 — Almacén | Bucles y parámetros | Reconocimiento de patrones, Abstracción | Programar un brazo robótico que **clasifica** barriles rojos y cajas azules. La fila de instrucciones es el bucle, y una ficha aparte decide qué tipo recoge |
-| 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Encontrar, entre figuras abstractas muy parecidas, la ficha **idéntica** a la que muestra cada hueco |
+| 1 — Dormitorio | Secuencialidad | Diseño de algoritmos, Descomposición, Abstracción | Ordenar bloques de instrucciones para guiar a Roki por una cuadrícula hasta el botón verde que abre la puerta. En intermedia hay un camino tentador que no cabe en la fila de instrucciones |
+| 2 — Sala de control | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Cada módulo describe **síntomas** (*"los motores hacen ruido pero no arrancan"*) y el jugador deduce qué acciones lo reparan. Hay que marcar exactamente las correctas: ni de menos ni de más |
+| 3 — Almacén | Bucles y parámetros | Reconocimiento de patrones, Abstracción | Programar un brazo robótico que **clasifica** la carga por color para despejar el paso. La fila de instrucciones es el bucle, y una ficha de color aparte decide qué tipo recoge. En intermedia, además, hay que ordenar la fila |
+| 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Encender la nave: encontrar, entre figuras abstractas muy parecidas, la ficha **idéntica** a la que muestra cada hueco. Las fichas incorrectas salen disparadas del panel |
 
 Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para adaptarse a la amplia diferencia de edad del público objetivo.
 
@@ -132,14 +132,15 @@ Puntos críticos abiertos en el SRS:
 
 | Subsistema | Estado |
 |---|---|
-| Escenario 1 — Secuencialidad | Funcional, verificado en visor |
-| Escenario 2 — Condicionales | Montado (4 opciones en ambas dificultades), pendiente de prueba en visor |
-| Escenario 3 — Bucles y parámetros | Rediseñado y montado, pendiente de prueba en visor |
-| Escenario 4 — Patrones | Montado con física en las fichas, pendiente de prueba en visor |
+| Escenario 1 — Secuencialidad | Funcional en las dos dificultades; básica verificada en visor |
+| Escenario 2 — Condicionales | Funcional, probado en el APK (4 opciones en ambas dificultades) |
+| Escenario 3 — Bucles y parámetros | Funcional, probado en el APK |
+| Escenario 4 — Patrones | Funcional, probado en el APK. Falta el juego de figuras propio de intermedia |
 | Sistema narrativo | Funcional, con CSV y voces nuevas por dificultad |
 | Telemetría JSON + subida | Funcional de punta a punta |
 | Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
 | Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
+| Dificultad intermedia | Escena `Intermedio` generada desde la básica con las herramientas de `Tools → Codea` |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | Sin implementar |
 
 **La documentación técnica completa está en [`Context.md`](Context.md)**: arquitectura,
@@ -175,21 +176,23 @@ Assets/
 │   ├── 2D/                 # Sprites: figuras del Escenario 4, fichas del Escenario 3, UI
 │   ├── 3D Models/
 │   ├── CustomMaterials/
-│   ├── Editor/
-│   ├── Levels/             # Definiciones de nivel por escenario/dificultad
+│   ├── Editor/             # Tools → Codea (montaje de escenas) y Level Editor
+│   ├── Levels/             # Niveles del Escenario 1: reto.json (básica), escenario1_intermedio.json
 │   ├── Prefabs/
 │   ├── Scripts/
 │   │   ├── Block Programming System/   # BlockNode, Socket, SocketRow, ProgramRunner…
 │   │   ├── Grid Level/                 # Bot, LevelManager, LevelLoader (Escenario 1)
-│   │   ├── Scenario 2/                 # Módulos de la sala de sistemas y sus ModuleData
+│   │   ├── Scenario 2/                 # Módulos de la sala de control y sus ModuleData
 │   │   ├── Scenario 3/                 # Brazo robótico, posiciones, fichas de tipo
 │   │   ├── Scenario 4/                 # Fichas, huecos y pliego de figuras
 │   │   ├── Session/                    # Selección de dificultad y PIN
 │   │   ├── Story/                      # Director, Narrator, Fader, Timer…
 │   │   └── Telemetry/                  # TelemetryManager, JSONUploader
-│   └── Sounds/
+│   ├── Narrativa.csv        # Guion: ID_Texto, texto de cada frase
+│   └── Sounds/             # Voces (VoiceLines/Victor), efectos y ambiente
 ├── _Recovery/               # Respaldos de escena (no son las escenas activas)
 ├── Scenes/
+│   ├── Setup.unity          # Pantalla del supervisor: PIN y dificultad (primera escena)
 │   ├── Basico.unity         # Sesión completa, dificultad básica
 │   └── Intermedio.unity     # Sesión completa, dificultad intermedia
 ├── Oculus/                  # Integración Meta/Oculus
@@ -199,10 +202,13 @@ Assets/
 ├── StreamingAssets/
 ├── XR/                      # Configuración XR
 └── InputSystem_Actions.inputactions
+Build/
+└── app.apk                  # APK para instalar en el visor (Git LFS). El resto de Build/ no se versiona
 Docs/
 ├── VARIABLES_TELEMETRIA.md  # Qué mide cada variable, para el equipo evaluador
 ├── ejemplo_run_telemetria.json
-├── Codea2_GDD.docx
+├── JSON Samples/            # Runs reales del APK
+├── Codea2_GDD.docx          # Game Design Document (30/09/2026)
 ├── Informe-Mes1.docx        # Informe técnico con el SRS (IEEE 830)
 ├── Informe-Mes1-firmado.pdf
 ├── Diagramas/               # Diagramas de flujo y funcionalidad, croquis
@@ -210,6 +216,15 @@ Docs/
 ```
 
 > Servidor Flask de telemetría (`csv.penginexr.com`): no versionado, corre en contenedores Docker en el Raspberry Pi del homelab (`~/Services/JSONServer`).
+
+### Instalar en el visor
+
+1. Clonar con Git LFS instalado (`git lfs install` una vez); si ya estaba clonado, `git lfs pull` para bajar el APK real y no un puntero de texto.
+2. Activar el modo desarrollador del Quest 3S y conectarlo por USB.
+3. `adb install -r Build/app.apk`
+4. Abrir la app desde *Biblioteca → Orígenes desconocidos*. Arranca en la pantalla del supervisor.
+
+Los JSON de cada sesión quedan en el visor, en `/sdcard/Android/data/<paquete>/files/`, además de subirse al servidor si hay red.
 
 ## Equipo
 
