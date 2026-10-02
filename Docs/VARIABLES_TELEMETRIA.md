@@ -90,8 +90,8 @@ meta. Puede ejecutar, ver qué pasa, reiniciar y volver a intentarlo cuantas vec
 | `failedAttempts` | entero | Ejecuciones que no resolvieron el reto. Indicador de persistencia y de ensayo-error |
 | `blocksGrabbed` | entero | Bloques agarrados en total |
 | `blocksReleased` | entero | Bloques soltados en total |
-| `errorCollisionBot` | entero | Intentos de mover el robot contra un muro o fuera del mapa |
-| `errorInvalidCommand` | entero | Órdenes de "usar" sobre una casilla donde no hay nada |
+| `errorCollisionBot` | entero | Intentos de mover el robot **fuera del tablero**. Cada paso cuenta: un "Avanzar 2" que se sale en los dos pasos suma 2 |
+| `errorInvalidCommand` | entero | Intentos de mover el robot **contra un muro o un peligro**, y órdenes de "usar" donde no hay nada. Como arriba, cada paso de "Avanzar 2" cuenta por separado |
 | `errorIncompleteSequence` | entero | ⚠️ **Siempre vale 0** (ver limitaciones) |
 
 ## Variables por intento

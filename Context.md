@@ -835,6 +835,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
 | `Docs/JSON Samples/` | Runs reales del APK (`0101`, `0102`, dificultad básica, 30/09/2026). Tienen el desfase de apertura de los retos 3 y 4 descrito en la sección 11 |
+| `Docs/Pruebas/` | Plan de prueba guionizado de la telemetría (`PLAN_PRUEBA_TELEMETRIA.md`) y el JSON exacto que debe producir (`esperado_prueba_basico.json`). Rehacerlo si cambia el código de telemetría o algún nivel |
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |

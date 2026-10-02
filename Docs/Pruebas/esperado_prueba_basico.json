@@ -1,0 +1,231 @@
+{
+    "pin": "0500",
+    "sessionId": "<VARIABLE: número correlativo del visor>",
+    "difficulty": 1,
+    "startedUtc": "<VARIABLE: fecha>",
+    "endedUtc": "<VARIABLE: fecha>",
+    "escenario1": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": "<VARIABLE: segundos>",
+        "startedUtc": "<VARIABLE: fecha>",
+        "endedUtc": "<VARIABLE: fecha>",
+        "failedAttempts": 2,
+        "blocksGrabbed": 18,
+        "blocksReleased": 18,
+        "errorCollisionBot": 1,
+        "errorIncompleteSequence": 0,
+        "errorInvalidCommand": 2,
+        "attempts": [
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Avanzar 2",
+                    "Avanzar"
+                ],
+                "solved": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Girar Derecha",
+                    "Avanzar",
+                    "Usar"
+                ],
+                "solved": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Avanzar",
+                    "Girar Derecha",
+                    "Avanzar 2",
+                    "Girar Derecha",
+                    "Avanzar 2",
+                    "Girar Izquierda",
+                    "Avanzar",
+                    "Usar"
+                ],
+                "solved": 1,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            }
+        ]
+    },
+    "escenario2": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": "<VARIABLE: segundos>",
+        "startedUtc": "<VARIABLE: fecha>",
+        "endedUtc": "<VARIABLE: fecha>",
+        "wrongSelections": 2,
+        "selections": [
+            {
+                "module": "enfriamiento",
+                "option": "Agregar gasolina",
+                "selected": 1,
+                "correct": 0,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "enfriamiento",
+                "option": "Agregar gasolina",
+                "selected": 0,
+                "correct": 0,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "enfriamiento",
+                "option": "Agregar agua",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "generadores",
+                "option": "Agregar agua",
+                "selected": 1,
+                "correct": 0,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "generadores",
+                "option": "Conectar una batería cargada",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "generadores",
+                "option": "Agregar agua",
+                "selected": 0,
+                "correct": 0,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "motores",
+                "option": "Agregar gasolina",
+                "selected": 1,
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            }
+        ]
+    },
+    "escenario3": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": "<VARIABLE: segundos>",
+        "startedUtc": "<VARIABLE: fecha>",
+        "endedUtc": "<VARIABLE: fecha>",
+        "failedAttempts": 1,
+        "blocksGrabbed": 3,
+        "blocksReleased": 3,
+        "errorCollisionBot": 0,
+        "errorIncompleteSequence": 0,
+        "errorInvalidCommand": 6,
+        "attempts": [
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar al destino",
+                    "Soltar",
+                    "Volver"
+                ],
+                "repetitions": 3,
+                "itemType": "Caja",
+                "solved": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar al destino",
+                    "Soltar",
+                    "Volver"
+                ],
+                "repetitions": 5,
+                "itemType": "Caja",
+                "solved": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar al destino",
+                    "Soltar",
+                    "Volver"
+                ],
+                "repetitions": 1,
+                "itemType": "Caja",
+                "solved": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "difficulty": 1,
+                "sequence": [
+                    "Recoger",
+                    "Girar al destino",
+                    "Soltar",
+                    "Volver"
+                ],
+                "repetitions": 3,
+                "itemType": "Barril",
+                "solved": 1,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            }
+        ]
+    },
+    "escenario4": {
+        "started": true,
+        "completed": true,
+        "totalSeconds": "<VARIABLE: segundos>",
+        "startedUtc": "<VARIABLE: fecha>",
+        "endedUtc": "<VARIABLE: fecha>",
+        "wrongPlacements": 1,
+        "chipsGrabbed": 5,
+        "chipsReleased": 5,
+        "placements": [
+            {
+                "socket": "circulo_cuadrado",
+                "chip": "cuadrado_circulo",
+                "correct": 0,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "socket": "circulo_cuadrado",
+                "chip": "circulo_cuadrado",
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "socket": "cuadrado_rombo",
+                "chip": "cuadrado_rombo",
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "socket": "cuadrado_trianguloinv",
+                "chip": "cuadrado_trianguloinv",
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "socket": "triangulo_circulo",
+                "chip": "triangulo_circulo",
+                "correct": 1,
+                "timestamp": "<VARIABLE: fecha>"
+            }
+        ]
+    }
+}
