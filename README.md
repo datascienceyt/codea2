@@ -208,6 +208,8 @@ Docs/
 ├── VARIABLES_TELEMETRIA.md  # Qué mide cada variable, para el equipo evaluador
 ├── ejemplo_run_telemetria.json
 ├── JSON Samples/            # Runs reales del APK
+├── Pruebas/                 # Plan de prueba de la telemetría y el JSON que debe producir
+├── Herramientas/            # Scripts de Node: comprobar niveles y regenerar el GDD
 ├── Codea2_GDD.docx          # Game Design Document (30/09/2026)
 ├── Informe-Mes1.docx        # Informe técnico con el SRS (IEEE 830)
 ├── Informe-Mes1-firmado.pdf

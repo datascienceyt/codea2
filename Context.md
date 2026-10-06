@@ -1,10 +1,56 @@
 # Context — Codea VR 2
 
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
-el sistema completo sin leer las ~8.800 líneas de código ni depender de conversaciones previas.
+el sistema completo sin leer las ~9.300 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **30/09/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **05/10/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
+
+---
+
+## 0. Para retomar en un chat nuevo
+
+**Dónde estamos (05/10/2026).** La versión se presentó el 30/09/2026. Las tres escenas
+(`Setup`, `Basico`, `Intermedio`) están montadas y verificadas, hay un APK en `Build/app.apk`
+y el repositorio está limpio y sincronizado en los dos remotos (`37c29c3` más el commit de
+este traspaso). **Ahora toca la ronda de ajustes pedida el 01/10/2026.**
+
+**Por dónde seguir, en este orden:**
+
+1. **Los 12 pedidos del 01/10/2026** — tabla en la sección 11. Se acordó tratarlos **uno a
+   uno**: primero un plan corto, luego el cambio. El punto 1 (depurar logs) ya tiene el plan
+   listo para aplicar. Los puntos 4, 6, 9, 11 y 12 tienen **preguntas abiertas** que hay que
+   hacerle al usuario antes de tocar nada; están listadas debajo de la tabla
+2. **Pasar el plan de prueba de la telemetría** (`Docs/Pruebas/`) en el visor y comparar con
+   el JSON esperado. Está escrito contra el código actual: si se aplican los pedidos 5, 7, 8,
+   9 o 10, cambian los datos y hay que rehacer el JSON esperado
+3. **Pendientes técnicos** de la sección 11: apertura única de los retos 2–4, figuras de
+   intermedia del Escenario 4 (lo sustituye el pedido 11), rótulo "Regresar"/"Volver"
+
+**Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
+
+- **Commits sin coautor**: nunca añadir `Co-Authored-By` ni firma de IA
+- **Cada push va a los dos remotos**, `clousck` y `datascienceyt`, con `dev` idéntico en ambos
+- **Si Unity está abierto, no editar escenas ni prefabs a mano** (YAML): Unity los pisa o pide
+  recargar. Los cambios de escena van por `Tools → Codea` (sección 3) o los hace el usuario en
+  el editor. Comprobar antes con `tasklist | grep -i unity`
+- **Compilar antes de dar algo por hecho** (sección 14) y decir siempre si se probó en Play o
+  en el visor, o solo compila
+- **Respuestas cortas y estructuradas**: listas de acciones y tablas, no párrafos. Cuando hay
+  que conectar algo en el inspector, decir objeto → campo → valor
+- **No alargar las tareas**: si una búsqueda o un diseño se complica, parar, contar lo que hay
+  y preguntar. El diseño de niveles lo decide el usuario; el agente lo comprueba
+- **Tras cambiar código, actualizar este documento** en la misma sesión
+
+**Herramientas ya hechas, para no rehacerlas:**
+
+| Para | Usar |
+|---|---|
+| Montar o reparar las escenas | `Tools → Codea → 1`, `2` y `3` en Unity (`Editor/CodeaSceneTools.cs`) |
+| Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
+| Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
+| Comprobar la telemetría de punta a punta | `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md` |
+| Asignar los `textId` de la narración | Menú contextual del Narrator: "Asignar textId por nombre del clip" |
 
 ---
 
@@ -12,11 +58,13 @@ código: avisa y corrige este documento.
 
 **CODEA 2** — Escape room educativo en VR para desarrollar **pensamiento computacional** en
 niños de 8-17 años de contexto rural en Ecuador. Respaldo de Yachay Tech.
-**Deadline: 30 de septiembre de 2026.**
+**Presentado el 30 de septiembre de 2026; en fase de ajustes.**
 
-El jugador despierta solo en una nave dañada y debe reparar cuatro sistemas para escapar. Cada
-escenario trabaja pilares distintos: secuencialidad, condicionales, bucles y patrones. Un
-supervisor fija la dificultad antes de empezar y exporta los datos al terminar.
+El jugador es un astronauta en una nave que atravesó una tormenta espacial. Con la ayuda de
+Roki, el robot de mantenimiento, repara cuatro sistemas en 15 minutos para volver a la Tierra.
+Cada sala trabaja un pilar: secuencialidad, condicionales, bucles y patrones. Un supervisor
+teclea el PIN y fija la dificultad antes de entregar el visor; los datos se guardan en el
+visor y se suben solos al terminar si hay red.
 
 | Persona | Rol |
 |---|---|
@@ -30,9 +78,12 @@ Repositorio `github.com/datascienceyt/codea2`, rama `dev`.
 
 - Unity **6000.4.1f1**, URP + Shader Graph
 - Meta XR All-in-One SDK **203.0.2**, Horizon OS
-- **Meta Quest 3S exclusivamente**, solo mandos físicos (sin hand tracking)
+- **Meta Quest 3S exclusivamente**. Mandos físicos; el proyecto admite también manos
+  (`handTrackingSupport: 1`) y todos los bloques y fichas tienen agarre con mano, pero **falta
+  verificarlo en el visor**
 - Locomoción por teletransporte
-- **100 % funcional offline** (RNF-04). La subida de datos es manual y opcional
+- **100 % funcional offline** (RNF-04). La subida de datos es opcional: se lanza sola al
+  terminar la sesión o al agotarse el tiempo, y sin red el JSON se queda en el visor
 - Objetivo 60 FPS el 90 % del tiempo (RNF-01)
 - Serialización con **`JsonUtility`**. Newtonsoft NO es dependencia directa
 
@@ -665,9 +716,14 @@ saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. V
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 30/09/2026 (tarde, día de la presentación)
+## 11. Estado voluble — 05/10/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
+
+**Desde la presentación del 30/09/2026 no ha cambiado ni el código ni las escenas**: solo
+documentación (pedidos del 01/10, plan de prueba de la telemetría, herramientas guardadas en
+`Docs/Herramientas/`). El APK de `Build/app.apk` es el del 30/09 a mediodía y corresponde al
+código actual.
 
 **Escenas:** `Setup` (pantalla del supervisor), `Basico` e `Intermedio`, las tres activas en
 Build Settings en ese orden. `Intermedio` se generó duplicando `Basico` y pasando las
@@ -762,7 +818,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
   es la que pide pulsarlo; `alerts` del temporizador; sprite roto en `ShapeChip.prefab`;
   salas activas desde el arranque
 
-**Pedidos de cambio recibidos el 01/10/2026 (por tratar en otra sesión, uno a uno):**
+**Pedidos de cambio recibidos el 01/10/2026 (sin empezar; se tratan uno a uno, con plan corto antes de cada cambio):**
 
 | # | Pedido | Tipo | Notas |
 |---|---|---|---|
@@ -823,7 +879,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | `SecuenciaIncompleta` | Sin definición operativa que separe "faltaron instrucciones" de "el orden estaba mal". Siempre vale 0. Es criterio pedagógico |
 | `SessionResult` | Declarado pero sin campo en el JSON. Falta decidir qué dispara "abandonado" |
 | Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. El PIN lo teclea el supervisor en la escena `Setup` |
-| Mecánica del brazo | Reescrita con ficha de argumento y dos destinos, sin probar en visor ni con niños. ¿Entienden los niños que la ficha es un parámetro y no una instrucción? |
+| Mecánica del brazo | Reescrita con ficha de argumento y dos destinos. Funciona en el APK, pero no se ha probado con niños. ¿Entienden los niños que la ficha es un parámetro y no una instrucción? |
 | Escenario 4 | ¿Necesita panel-ejemplo introductorio? Depende de los beta testers |
 | Tanteo con el contador de repeticiones | Cada pulsación de `+`/`−` del Escenario 3 no se registra; solo queda el valor final del intento. Añadirlo es una métrica nueva, no un arreglo: decisión pedagógica |
 | Gestor de retos | Hoy el reto activo lo fija quien llame a `StartChallenge`, y eso lo hace el Director. Un gestor que cada escenario declare al activarse eliminaría el riesgo de atribución, pero no hace falta mientras el Director abra todos los pasos |
@@ -836,6 +892,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
 | `Docs/JSON Samples/` | Runs reales del APK (`0101`, `0102`, dificultad básica, 30/09/2026). Tienen el desfase de apertura de los retos 3 y 4 descrito en la sección 11 |
 | `Docs/Pruebas/` | Plan de prueba guionizado de la telemetría (`PLAN_PRUEBA_TELEMETRIA.md`) y el JSON exacto que debe producir (`esperado_prueba_basico.json`). Rehacerlo si cambia el código de telemetría o algún nivel |
+| `Docs/Herramientas/` | Scripts de Node: `resolver_nivel.js` (caminos y bloques de un nivel del Escenario 1) y `generar_gdd.js` (regenera el GDD). Uso en su `LEEME.md` |
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
@@ -881,10 +938,49 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 27 | Intermedia · Esc. 3 | La fila llega desordenada y se puede reordenar; cada color necesita sus giros | Herramienta 3 |
 | 28 | JSON: primer intento del esc. 3 | Su `timestamp` es posterior a `escenario3.startedUtc`; agarres ≈ sueltas en esc. 3 y 4 | Retos abiertos al llegar |
 
+### Compilar sin abrir Unity
+
+`Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de
+editor comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno
+a uno; un script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto"
+sin haberlo compilado. A 05/10/2026 faltan `Session/TimeUpSequence.cs` (en el de runtime) y
+`Editor/CodeaSceneTools.cs` (en el de editor): Unity sí los compila, pero el `.csproj` no se
+regeneró. Hasta que lo haga (en Unity: *Edit → Preferences → External Tools → Regenerate
+project files*), hay que añadirlos a mano a una copia, compilar y restaurar:
+
+```powershell
+$r = "X:\Projects\Unity\Codea-2"
+Copy-Item "$r\Assembly-CSharp.csproj" "$env:TEMP\ac.bak"; Copy-Item "$r\Assembly-CSharp-Editor.csproj" "$env:TEMP\ace.bak"
+try {
+  $s = [IO.File]::ReadAllText("$r\Assembly-CSharp.csproj")
+  $a = '<Compile Include="Assets\_Main\Scripts\Session\SceneLoader.cs" />'
+  if (-not $s.Contains('TimeUpSequence.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Session\TimeUpSequence.cs" />') }
+  [IO.File]::WriteAllText("$r\Assembly-CSharp.csproj", $s)
+  $e = [IO.File]::ReadAllText("$r\Assembly-CSharp-Editor.csproj")
+  $b = '<Compile Include="Assets\_Main\Editor\LevelEditorWindow.cs" />'
+  if (-not $e.Contains('CodeaSceneTools.cs')) { $e = $e.Replace($b, $b + '<Compile Include="Assets\_Main\Editor\CodeaSceneTools.cs" />') }
+  [IO.File]::WriteAllText("$r\Assembly-CSharp-Editor.csproj", $e)
+  dotnet build "$r\Assembly-CSharp-Editor.csproj" -v:q --nologo | Select-String "error|Compilaci"
+} finally {
+  Copy-Item "$env:TEMP\ac.bak" "$r\Assembly-CSharp.csproj" -Force; Copy-Item "$env:TEMP\ace.bak" "$r\Assembly-CSharp-Editor.csproj" -Force
+}
+```
+
+Cualquier script nuevo creado fuera de Unity necesita además su `.meta` (dos líneas:
+`fileFormatVersion: 2` y `guid:` con 32 hexadecimales nuevos), para que su identificador sea el
+mismo en todos los equipos.
+
+**Otras trampas del entorno** (Windows, sin Python, pandoc ni LibreOffice; hay Node y
+PowerShell): los `.cs` y `.md` son UTF-8 y muchos usan CRLF. `perl -pi` y `sed` **rompen los
+acentos** si el patrón o el reemplazo llevan caracteres no ASCII; para esos cambios usar la
+herramienta de edición, o un script de Perl con `use utf8; use open qw(:std :encoding(UTF-8));`.
+Los assets de Unity escriben los acentos como `"\xED"` dentro de comillas dobles.
+
+### Otras comprobaciones
+
 ```bash
-# Compilar sin abrir Unity. Necesita que Unity haya generado el .csproj al menos una vez:
-# en un worktree recién clonado no existe todavía
-dotnet build Assembly-CSharp.csproj -v:q --nologo -t:Rebuild
+# Caminos y bloques de un nivel del Escenario 1 (búsqueda exhaustiva)
+node Docs/Herramientas/resolver_nivel.js Assets/_Main/Levels/escenario1_intermedio.json 11
 
 # Superficie pública (si este documento parece desfasado)
 grep -rnE "^\s{4}public\s+(void|IEnumerator|bool|int|string|float)\s+\w+\s*\(" Assets/_Main/Scripts
