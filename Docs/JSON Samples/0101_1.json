@@ -38,8 +38,8 @@
     "escenario2": {
         "started": true,
         "completed": true,
-        "totalSeconds": 63.04496765136719,
-        "startedUtc": "2026-09-30T15:17:33.9655450Z",
+        "totalSeconds": 82.78103637695312,
+        "startedUtc": "2026-09-30T15:17:14.2291630Z",
         "endedUtc": "2026-09-30T15:18:37.0101980Z",
         "wrongSelections": 2,
         "selections": [
@@ -97,8 +97,8 @@
     "escenario3": {
         "started": true,
         "completed": true,
-        "totalSeconds": 33.81098937988281,
-        "startedUtc": "2026-09-30T15:19:17.7795780Z",
+        "totalSeconds": 66.07817840576172,
+        "startedUtc": "2026-09-30T15:18:45.5127340Z",
         "endedUtc": "2026-09-30T15:19:51.5909130Z",
         "failedAttempts": 0,
         "blocksGrabbed": 3,
@@ -118,7 +118,7 @@
                 "repetitions": 7,
                 "itemType": "Caja",
                 "solved": 0,
-                "durationSeconds": 1.9627227783203126,
+                "durationSeconds": 34.22771072387695,
                 "timestamp": "2026-09-30T15:19:19.7404440Z"
             },
             {
@@ -140,8 +140,8 @@
     "escenario4": {
         "started": true,
         "completed": true,
-        "totalSeconds": 24.96826171875,
-        "startedUtc": "2026-09-30T15:20:15.6117610Z",
+        "totalSeconds": 40.70558166503906,
+        "startedUtc": "2026-09-30T15:19:59.8743020Z",
         "endedUtc": "2026-09-30T15:20:40.5798850Z",
         "wrongPlacements": 3,
         "chipsGrabbed": 17,
