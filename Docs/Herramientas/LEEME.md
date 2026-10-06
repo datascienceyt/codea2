@@ -24,6 +24,21 @@ Reglas que aplica:
 
 Con más de 14 bloques tarda bastante: el número de secuencias crece muy deprisa.
 
+## `validar_json_telemetria.js` — comprobar el formato de un JSON de telemetría
+
+Lee `Assets/_Main/Scripts/Telemetry/TelemetryData.cs` y comprueba que un JSON tiene exactamente
+esos campos, en ese orden y con ese tipo, que es lo que emite `JsonUtility`. No hay que
+mantenerlo: si cambia el modelo, cambia lo que exige.
+
+```bash
+node Docs/Herramientas/validar_json_telemetria.js                  # los JSON de la documentación
+node Docs/Herramientas/validar_json_telemetria.js 0500_12_3F9A1.json   # uno sacado del visor
+```
+
+Sirve para dos cosas: que los ejemplos de `Docs/` no se queden atrás cuando cambia el código,
+y saber de un vistazo si un visor lleva un APK con el formato viejo. No comprueba los valores,
+solo la forma; para los valores está `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md`.
+
 ## `generar_gdd.js` — regenerar `Docs/Codea2_GDD.docx`
 
 El GDD se escribe desde este script. Para cambiarlo, editar el texto aquí y regenerar:

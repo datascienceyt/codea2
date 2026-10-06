@@ -289,13 +289,13 @@ const dificultad = [
 
 const datos = [
   h1("9. Registro de datos"),
-  p("Cada sesión genera un archivo JSON en el visor, nombrado con el PIN y un número de sesión. Se escribe durante la partida, de modo que un cierre inesperado no pierde lo ya registrado. Al terminar se intenta subir al servidor del proyecto; sin conexión, el archivo se queda en el visor."),
+  p("Cada sesión genera un archivo JSON en el visor, nombrado con el PIN, un número de sesión y el código del visor. Se escribe durante la partida, de modo que un cierre inesperado no pierde lo ya registrado. Al terminar se intenta subir al servidor del proyecto; sin conexión, el archivo se queda en el visor."),
   table(["Sala", "Qué se registra"], [
     ["Todas", "Inicio, fin, si se completó y el tiempo empleado"],
-    ["1 y 3", "Cada intento con su secuencia de bloques, intentos fallidos, piezas agarradas y soltadas, y errores (choques y órdenes imposibles)"],
+    ["1 y 3", "Cada intento con su secuencia de bloques, intentos fallidos, piezas agarradas y encajadas, y errores (choques y órdenes imposibles)"],
     ["3", "Además, las repeticiones elegidas y el color con que se ejecutó cada intento"],
-    ["2", "Cada opción marcada y desmarcada, y las selecciones incorrectas"],
-    ["4", "Cada figura intentada en cada hueco, las colocaciones incorrectas y la manipulación de fichas"],
+    ["2", "Cada opción marcada, si era correcta y el tiempo desde la anterior"],
+    ["4", "Cada figura intentada en cada hueco, si encajaba, el tiempo desde la anterior y las fichas agarradas"],
   ], [1800, WIDTH - 1800]),
   gap(),
   p("El detalle de cada variable está en el documento «Variables de telemetría» del repositorio."),

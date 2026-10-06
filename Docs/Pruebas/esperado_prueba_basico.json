@@ -1,9 +1,11 @@
 {
     "pin": "0500",
+    "deviceId": "<VARIABLE: código del visor, 5 caracteres>",
     "sessionId": "<VARIABLE: número correlativo del visor>",
     "difficulty": 1,
     "startedUtc": "<VARIABLE: fecha>",
     "endedUtc": "<VARIABLE: fecha>",
+    "totalSeconds": "<VARIABLE: segundos>",
     "escenario1": {
         "started": true,
         "completed": true,
@@ -11,35 +13,32 @@
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
         "failedAttempts": 2,
-        "blocksGrabbed": 18,
-        "blocksReleased": 18,
-        "errorCollisionBot": 1,
-        "errorIncompleteSequence": 0,
-        "errorInvalidCommand": 2,
+        "blocksGrabbed": 15,
+        "blocksConnected": 13,
+        "blockResets": 1,
+        "errorCollisionBot": 2,
+        "errorInvalidUse": 1,
         "attempts": [
             {
-                "difficulty": 1,
                 "sequence": [
                     "Avanzar 2",
                     "Avanzar"
                 ],
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
-                "difficulty": 1,
                 "sequence": [
                     "Girar Derecha",
                     "Avanzar",
                     "Usar"
                 ],
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
-                "difficulty": 1,
                 "sequence": [
                     "Avanzar",
                     "Girar Derecha",
@@ -50,7 +49,7 @@
                     "Avanzar",
                     "Usar"
                 ],
-                "solved": 1,
+                "solved": true,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
@@ -62,55 +61,40 @@
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
-        "wrongSelections": 2,
         "selections": [
             {
                 "module": "enfriamiento",
                 "option": "Agregar gasolina",
-                "selected": 1,
-                "correct": 0,
-                "timestamp": "<VARIABLE: fecha>"
-            },
-            {
-                "module": "enfriamiento",
-                "option": "Agregar gasolina",
-                "selected": 0,
-                "correct": 0,
+                "correct": false,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "module": "enfriamiento",
                 "option": "Agregar agua",
-                "selected": 1,
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "module": "generadores",
                 "option": "Agregar agua",
-                "selected": 1,
-                "correct": 0,
+                "correct": false,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "module": "generadores",
                 "option": "Conectar una batería cargada",
-                "selected": 1,
-                "correct": 1,
-                "timestamp": "<VARIABLE: fecha>"
-            },
-            {
-                "module": "generadores",
-                "option": "Agregar agua",
-                "selected": 0,
-                "correct": 0,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "module": "motores",
                 "option": "Agregar gasolina",
-                "selected": 1,
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
         ]
@@ -123,13 +107,10 @@
         "endedUtc": "<VARIABLE: fecha>",
         "failedAttempts": 1,
         "blocksGrabbed": 3,
-        "blocksReleased": 3,
-        "errorCollisionBot": 0,
-        "errorIncompleteSequence": 0,
+        "blocksConnected": 2,
         "errorInvalidCommand": 6,
         "attempts": [
             {
-                "difficulty": 1,
                 "sequence": [
                     "Recoger",
                     "Girar al destino",
@@ -138,12 +119,11 @@
                 ],
                 "repetitions": 3,
                 "itemType": "Caja",
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
-                "difficulty": 1,
                 "sequence": [
                     "Recoger",
                     "Girar al destino",
@@ -152,12 +132,11 @@
                 ],
                 "repetitions": 5,
                 "itemType": "Caja",
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
-                "difficulty": 1,
                 "sequence": [
                     "Recoger",
                     "Girar al destino",
@@ -166,12 +145,11 @@
                 ],
                 "repetitions": 1,
                 "itemType": "Caja",
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
-                "difficulty": 1,
                 "sequence": [
                     "Recoger",
                     "Girar al destino",
@@ -180,7 +158,7 @@
                 ],
                 "repetitions": 3,
                 "itemType": "Barril",
-                "solved": 1,
+                "solved": true,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
@@ -192,38 +170,41 @@
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
-        "wrongPlacements": 1,
         "chipsGrabbed": 5,
-        "chipsReleased": 5,
         "placements": [
             {
                 "socket": "circulo_cuadrado",
                 "chip": "cuadrado_circulo",
-                "correct": 0,
+                "correct": false,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "socket": "circulo_cuadrado",
                 "chip": "circulo_cuadrado",
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "socket": "cuadrado_rombo",
                 "chip": "cuadrado_rombo",
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "socket": "cuadrado_trianguloinv",
                 "chip": "cuadrado_trianguloinv",
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
             {
                 "socket": "triangulo_circulo",
                 "chip": "triangulo_circulo",
-                "correct": 1,
+                "correct": true,
+                "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
         ]

@@ -93,21 +93,21 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 Pipeline de persistencia local con exportación remota manual:
 
 1. **`TelemetryManager`** (uno por escena) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
-2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}.json` en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
+2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}_{deviceId}.json` (PIN, número de sesión y código del visor) en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
 3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
 4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local.
 5. Al cerrar la sesión se imprime un **informe de integridad** por escenario, que avisa de contadores sospechosamente a cero antes de dar los datos por buenos.
 
-Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 registra la secuencia de bloques de cada intento; el 3 además las repeticiones y **con qué tipo** se ejecutó; el 2 cada opción marcada y desmarcada; y el 4 qué figura se intentó encajar en qué hueco.
+Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 registra la secuencia de bloques de cada intento; el 3 además las repeticiones y **con qué tipo** se ejecutó; el 2 cada opción pulsada y el tiempo entre una y otra; y el 4 qué figura se intentó encajar en qué hueco.
 
 ```json
 "escenario3": {
     "started": true, "completed": true, "totalSeconds": 121.7,
     "failedAttempts": 1, "errorInvalidCommand": 3,
     "attempts": [
-        { "itemType": "Caja",   "repetitions": 7, "solved": 0,
+        { "itemType": "Caja",   "repetitions": 7, "solved": false,
           "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"] },
-        { "itemType": "Barril", "repetitions": 3, "solved": 1,
+        { "itemType": "Barril", "repetitions": 3, "solved": true,
           "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"] }
     ]
 }
@@ -141,6 +141,7 @@ Puntos críticos abiertos en el SRS:
 | Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
 | Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
 | Dificultad intermedia | Escena `Intermedio` generada desde la básica con las herramientas de `Tools → Codea` |
+| Tutorial | Cuarto inicial donde se practican los cuatro gestos de la experiencia (dos botones, un bloque y una ficha) antes de empezar la misión. No se registra en la telemetría |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | Sin implementar |
 
 **La documentación técnica completa está en [`Context.md`](Context.md)**: arquitectura,
@@ -207,9 +208,9 @@ Build/
 Docs/
 ├── VARIABLES_TELEMETRIA.md  # Qué mide cada variable, para el equipo evaluador
 ├── ejemplo_run_telemetria.json
-├── JSON Samples/            # Runs reales del APK
+├── JSON Samples/            # Runs reales del APK, convertidas al formato actual
 ├── Pruebas/                 # Plan de prueba de la telemetría y el JSON que debe producir
-├── Herramientas/            # Scripts de Node: comprobar niveles y regenerar el GDD
+├── Herramientas/            # Scripts de Node: comprobar niveles, validar los JSON y regenerar el GDD
 ├── Codea2_GDD.docx          # Game Design Document (30/09/2026)
 ├── Informe-Mes1.docx        # Informe técnico con el SRS (IEEE 830)
 ├── Informe-Mes1-firmado.pdf

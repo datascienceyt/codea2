@@ -3,28 +3,32 @@
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
 el sistema completo sin leer las ~9.300 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **05/10/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **06/10/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
 
 ## 0. Para retomar en un chat nuevo
 
-**Dónde estamos (05/10/2026).** La versión se presentó el 30/09/2026. Las tres escenas
-(`Setup`, `Basico`, `Intermedio`) están montadas y verificadas, hay un APK en `Build/app.apk`
-y el repositorio está limpio y sincronizado en los dos remotos (`37c29c3` más el commit de
-este traspaso). **Ahora toca la ronda de ajustes pedida el 01/10/2026.**
+**Dónde estamos (06/10/2026).** La versión se presentó el 30/09/2026. El 06/10/2026 se hizo,
+sobre el feedback recibido: el **formato nuevo de la telemetría**, el botón del Escenario 2
+que se suelta solo, y el **cuarto del tutorial** (prefab compartido, con su frase `0`). Todo
+está subido a los dos remotos y compila, pero **nada de eso se ha probado en Play ni en el
+visor**, y el APK de `Build/app.apk` es el del 30/09: emite el formato viejo y no tiene
+tutorial. `Basico` está al día; **`Intermedio` tiene el tutorial a medias** (sección 11).
 
 **Por dónde seguir, en este orden:**
 
-1. **Los 12 pedidos del 01/10/2026** — tabla en la sección 11. Se acordó tratarlos **uno a
-   uno**: primero un plan corto, luego el cambio. El punto 1 (depurar logs) ya tiene el plan
-   listo para aplicar. Los puntos 4, 6, 9, 11 y 12 tienen **preguntas abiertas** que hay que
-   hacerle al usuario antes de tocar nada; están listadas debajo de la tabla
-2. **Pasar el plan de prueba de la telemetría** (`Docs/Pruebas/`) en el visor y comparar con
-   el JSON esperado. Está escrito contra el código actual: si se aplican los pedidos 5, 7, 8,
-   9 o 10, cambian los datos y hay que rehacer el JSON esperado
-3. **Pendientes técnicos** de la sección 11: apertura única de los retos 2–4, figuras de
+1. **Dejar `Intermedio` igual que `Basico`** en el tutorial (lista de lo que falta en la
+   sección 11, "Tutorial") y **probar en Play** el tutorial, el botón del Escenario 2 y el
+   JSON nuevo (`node Docs/Herramientas/validar_json_telemetria.js <archivo>` lo comprueba)
+2. **Los pedidos del 01/10/2026 que quedan** — tabla en la sección 11. Se tratan **uno a
+   uno**: primero un plan corto, luego el cambio. El punto 1 (depurar logs) tiene el plan
+   listo. Los puntos 6, 9 y 11 tienen **preguntas abiertas** para el usuario
+3. **Pasar el plan de prueba de la telemetría** (`Docs/Pruebas/`) en el visor y comparar con
+   el JSON esperado. Está rehecho para el formato del 06/10/2026: si se aplican los pedidos
+   7, 8, 9 o 10, cambian los datos y hay que rehacer el JSON esperado
+4. **Recompilar el APK** y **pendientes técnicos** de la sección 11: apertura única de los retos 2–4, figuras de
    intermedia del Escenario 4 (lo sustituye el pedido 11), rótulo "Regresar"/"Volver"
 
 **Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
@@ -47,8 +51,11 @@ este traspaso). **Ahora toca la ronda de ajustes pedida el 01/10/2026.**
 | Para | Usar |
 |---|---|
 | Montar o reparar las escenas | `Tools → Codea → 1`, `2` y `3` en Unity (`Editor/CodeaSceneTools.cs`) |
+| Montar y cablear el tutorial | `Tools → Codea → 4`, con la escena de juego abierta |
+| Llevar el tutorial de una escena a la otra | `Tools → Codea → 5` en la escena donde se ajustó (lo guarda en el prefab) y `6` en la otra (lo pone) |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
+| Comprobar que un JSON de telemetría tiene el formato del código | `node Docs/Herramientas/validar_json_telemetria.js [archivo]` (sin archivo, los de la documentación) |
 | Comprobar la telemetría de punta a punta | `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md` |
 | Asignar los `textId` de la narración | Menú contextual del Narrator: "Asignar textId por nombre del clip" |
 
@@ -100,7 +107,7 @@ dependencia:
 
 ## 3. Mapa de archivos
 
-62 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
+63 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
 
 ### `Scripts/Block Programming System/` — núcleo compartido por escenarios 1, 3 y 4
 
@@ -134,7 +141,7 @@ dependencia:
 |---|---|
 | `ModuleData.cs` | ScriptableObject: problema y lista de `ModuleOption` con su `isCorrect` |
 | `SystemModule.cs` | Pantalla + botones. Selección múltiple con alternado |
-| `ModuleOptionButton.cs` | Un botón. Expone `Press()`, sin acoplarse a Oculus |
+| `ModuleOptionButton.cs` | Un botón. Expone `Press()`, sin acoplarse a Oculus. Con `standalone` funciona sin módulo: se alterna solo (tutorial) |
 | `RoboticArm.cs` | Gira entre `ArmSlot`, recoge y suelta. Equivalente de `Bot` |
 | `ArmSlot.cs` | Una posición del brazo. Puede llevar varias pilas, una por tipo |
 | `ArmItem.cs` | Marca un barril o una caja con su tipo. El enum `ArmItemType` vive aquí |
@@ -150,6 +157,7 @@ dependencia:
 |---|---|
 | `Director.cs` | Orquesta escenarios → pasos. `Scenario`, `Step`, `StepCompletionType`. Menú **Skip Step** para probar |
 | `IStepAction.cs` | Contrato: acción que bloquea el paso hasta terminar |
+| `TutorialController.cs` | Cuarto del tutorial: vigila cuatro interacciones (dos botones, un bloque, una ficha) y termina cuando están todas. `IStepAction`, sin telemetría |
 | `Narrator.cs` | Voz **y** texto en pantalla, emparejados por ID contra un CSV |
 | `VRGrabEvents.cs` | Envuelve `Grabbable` de Meta en UnityEvents |
 | `VRInteractEvents.cs` | Dispara por menú contextual los eventos de un `InteractableUnityEventWrapper` |
@@ -172,7 +180,7 @@ dependencia:
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
-| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara `Basico`/`Intermedio` (dificultad, tiempo agotado, vuelta a `Setup`). **3** convierte una copia de `Basico` en `Intermedio`. Repetibles |
+| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara `Basico`/`Intermedio` (dificultad, tiempo agotado, vuelta a `Setup`). **3** convierte una copia de `Basico` en `Intermedio`. **4** monta en el cuarto del tutorial las cuatro interacciones y su `TutorialController`, y cablea el arranque del Director. **5** guarda el tutorial de la escena abierta en `Prefabs/Tutorial.prefab` y **6** pone ese prefab en la escena abierta. Repetibles |
 
 ## 4. Sistema de bloques
 
@@ -251,9 +259,10 @@ solución más un Girar Derecha y un Avanzar 2 de sobra. Huecos y paleta están 
 
 ### Escenario 2 — Condicionales *(montado, sin probar en visor)*
 
-Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Los
-botones **alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el
-conjunto seleccionado coincide **exactamente** con el correcto: ni de menos ni de más.
+Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Una
+acción **correcta** alterna entre seleccionada y no seleccionada; una **incorrecta** se queda
+marcada `wrongOptionSeconds` (0,8 s) y se suelta sola. El módulo se repara cuando están
+marcadas todas las correctas.
 
 | | Opciones | Correctas |
 |---|---|---|
@@ -289,8 +298,10 @@ vacío"*: hay que deducir qué falta. Tres reglas al escribirlos:
 idéntico y la respuesta distinta, y lo que decide es la primera frase.
 
 **Al seleccionar una opción incorrecta**, `SystemModule.OnWrongOption` dispara la frase de error
-del narrador (sección 6). No salta al deseleccionarla: quitar una opción equivocada es
-autocorrección, y regañar por acertar sería justo al revés.
+del narrador (sección 6) y el botón se suelta solo: el niño ya no la desmarca a mano (pedido
+del 06/10/2026). La incorrecta **nunca entra en el conjunto seleccionado** —solo se dibuja
+marcada—, así que el módulo puede repararse aunque su corrutina de soltado no haya terminado.
+Mientras está marcada ignora otra pulsación.
 
 ### Escenario 3 — Bucles y parametrización *(reescrito, sin probar en visor)*
 
@@ -421,7 +432,7 @@ y los cuatro `ScenarioNController`.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 20 IDs más 2 variantes
+(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 21 IDs (el `0` es la frase del tutorial) más 2 variantes
 por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el tiempo agotado.
 
 **`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
@@ -434,10 +445,13 @@ desplazada a partir de la primera variante.
 `Victor (Intermedia)`. La `0` (`Camila`) es la grabación anterior y no se usa. Las dos listas
 tienen **19 entradas en el mismo orden** y deben seguir así: el Director reproduce una por cada
 vez que un paso espera al Narrator, así que una lista con una línea de más desplaza todas las
-siguientes. El Director de `Basico` tiene que esperar al Narrator exactamente 19 veces.
+siguientes. El Director tiene que esperar al Narrator tantas veces como entradas tenga la
+lista: 19, o **20 con la frase `0` del tutorial delante** (así está `Basico` desde el
+06/10/2026; `Intermedio` aún no).
 
-Degrada limpiamente: sin clip solo escribe, sin `Text` o sin CSV solo suena, `textId` vacío o
-`0` significa sin texto. **Ni el CSV ni el Text son obligatorios.** Las frases de error
+Degrada limpiamente: sin clip solo escribe, sin `Text` o sin CSV solo suena, `textId` vacío
+significa sin texto. (El `0` también lo significaba hasta el 06/10/2026, resto de cuando el id
+era un entero; se quitó porque `0` es ahora el id de la frase del tutorial y salía sin texto.) **Ni el CSV ni el Text son obligatorios.** Las frases de error
 (`e1`–`e5.wav`) van en `errorLines` sin `textId`: no están en el CSV.
 
 > Exportar el CSV como **"CSV UTF-8"**, o los acentos llegan rotos. El parser propio respeta
@@ -452,29 +466,68 @@ justo la instrucción que quizá explicaba cómo acertar.
 
 ## 7. Telemetría
 
-Un JSON por participante en `Application.persistentDataPath/{pin}_{sessionId}.json`.
+Un JSON por participante en `Application.persistentDataPath/{pin}_{sessionId}_{deviceId}.json`. Formato
+cambiado el 06/10/2026; la tabla de equivalencias con el anterior está al final de
+`Docs/VARIABLES_TELEMETRIA.md`.
 
 ### Jerarquía de registros
 
 ```
 ScenarioRecord            started, completed, totalSeconds, startedUtc, endedUtc
-├── BlockScenarioRecord   + failedAttempts, blocksGrabbed/Released, 3 contadores de error
-│   ├── Scenario1Record   + attempts[]  (AttemptRecord)
-│   └── Scenario3Record   + attempts[]  (LoopAttemptRecord: + repetitions, itemType)
-├── Scenario2Record       + wrongSelections, selections[]
-└── Scenario4Record       + wrongPlacements, chipsGrabbed/Released, placements[]
+├── Scenario1Record       + failedAttempts, blocksGrabbed, blocksConnected, blockResets,
+│                           errorCollisionBot, errorInvalidUse, attempts[]  (AttemptRecord)
+├── Scenario2Record       + selections[]  (cada una con durationSeconds)
+├── Scenario3Record       + failedAttempts, blocksGrabbed, blocksConnected,
+│                           errorInvalidCommand, attempts[]  (LoopAttemptRecord: + repetitions, itemType)
+└── Scenario4Record       + chipsGrabbed, placements[]  (cada una con durationSeconds)
 
-RunRecord (raíz) ── pin, sessionId, difficulty, startedUtc, endedUtc
+RunRecord (raíz) ── pin, deviceId, sessionId, difficulty, startedUtc, endedUtc, totalSeconds
                  └─ escenario1, escenario2, escenario3, escenario4
 ```
 
-`difficulty` es **1-based**: 1 = básica, 2 = intermedia. `started`/`completed` son booleanos de
-verdad (`true`/`false`); el resto de banderas (`solved`, `correct`, `selected`) van como **0/1**.
+**Cada escenario tiene su clase y ninguna comparte base** más allá de `ScenarioRecord`. Los
+escenarios 1 y 3 tuvieron una común, `BlockScenarioRecord`, y se quitó el 06/10/2026: cada
+pedido para uno arrastraba al otro. Los tres campos que coinciden (`failedAttempts`,
+`blocksGrabbed`, `blocksConnected`) están declarados en los dos, y `TelemetryManager` enruta
+por tipo concreto (`is Scenario1Record` / `is Scenario3Record`). Para quitar o añadir un campo
+a uno basta con tocar su clase y la rama que lo escribe.
 
-**El escenario 4 NO hereda de `BlockScenarioRecord`** aunque sus fichas también se agarren.
-Tiene sus propios `chipsGrabbed`/`chipsReleased`: heredar habría metido `failedAttempts` y los
-tres contadores de error como ceros permanentes que nadie puede interpretar, porque ese
-escenario no tiene intentos ni ejecución.
+`difficulty` es **1-based** (1 = básica, 2 = intermedia) y va **solo en la raíz**: es de toda
+la sesión, no de cada intento. **Todas las banderas son booleanas** (`started`, `completed`,
+`solved`, `correct`). Los tiempos se llaman `totalSeconds` (la sesión o un escenario) y
+`durationSeconds` (una acción: preparar un intento, o el tiempo desde la selección o
+colocación anterior).
+
+**No hay contadores que repitan una lista.** `wrongSelections` y `wrongPlacements` se quitaron:
+son las entradas con `correct: false`. Tampoco se cuentan las sueltas: `blocksConnected` suma
+solo cuando el jugador **encaja** un bloque en un hueco (`BlockNode.AttachTo` con
+`byPlayer`), no cuando `SocketRow` monta la fila por código. En el Escenario 4 no hay
+contador de conexiones porque cada ficha encajada ya es una entrada de `placements[]`.
+
+**Errores de lógica.** El destino lo decide primero el reto activo. En el Escenario 1,
+`LogicErrorType.UsoInvalido` va a `errorInvalidUse` ("Usar" donde no hay nada) y cualquier
+otro tipo a `errorCollisionBot` (salirse o chocar). En el 3 todo va a `errorInvalidCommand`.
+
+**El Escenario 2 solo registra lo que el niño marca.** Las deselecciones no van al JSON —ni la
+automática de una incorrecta ni la manual de una correcta— y por eso `SelectionRecord` no
+tiene campo `selected`.
+
+### Identificador del visor y nombre del archivo
+
+`deviceId` son los **5 primeros caracteres** de `SystemInfo.deviceUniqueIdentifier`, en
+mayúsculas (`TelemetryManager.GetDeviceId()`, estático; el largo es `DeviceIdLength`). En
+Quest deriva del `ANDROID_ID`: sobrevive a reinicios, actualizaciones y borrado de datos de la
+app. **Cambia con un restablecimiento de fábrica y con un APK firmado con otra clave** (Android
+da un `ANDROID_ID` por clave de firma): compilar siempre con el mismo keystore. Si el sistema
+no da identificador, se genera uno y se guarda en PlayerPrefs. Con 5 caracteres hexadecimales
+hay un millón de códigos: de sobra para distinguir los visores del proyecto, pero conviene
+apuntarlos al empezar y comprobar que no coinciden dos.
+
+El archivo es `{pin}_{sessionId}_{deviceId}.json`. El `sessionId` hace que repetir un PIN en
+el mismo visor no pise nada, y el código, que dos visores no se pisen en el servidor.
+
+`totalSeconds` de la raíz se actualiza en cada escritura mientras la run está abierta y se
+congela en `EndRun()`: un visor que se apaga sin cerrar deja el tiempo hasta el último guardado.
 
 ### Ejemplo
 
@@ -493,11 +546,13 @@ análisis sin tener que jugar una sesión entera.
 |---|---|
 | Inicio / fin de escenario | Escenarios 2–4: el **primer paso** de su escenario en el Director llama a `StartScenario`, antes de la narración, porque el niño manipula mientras escucha. El controlador lo repite después; `StartChallenge` es idempotente y **gana la primera llamada**. Escenario 1: arranca con el temporizador. `totalSeconds` incluye por tanto la narración de la sala |
 | Intento (secuencia + repeticiones + tipo) | `ProgramTrigger.OnPlayPressed`. El `itemType` lo aporta la `IRunPrecondition`, así que sin el socket de tipo en `preconditions` sale vacío |
-| Piezas agarradas / soltadas | `BlockNode.OnGrabbed` / `OnReleased`, **desde código**. Enruta a `blocksGrabbed` (esc. 1 y 3) o a `chipsGrabbed` (esc. 4) según el reto activo |
-| Colisión / comando inválido | `LevelManager.ValidMovementInGrid`, `Bot.Use` (esc. 1) · `RoboticArm.OnInvalidAction` y `ArmTypeSocket.CanRun` (esc. 3) |
+| Piezas agarradas | `BlockNode.OnGrabbed`, **desde código**. Enruta a `blocksGrabbed` (esc. 1 y 3) o a `chipsGrabbed` (esc. 4) según el reto activo |
+| Piezas conectadas | `BlockNode.AttachTo(socket, byPlayer: true)`, **desde código**. Solo esc. 1 y 3. Una vez por frame: el prefab cablea además `TryAtattch` en `onReleased` y una suelta puede pasar dos veces |
+| Reinicio de bloques (esc. 1) | `BlockResetter.ResetBlocks`, **desde código**. `TelemetryManager` solo lo cuenta con el Escenario 1 activo |
+| Error de lógica | `LevelManager.ValidMovementInGrid` (esc. 1 → `errorCollisionBot`), `Bot.Use` (esc. 1 → `errorInvalidUse`) · `RoboticArm.OnInvalidAction` y `ArmTypeSocket.CanRun` (esc. 3 → `errorInvalidCommand`) |
 | Intentos fallidos (esc. 1) | `Scenario1Controller.OnAttemptFailed` — **cableado en escena** |
 | Intentos fallidos (esc. 3) | `Scenario3Controller.HandleRunFinished` — **desde código** |
-| Selecciones (esc. 2) | `Scenario2Controller` — registra **también las deselecciones** |
+| Selecciones (esc. 2) | `Scenario2Controller`. Solo al **marcar**; ninguna deselección se registra |
 | Colocaciones (esc. 4) | `Scenario4Controller` |
 
 **Todo se atribuye al reto activo** (`_currentChallengeId`, que fija `StartChallenge`). Si el
@@ -515,7 +570,7 @@ antes de leer el archivo.
 
 Flask en Raspberry Pi vía Cloudflare Tunnel en `csv.penginexr.com` (el nombre es residuo: sube
 JSON). Acepta `.json` y `.csv`, y guarda con **el nombre que manda el visor**,
-`{pin}_{sessionId}.json`, sin prefijo de fecha: el `sessionId` ya evita las colisiones.
+`{pin}_{sessionId}_{deviceId}.json`, sin prefijo de fecha: el nombre ya es único.
 
 El stack vive en la Pi, en `~/Services/JSONServer` — contenedor `json-uploader`, imagen
 `jsonserver-json-uploader`, subidas en `./uploads`. **Ese código no está en este repositorio.**
@@ -551,7 +606,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 
 | Componente | Métodos |
 |---|---|
-| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed/Released()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` |
+| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` · estático: `GetDeviceId()` |
 | `JSONUploader` | `UploadTelemetry()`, `UploadFile(string)` |
 | `ProgramTrigger` | `OnPlayPressed()`, `AddPrecondition(IRunPrecondition)` (desde código) |
 | `ProgramRunner` | `ResetRunner()` |
@@ -571,6 +626,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `SceneLoader` | `Load()`, `Load(string)` |
 | `TimeUpSequence` | `Begin()` |
 | `Director` | `Play()`, `Stop()` |
+| `TutorialController` | Eventos: `OnProgramButtonPressed`, `OnOptionButtonPressed`, `OnBlockPlaced`, `OnChipPlaced`, `OnTutorialFinished`. Es acción de paso del Director |
 | `Tools` | `SetActive(GameObject)`, `SetInactive(GameObject)`, `DestroyObject(GameObject)` |
 
 ## 9. Decisiones no obvias — el porqué
@@ -593,8 +649,10 @@ resolver.
 **`durationSeconds` excluye el tiempo de ejecución.** Ese tiempo lo determina la longitud de la
 secuencia; incluirlo mediría el tamaño de la solución en vez del razonamiento.
 
-**El Escenario 2 registra también las deselecciones** (`selected: 0`). Quitar una opción es
-autocorrección, y sin ese campo sería indistinguible de no haberla tocado.
+**El Escenario 2 no registra deselecciones** (pedido 5 del 01/10/2026). Hasta el 06/10/2026 sí:
+las incorrectas se desmarcaban a mano y eso se leía como autocorrección. Ahora se sueltan
+solas, y lo único que quedaba —desmarcar a mano una correcta— no era un dato que el equipo
+quisiera. Al quitarlo, el campo `selected` valía siempre `true` y se eliminó.
 
 **`RoboticArm` fuerza el sentido de giro** en vez de tomar el camino más corto: con ciertos
 `yaw`, "Girar Derecha" giraba visualmente a la izquierda.
@@ -615,12 +673,11 @@ son peores que uno.
 renombrar desde el Sprite Editor; un `shapeId` de texto habría dejado de encajar en silencio.
 El nombre solo se usa para la telemetría, y por eso hay que fijarlo antes de recoger datos.
 
-**`Scenario4Record` no hereda de `BlockScenarioRecord`.** Sus fichas se agarran igual que los
-bloques, pero el escenario no tiene intentos ni ejecución: heredar habría emitido
-`failedAttempts` y los tres contadores de error como ceros permanentes. Tiene sus propios
-`chipsGrabbed`/`chipsReleased`, y `RegisterBlockGrabbed/Released` enruta a uno u otro. Antes el
-cast a `BlockScenarioRecord` devolvía null y **cada agarre del Escenario 4 se descartaba en
-silencio**.
+**`Scenario4Record` tiene su propio `chipsGrabbed`.** Sus fichas se agarran igual que los
+bloques (`ShapeChip` hereda de `BlockNode`), y `RegisterBlockGrabbed` enruta según el reto
+activo. Hubo un tiempo en que ese método solo conocía los escenarios de bloques y **cada
+agarre del Escenario 4 se descartaba en silencio**: al añadir un escenario, repasar todas las
+ramas `is ScenarioNRecord` de `TelemetryManager`.
 
 **`Scenario3Controller` mide la meta contando lo que hay en cada destino, no lo que falta en el
 origen.** `ArmSlot.Take()` saca el objeto de la pila en el propio `Recoger`, antes de que el
@@ -716,14 +773,32 @@ saliendo a cero, y un JSON válido y vacío solo se descubre semanas después. V
 **Regla corta para decidir dónde cablear:** si olvidarlo rompe los datos, va en código; si es
 estética (sonidos, luces, transiciones), va en `UnityEvent`.
 
-## 11. Estado voluble — 05/10/2026
+## 11. Estado voluble — 06/10/2026
 
 > Esta sección caduca. Todo lo anterior es estable.
 
-**Desde la presentación del 30/09/2026 no ha cambiado ni el código ni las escenas**: solo
-documentación (pedidos del 01/10, plan de prueba de la telemetría, herramientas guardadas en
-`Docs/Herramientas/`). El APK de `Build/app.apk` es el del 30/09 a mediodía y corresponde al
-código actual.
+**El 06/10/2026 cambiaron el código de telemetría, el botón del Escenario 2 y las dos escenas de juego** (cuarto del tutorial y retoques visuales del usuario en materiales y prefabs).
+El APK de `Build/app.apk` es el del 30/09 a mediodía: **emite el formato viejo** y sus botones
+del Escenario 2 se desmarcan a mano. Hay que recompilarlo antes de recoger datos.
+
+**Cambios de telemetría del 06/10/2026 — compilan; sin probar en Play ni en el visor:**
+
+| Dónde | Cambio |
+|---|---|
+| General | `deviceId` (5 caracteres) y `totalSeconds` en la raíz · archivo `{pin}_{sessionId}_{deviceId}.json` · todas las banderas `true`/`false` · `difficulty` solo en la raíz |
+| Esc. 1 | `blockResets` · `errorCollisionBot` (salirse y chocar) y `errorInvalidUse` ("Usar" mal) en lugar de `errorInvalidCommand` · fuera `errorIncompleteSequence` · `blocksReleased` → `blocksConnected` |
+| Esc. 2 | `durationSeconds` por selección · fuera `wrongSelections` y `selected` (no se registran deselecciones) · el botón incorrecto se suelta solo (`SystemModule.wrongOptionSeconds`) |
+| Esc. 3 | Clase propia, ya sin base común con el Esc. 1. `blocksConnected`, sin `difficulty` por intento, y solo `errorInvalidCommand`. Los pedidos 7–10 siguen pendientes |
+| Esc. 4 | `durationSeconds` por colocación · fuera `wrongPlacements` y `chipsReleased` |
+
+Confirmado por el usuario el 06/10/2026: código del visor de 5 caracteres, nombre
+`{pin}_{sessionId}_{deviceId}.json`, `errorInvalidUse` aparte, clases de los escenarios 1 y 3
+separadas, y sin deselecciones en el Escenario 2. Queda **sin confirmar** que en el Escenario 4
+se quitó `chipsReleased` sin sustituto (cada conexión ya está en `placements[]`).
+
+Restos sin efecto en `Basico` e `Intermedio`: varios bloques tienen overrides de
+`onGrabbed`/`onReleased` con `RegisterBlockGrabbed`/`RegisterBlockReleased`, pero sin tamaño
+de lista, así que no llaman a nada. `RegisterBlockReleased` ya no existe.
 
 **Escenas:** `Setup` (pantalla del supervisor), `Basico` e `Intermedio`, las tres activas en
 Build Settings en ese orden. `Intermedio` se generó duplicando `Basico` y pasando las
@@ -735,8 +810,8 @@ herramientas 2 y 3. `Main 2.unity` se borró; quedan `Tests.unity` y 7 respaldos
 | Qué | `Basico` | `Intermedio` |
 |---|---|---|
 | `DifficultyScene` | Básica | Avanzada |
-| Narrador | lista 1 · CSV `Narrativa.csv` · texto de golpe | lista 2 · igual |
-| Director | 19 esperas al Narrator | 19 esperas al Narrator |
+| Narrador | lista 1 · CSV `Narrativa.csv` · texto de golpe · **20 entradas** (06/10: la `0` delante) | lista 2 · igual · 19 entradas con texto |
+| Director | **20** esperas al Narrator (06/10: la primera es el paso "Iniciar tutorial") | 19 esperas: le falta ese paso |
 | Tiempo agotado | `Timer.OnTimeUp → Begin`, frase 20, vuelta a `Setup` | igual |
 | Esc. 1 · nivel | `reto.json` · 8 huecos · 8 bloques | `escenario1_intermedio.json` · 11 huecos · 13 bloques |
 | Esc. 2 · módulos | `*_Basica` | `*_Intermedia` |
@@ -752,7 +827,7 @@ herramientas 2 y 3. `Main 2.unity` se borró; quedan `Tests.unity` y 7 respaldos
 | Escenario 2 | ✅ Probado en APK (`0101`, `0102`) |
 | Escenario 3 | ✅ Probado en APK: `itemType` se registra, repeticiones a 0, pinza arreglada |
 | Escenario 4 | ✅ Probado en APK: física, rechazo con empujón y sonido, reinicio que respeta las acertadas, motores |
-| Narrativa | ✅ CSV y voces nuevas, dos listas de 19 frases, 5 frases de error |
+| Narrativa | ✅ CSV y voces nuevas, dos listas de 19 frases (20 en `Basico`, con la `0` del tutorial delante), 5 frases de error |
 | Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup`, retos 2–4 abiertos al llegar |
 | Repositorio | ✅ De `Build/` solo se versiona `app.apk` (Git LFS, ~160 MB) |
 | Servidor | ✅ `~/Services/JSONServer` en la Pi |
@@ -779,6 +854,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 | Paso | Esperas al Narrator | Frases |
 |---|---|---|
+| Inicio · Iniciar tutorial (solo en `Basico`, desde el 06/10/2026) | 1 | 0 |
 | Esc. 1 · Narrar | 6 | 1–6 |
 | Esc. 1 · Esperar a completar | 1 | 7 |
 | Esc. 2 · Narrar | 2 | 8, 9.x |
@@ -818,22 +894,85 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
   es la que pide pulsarlo; `alerts` del temporizador; sprite roto en `ShapeChip.prefab`;
   salas activas desde el arranque
 
-**Pedidos de cambio recibidos el 01/10/2026 (sin empezar; se tratan uno a uno, con plan corto antes de cada cambio):**
+**Pedidos de cambio recibidos el 01/10/2026 (se tratan uno a uno, con plan corto antes de cada cambio):**
 
 | # | Pedido | Tipo | Notas |
 |---|---|---|---|
 | 1 | Esc. 1 · Depurar logs | Código | Plan listo, ver abajo |
 | 2 | Esc. 2 · Título "Sistema de motores" | Datos | `moduleName` de `Motores_Basica` y `Motores_Intermedia` (hoy "Motores") |
 | 3 | Esc. 2 · "Agregar combustible" | Datos | Hoy "Agregar gasolina" en los módulos donde aparece. Es un distractor en Enfriamiento y Generadores: cambiar el texto en todos los assets |
-| 4 | Esc. 2 · El botón se desactiva solo tras un error | Código | `SystemModule` / `ModuleOptionButton`. Decidir si se deselecciona y bloquea, y si vuelve a habilitarse |
-| 5 | Esc. 2 · No contar deselecciones en telemetría | Código + formato | `Scenario2Controller`. Contradice la decisión de la sección 9 ("registra también las deselecciones"): actualizarla y `VARIABLES_TELEMETRIA.md` |
+| 4 | Esc. 2 · El botón se desactiva solo tras un error | Código | ✅ **Hecho el 06/10/2026**: se suelta solo a los 0,8 s, no se bloquea. Falta verlo en el visor |
+| 5 | Esc. 2 · No contar deselecciones en telemetría | Código + formato | ✅ **Hecho el 06/10/2026**: `Scenario2Controller` solo registra lo que se marca y `SelectionRecord` ya no tiene `selected`. Sección 9 y `VARIABLES_TELEMETRIA.md` actualizadas. Falta verlo en el visor |
 | 6 | Esc. 2 · Reducir el tamaño de los paneles | Escena / prefabs | Hoy no se ve el estado corregido / sin corregir. Revisar en visor qué queda fuera de vista |
 | 7 | Esc. 3 · Repeticiones a 0 al terminar cada ejecución | Código | `Scenario3Controller.HandleRunFinished` → `SocketRow.SetRepetitions(0)` |
-| 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Actualizar la guía de variables y el informe de integridad |
-| 9 | Esc. 3 · `solved=1` al terminar barriles o cajas | Código | **Pregunta abierta**, ver abajo |
+| 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Desde el 06/10/2026 cada escenario tiene su clase: basta con quitarlo de `Scenario3Record` y de la rama del esc. 3 en `RegisterFailedAttempt`. Actualizar la guía de variables y el informe de integridad |
+| 9 | Esc. 3 · `solved: true` al terminar barriles o cajas | Código | **Pregunta abierta**, ver abajo |
 | 10 | Esc. 3 · Cantidad disponible por intento | Código + formato | Campo nuevo en `LoopAttemptRecord`: objetos de ese tipo que quedaban por clasificar al ejecutar. Actualizar ejemplo y guía |
 | 11 | Esc. 4 · Intermedia con el alfabeto Yachay en glifos cuadrados | Recursos + escena | Hacen falta las imágenes. Sustituye el pendiente de las "figuras densas" |
-| 12 | Tutorial · Botón, chip + socket | Diseño | **Pregunta abierta**, ver abajo |
+| 12 | Tutorial · Botón, chip + socket | Diseño | 🟡 **En curso (06/10/2026)**, ver "Tutorial" abajo |
+
+**Tutorial (pedido 12), estado al 06/10/2026:**
+
+- El cuarto es el objeto raíz `Tutorial` (antes `Start`), con `Room` y `Desk` (ProBuilder) y
+  las piezas como **hijas directas**, colocadas a mano por el usuario en `Intermedio`. Ya no
+  hay `StartButton` ni `TestButton`: **la experiencia empieza al terminar el tutorial**
+- **El tutorial es un prefab, `Prefabs/Tutorial.prefab`, compartido por `Basico` e
+  `Intermedio`.** Se ajusta en cualquiera de las dos y se lleva a la otra con las
+  herramientas 5 y 6
+- Cuatro interacciones, cada una con la pieza de su escenario:
+
+  | # | Interacción | Pieza | Cuenta cuando |
+  |---|---|---|---|
+  | 1 | Botón del Escenario 1 | Copia del botón de ejecutar, **sin** su cable al `ProgramTrigger` | Se pulsa (`WhenSelect`) |
+  | 2 | Botón del Escenario 2 | `Prefabs/Scenario2/Button` con `standalone` | Queda marcado (`OnSelected`) |
+  | 3 | Bloque y hueco del Escenario 1 | Copia de un bloque "Avanzar" y un `socket` suelto | Encaja cualquier bloque (`Socket.OnOccupied`) |
+  | 4 | Ficha y hueco del Escenario 4 | `ShapeSocket` y **una** `ShapeChip`, la que encaja | Encaja la ficha correcta |
+
+- **`TutorialController`**, en la raíz, vigila las cuatro (suscrito desde código) y termina
+  cuando están todas, en cualquier orden. No escribe telemetría
+- **Arranque (plan del usuario, 06/10/2026):** `StartButton → Director.Play`. El primer paso
+  del Director, **"Iniciar tutorial"** (escenario `Inicio`, en serie), apaga `StartButton`,
+  enciende las piezas, espera al Narrator (frase `0`, `Sounds/VoiceLines/Victor/0.wav`) y
+  después al `Tutorial` (`TutorialController`). Luego sigue "Teletransportar a Escenario 1".
+  **Montado a mano por el usuario en `Basico`; falta en `Intermedio`**
+- **`Director.Play` ignora una segunda llamada** mientras el recorrido está en marcha
+  (`Director.IsPlaying`). Antes lanzaba otro recorrido en paralelo: bastaba con pulsar dos
+  veces el botón de inicio
+- `TutorialController.startDirectorOnFinish` solo arranca el Director **si no está ya en
+  marcha**. Con el plan actual nunca hace nada (el Director ya corre y está esperando al
+  tutorial), así que da igual cómo esté; queda como respaldo por si se usa el tutorial sin
+  botón de inicio
+- **`BlockResetter` en la raíz `Tutorial`:** es a donde vuelve sola una ficha que se cae al
+  suelo. Lista como "piezas" a todos los hijos directos (sala y mesa incluidas), pero solo se
+  usa `ReturnBlock`. **No cablear `ResetBlocks` de ese componente a ningún botón**
+- **`Scenario4Controller` con `challengeId` vacío: solo si hay una ficha que no encaja.** Su
+  único papel en el tutorial es expulsarla, porque el rechazo vive en ese controlador y no en
+  `ShapeSocket`. Con una sola ficha sobra, y la herramienta 4 lo quita; si se añade una ficha
+  incorrecta, lo vuelve a poner. Mientras haya dos en una escena, nada debe buscarlo por tipo
+  sin mirar el `challengeId` (`CodeaSceneTools.FindScenario4`)
+- **`Tools → Codea → 4`** (en cualquier escena de juego): no mueve ni cambia de padre nada de
+  lo que ya esté; crea solo las piezas que falten y deja el cuarto listo (resetter, sin
+  controlador sobrante, sin cable al Director, `playOnStart` apagado)
+- **`Tools → Codea → 5`**: guarda en el prefab el cuarto de la escena abierta. Si el cuarto
+  ya es instancia del prefab, le aplica los cambios; si no, sobrescribe el prefab y lo enlaza
+- **`Tools → Codea → 6`**: en la otra escena, sustituye su `Start`/`Tutorial` por el prefab.
+  Lo que se hubiera cambiado en el cuarto de esa escena sin pasar la 5 se pierde (avisa antes)
+- La posición de la **raíz** del cuarto no viaja al aplicar cambios a un prefab ya enlazado:
+  si se mueve la sala entera, hay que moverla igual en la otra escena
+- **Las herramientas 4, 5 y 6 compilan pero no se han ejecutado en su versión actual**; el
+  tutorial no se ha probado en Play. Al pasar la 6, comprobar que sala y mesa se ven: son
+  mallas de ProBuilder dentro de un prefab
+- Si a `TutorialController` le falta una pieza, avisa con error y da esa interacción por
+  hecha, para que el Director no se quede esperando para siempre
+- La conversión a intermedia (herramienta 3) ignora el bloque del tutorial al contar la paleta
+- Los agarres del tutorial ocurren sin reto abierto: no se cuentan, y `TelemetryManager`
+  avisa una vez en consola de "agarres sin ningún reto activo". En el tutorial es lo esperado
+- **Pendiente en `Intermedio`:** tiene guardado un montaje de prueba (`Interactables`
+  apagado, `StartButton` encendido, `startDirectorOnFinish` apagado) y le faltan el paso
+  "Iniciar tutorial" del Director y la frase `0` al principio de sus listas del Narrator. Hay
+  que dejarlo igual que `Basico`
+- La frase del tutorial es una sola, id `0`, ya en el CSV y grabada. La frase 3 sigue
+  pidiendo pulsar «Iniciar» para que corra el tiempo: revisar si aún cuadra
 
 **Plan del punto 1 (depurar logs del esc. 1), listo para aplicar:**
 
@@ -847,9 +986,8 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 **Preguntas abiertas para esa sesión:**
 
-- **Punto 9:** ¿`solved` debe valer 1 en la pasada que clasifica **todo su tipo** (todas las cajas o todos los barriles), en vez de solo en la que completa el escenario? Hoy solo la última pasada sale con `solved: 1`.
-- **Punto 12:** ¿el tutorial es una escena aparte o un paso previo al Escenario 1, donde el niño aprende a pulsar un botón y a encajar una ficha en un socket? ¿Lleva narración propia (frases nuevas en el CSV) y se registra en la telemetría?
-- **Punto 4:** al equivocarse, ¿el botón se deselecciona y queda bloqueado para siempre, o un tiempo? ¿Cuenta como error de la misma forma que hoy?
+- **Punto 9:** ¿`solved` debe ser `true` en la pasada que clasifica **todo su tipo** (todas las cajas o todos los barriles), en vez de solo en la que completa el escenario? Hoy solo la última pasada sale con `solved: true`.
+- **Punto 12:** resuelto en parte: el tutorial es el cuarto `Tutorial` de la propia escena y no se registra en la telemetría. Queda: ¿lleva narración propia (frases nuevas en el CSV)?
 - **Punto 6:** ¿qué es exactamente lo que no se ve: el icono, la luz o el texto "Sistema restablecido"? ¿Desde dónde mira el jugador?
 - **Punto 11:** ¿hay ya imágenes del alfabeto Yachay en glifos cuadrados? ¿Cuántos huecos y fichas tendrá la intermedia?
 
@@ -876,7 +1014,6 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 | Qué | Por qué sigue abierto |
 |---|---|
-| `SecuenciaIncompleta` | Sin definición operativa que separe "faltaron instrucciones" de "el orden estaba mal". Siempre vale 0. Es criterio pedagógico |
 | `SessionResult` | Declarado pero sin campo en el JSON. Falta decidir qué dispara "abandonado" |
 | Username vs PIN | El SRS pide username (RF-01), el código usa PIN. Divergencia **deliberada**: se decidió corregir el documento. El PIN lo teclea el supervisor en la escena `Setup` |
 | Mecánica del brazo | Reescrita con ficha de argumento y dos destinos. Funciona en el APK, pero no se ha probado con niños. ¿Entienden los niños que la ficha es un parámetro y no una instrucción? |
@@ -890,9 +1027,9 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 |---|---|
 | `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
-| `Docs/JSON Samples/` | Runs reales del APK (`0101`, `0102`, dificultad básica, 30/09/2026). Tienen el desfase de apertura de los retos 3 y 4 descrito en la sección 11 |
+| `Docs/JSON Samples/` | Dos runs reales del APK del 30/09/2026 (básica), **convertidas el 06/10/2026 al formato nuevo** y renombradas (`0101_5_00000.json`, `0102_6_00000.json`). Secuencias, tiempos y fechas son los reales; `durationSeconds` de selecciones y colocaciones y el `totalSeconds` de la raíz salen de las fechas. **Estimados, porque el APK de entonces no los registraba:** `deviceId` (`00000`), `blocksConnected` (el mínimo posible: 8 en el esc. 1, 2 en el esc. 3) y `blockResets` (0). No sirven para validar esos tres campos |
 | `Docs/Pruebas/` | Plan de prueba guionizado de la telemetría (`PLAN_PRUEBA_TELEMETRIA.md`) y el JSON exacto que debe producir (`esperado_prueba_basico.json`). Rehacerlo si cambia el código de telemetría o algún nivel |
-| `Docs/Herramientas/` | Scripts de Node: `resolver_nivel.js` (caminos y bloques de un nivel del Escenario 1) y `generar_gdd.js` (regenera el GDD). Uso en su `LEEME.md` |
+| `Docs/Herramientas/` | Scripts de Node: `resolver_nivel.js` (caminos y bloques de un nivel del Escenario 1) `validar_json_telemetria.js` (comprueba un JSON contra `TelemetryData.cs`) y `generar_gdd.js` (regenera el GDD). Uso en su `LEEME.md` |
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
@@ -905,7 +1042,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 Antes de compilar: `Setup` primera en Build Settings y las tres escenas marcadas. Con el visor
 conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON queda en
-`/sdcard/Android/data/<paquete>/files/{pin}_{sessionId}.json`.
+`/sdcard/Android/data/<paquete>/files/{pin}_{sessionId}_{deviceId}.json`.
 
 | # | Paso | Debe pasar | Si falla, mirar |
 |---|---|---|---|
@@ -913,10 +1050,11 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 2 | Teclear un PIN, borrar una cifra, "Siguiente" | La pantalla sigue cada tecla | Cableado de las teclas |
 | 3 | Pulsar EMPEZAR sin dificultad | No arranca; el estado pide la dificultad | `SessionSetup.statusText` |
 | 4 | Básica → EMPEZAR | Fundido y carga de `Basico` | Build Settings |
-| 5 | Introducción | Frases 1–3 con voz y texto completo a la vez; el reloj arranca con «Iniciar» | Listas del Narrator |
+| 5 | Tutorial | Al pulsar el botón de inicio suena la frase `0` con su texto; tras pulsar los dos botones y encajar el bloque y la ficha, se pasa al Escenario 1 | Paso "Iniciar tutorial" del Director, `TutorialController` |
+| 5b | Introducción | Frases 1–3 con voz y texto completo a la vez; el reloj arranca con «Iniciar» | Listas del Narrator |
 | 6 | Esc. 1: fallar a propósito | Choca, frase de error, el nivel se rearma solo | `OnAttemptFailed` |
 | 7 | Esc. 1: resolver | Frase 7, puerta abierta, traslado | Director |
-| 8 | Esc. 2: opción incorrecta | Frase de error; deseleccionar no la repite | `OnWrongOption` |
+| 8 | Esc. 2: opción incorrecta | Frase de error; el botón se suelta solo en menos de un segundo | `OnWrongOption`, `wrongOptionSeconds` |
 | 9 | Esc. 2: resolver los 3 módulos | Luces verdes, frase 10 | `ModuleData` |
 | 10 | Esc. 3: ejecutar sin ficha | No se mueve nada | `preconditions` |
 | 11 | Esc. 3: poner ficha | Contador a 0; ejecutar con 0 no hace nada | `ArmTypeSocket` |
@@ -928,7 +1066,7 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |
 | 18 | Segunda partida seguida (otro PIN) | Todo igual que la primera | `TelemetryManager` por escena |
 | 19 | Tercera partida: dejar que se acabe el tiempo | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
-| 20 | Sacar los JSON del visor | Un archivo por partida, con su PIN, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
+| 20 | Sacar los JSON del visor | Un archivo por partida, `{pin}_{sessionId}_{deviceId}.json`, con el mismo `deviceId` en todos, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
 | 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
 | 22 | `Setup` → **Intermedia** → EMPEZAR | Carga `Intermedio`; en el JSON, `difficulty: 2` | `DifficultyScene`, Build Settings |
 | 23 | Intermedia · frases 9.2 y 14.2 | Suenan las variantes de intermedia | `listIndex` 2 |
@@ -936,14 +1074,14 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 25 | Intermedia · Esc. 1 por arriba (11 bloques) | Roki llega de frente al botón y la puerta se abre | Solución en la sección 5 |
 | 26 | Intermedia · Esc. 2 | Cada módulo pide 2 opciones | Módulos `*_Intermedia` |
 | 27 | Intermedia · Esc. 3 | La fila llega desordenada y se puede reordenar; cada color necesita sus giros | Herramienta 3 |
-| 28 | JSON: primer intento del esc. 3 | Su `timestamp` es posterior a `escenario3.startedUtc`; agarres ≈ sueltas en esc. 3 y 4 | Retos abiertos al llegar |
+| 28 | JSON: primer intento del esc. 3 | Su `timestamp` es posterior a `escenario3.startedUtc`; `blocksConnected` ≤ `blocksGrabbed` en esc. 1 y 3 | Retos abiertos al llegar |
 
 ### Compilar sin abrir Unity
 
 `Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de
 editor comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno
 a uno; un script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto"
-sin haberlo compilado. A 05/10/2026 faltan `Session/TimeUpSequence.cs` (en el de runtime) y
+sin haberlo compilado. A 06/10/2026 faltan `Session/TimeUpSequence.cs` y `Story/TutorialController.cs` (en el de runtime) y
 `Editor/CodeaSceneTools.cs` (en el de editor): Unity sí los compila, pero el `.csproj` no se
 regeneró. Hasta que lo haga (en Unity: *Edit → Preferences → External Tools → Regenerate
 project files*), hay que añadirlos a mano a una copia, compilar y restaurar:
@@ -955,6 +1093,7 @@ try {
   $s = [IO.File]::ReadAllText("$r\Assembly-CSharp.csproj")
   $a = '<Compile Include="Assets\_Main\Scripts\Session\SceneLoader.cs" />'
   if (-not $s.Contains('TimeUpSequence.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Session\TimeUpSequence.cs" />') }
+  if (-not $s.Contains('TutorialController.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Story\TutorialController.cs" />') }
   [IO.File]::WriteAllText("$r\Assembly-CSharp.csproj", $s)
   $e = [IO.File]::ReadAllText("$r\Assembly-CSharp-Editor.csproj")
   $b = '<Compile Include="Assets\_Main\Editor\LevelEditorWindow.cs" />'
@@ -981,6 +1120,9 @@ Los assets de Unity escriben los acentos como `"\xED"` dentro de comillas dobles
 ```bash
 # Caminos y bloques de un nivel del Escenario 1 (búsqueda exhaustiva)
 node Docs/Herramientas/resolver_nivel.js Assets/_Main/Levels/escenario1_intermedio.json 11
+
+# Los JSON de la documentación (o uno del visor) contra el modelo de TelemetryData.cs
+node Docs/Herramientas/validar_json_telemetria.js
 
 # Superficie pública (si este documento parece desfasado)
 grep -rnE "^\s{4}public\s+(void|IEnumerator|bool|int|string|float)\s+\w+\s*\(" Assets/_Main/Scripts

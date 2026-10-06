@@ -3,7 +3,10 @@
 > Documento para el equipo de evaluación. Describe **qué registra el juego** en cada escenario
 > y qué permite observar cada variable.
 >
-> Estado verificado contra el código el **23/09/2026**.
+> Estado verificado contra el código el **06/10/2026**. Ese día cambió el formato: los
+> archivos anteriores usan el antiguo, resumido al final. Las dos muestras de `JSON Samples/`
+> son sesiones del 30/09/2026 **convertidas** al formato nuevo: llevan estimados los campos que
+> entonces no se registraban (`deviceId`, `blocksConnected`, `blockResets`).
 
 ---
 
@@ -23,25 +26,28 @@ Esto es importante para no planificar un análisis sobre datos que aún no exist
 | Escenario | Código | ¿Ha generado datos reales? |
 |---|---|---|
 | 1 — Secuencialidad | ✅ Completo | ✅ Sí, verificado en visor |
-| 2 — Condicionales | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
-| 3 — Bucles y parámetros | ✅ Completo, **rediseñado** | 🟡 Montado en escena, **pendiente de probar** |
-| 4 — Patrones | ✅ Completo | 🟡 Montado en escena, **pendiente de probar** |
+| 2 — Condicionales | ✅ Completo | ✅ Sí, en el APK del 30/09/2026 |
+| 3 — Bucles y parámetros | ✅ Completo | ✅ Sí, en el APK del 30/09/2026 |
+| 4 — Patrones | ✅ Completo | ✅ Sí, en el APK del 30/09/2026 |
 
-Las variables de los escenarios 2, 3 y 4 **están implementadas en código**, pero ese código
-todavía no se ha ejecutado en una sesión real. Son un compromiso firme de qué se va a
-recoger, no datos disponibles hoy.
+Esos datos son del **formato anterior**. El formato que describe este documento, del
+06/10/2026, está implementado en código pero **todavía no se ha ejecutado en el visor**:
+hasta que se pruebe es un compromiso firme de qué se va a recoger, no datos disponibles.
 
 ---
 
 ## Cómo llegan los datos
 
-- Un **archivo JSON por participante**, nombrado `{pin}_{sessionId}.json`
+- Un **archivo JSON por participante**, nombrado `{pin}_{sessionId}_{deviceId}.json`: el PIN,
+  el número de sesión del visor y el código del visor. Repetir un PIN no pisa nada, porque el
+  número de sesión siempre cambia
 - Se guarda en el visor y se conserva siempre, aunque no haya red
-- El supervisor lo envía al servidor con un botón dedicado (no es automático)
+- Se sube solo al servidor al terminar la sesión o al agotarse el tiempo, si hay red. Cerrar la aplicación a mitad de partida no lo sube: queda en el visor
 - Todas las marcas de tiempo son **ISO-8601 en UTC**
-- Los indicadores por registro (`solved`, `correct`, `selected`) se guardan como **0 / 1** para
-  facilitar el volcado a tabla. Excepción: `started` y `completed` son booleanos de verdad,
-  `true` / `false`
+- Todos los indicadores (`started`, `completed`, `solved`, `correct`) son
+  booleanos: `true` / `false`
+- Los tiempos se llaman siempre igual: `totalSeconds` para un total (la sesión o un escenario)
+  y `durationSeconds` para lo que tardó una acción concreta
 
 ---
 
@@ -52,16 +58,22 @@ Se registran una vez por participante.
 | Variable | Tipo | Qué es |
 |---|---|---|
 | `pin` | texto | Identificador del participante, de 4 dígitos. Lo asigna el supervisor |
-| `sessionId` | entero | Contador interno que sube en cada arranque. Evita colisiones si se repite un PIN |
-| `difficulty` | entero | **1 = básica, 2 = intermedia**. Fija para toda la sesión |
+| `deviceId` | texto | **Código del visor**, 5 letras y cifras. El mismo en todas las sesiones de ese visor |
+| `sessionId` | entero | Contador interno del visor, sube en cada sesión |
+| `difficulty` | entero | **1 = básica, 2 = intermedia**. Fija para toda la sesión; por eso no se repite en cada intento |
 | `startedUtc` | fecha | Inicio de la sesión |
 | `endedUtc` | fecha | Cierre de la sesión |
+| `totalSeconds` | decimal | **Tiempo total de juego**, de principio a fin de la sesión. Incluye la narración y los traslados entre salas, así que es mayor que la suma de los cuatro escenarios |
 
 > `pin` **no es un nombre de usuario**: es un número que el supervisor teclea en el visor antes
 > de entregárselo al niño. La pantalla propone el siguiente al último usado, así que en una
-> ronda de participantes basta con confirmarlo. `sessionId` cambia en cada sesión, de modo que
-> dos archivos nunca se pisan, ni siquiera repitiendo PIN. **Qué niño corresponde a cada PIN lo
-> registra el supervisor fuera del visor.**
+> ronda de participantes basta con confirmarlo. **Qué niño corresponde a cada PIN lo registra
+> el supervisor fuera del visor.**
+>
+> `deviceId` sale del identificador que Android da a la aplicación en ese visor. No cambia al
+> reiniciar, al actualizar la app ni al borrar sus datos. **Sí cambia** si el visor se
+> restablece de fábrica o si se instala un APK firmado con otra clave: conviene apuntar el
+> código de cada visor al empezar una campaña y comprobar que sigue igual.
 
 ## Variables comunes de cada escenario
 
@@ -88,11 +100,11 @@ meta. Puede ejecutar, ver qué pasa, reiniciar y volver a intentarlo cuantas vec
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `failedAttempts` | entero | Ejecuciones que no resolvieron el reto. Indicador de persistencia y de ensayo-error |
-| `blocksGrabbed` | entero | Bloques agarrados en total |
-| `blocksReleased` | entero | Bloques soltados en total |
-| `errorCollisionBot` | entero | Intentos de mover el robot **fuera del tablero**. Cada paso cuenta: un "Avanzar 2" que se sale en los dos pasos suma 2 |
-| `errorInvalidCommand` | entero | Intentos de mover el robot **contra un muro o un peligro**, y órdenes de "usar" donde no hay nada. Como arriba, cada paso de "Avanzar 2" cuenta por separado |
-| `errorIncompleteSequence` | entero | ⚠️ **Siempre vale 0** (ver limitaciones) |
+| `blocksGrabbed` | entero | Veces que agarró un bloque |
+| `blocksConnected` | entero | Veces que **encajó un bloque en un hueco** de la fila. Soltarlo en la mesa no cuenta |
+| `blockResets` | entero | Veces que pulsó el botón que devuelve todos los bloques a su sitio |
+| `errorCollisionBot` | entero | Movimientos imposibles del robot: salirse del tablero o chocar con un muro o un peligro. Cada paso cuenta: un "Avanzar 2" que choca en los dos pasos suma 2 |
+| `errorInvalidUse` | entero | Órdenes de **"Usar" donde no hay nada que usar**. Va aparte del choque porque es otro error: el robot no se movió mal, usó en el sitio equivocado |
 
 ## Variables por intento
 
@@ -101,7 +113,7 @@ Cada vez que el niño pulsa el botón de ejecutar se guarda un registro completo
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `sequence` | lista de textos | **La secuencia exacta que montó**, en lenguaje natural |
-| `solved` | 0/1 | Si ese intento resolvió el reto |
+| `solved` | `true`/`false` | Si ese intento resolvió el reto |
 | `durationSeconds` | decimal | **Segundos que tardó en preparar este intento**: desde que empezó el reto (o desde el fallo anterior) hasta que pulsó ejecutar |
 | `timestamp` | fecha | Cuándo lo ejecutó |
 
@@ -125,10 +137,10 @@ ver cómo evoluciona la estrategia.
 
 Tres módulos averiados de la nave. Cada uno describe en texto **lo que se observa**, no la
 causa (*"Los motores hacen ruido pero no arrancan. Su tanque está vacío"*), y ofrece varias
-acciones: el niño tiene que deducir qué falta. Los botones
-**alternan** entre seleccionado y no seleccionado, y el módulo se repara cuando el conjunto
-elegido coincide **exactamente** con el correcto: ni de menos ni de más. Se puede reintentar
-sin límite.
+acciones: el niño tiene que deducir qué falta. El módulo se repara cuando están marcadas
+**todas** las acciones correctas. Una acción incorrecta se queda marcada un instante, suena la
+frase de error y **se suelta sola**: el niño no tiene que desmarcarla. Se puede reintentar sin
+límite.
 
 La dificultad vive en los datos, no en el código:
 
@@ -142,37 +154,32 @@ lubricación, energía de electricidad, enfriamiento de temperatura—, así que
 acertar reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar
 agua"* aparece en los tres módulos y solo es correcta en uno.
 
-## Variables del escenario
-
-| Variable | Tipo | Qué permite observar |
-|---|---|---|
-| `wrongSelections` | entero | Cuántas veces **marcó** una acción incorrecta, en todo el escenario |
-
-> Solo cuenta el acto de **marcar** algo incorrecto. Desmarcarlo después no suma otro error:
-> es la corrección, no una equivocación nueva.
-
 ## Variables por pulsación
 
-Se guarda **cada pulsación**, tanto al marcar como al desmarcar:
+El escenario no tiene contadores propios: todo está en la lista `selections`, con una entrada
+por cada acción que el niño **marca**.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `module` | texto | En qué módulo: `"motores"`, `"generadores"`, `"enfriamiento"` |
-| `option` | texto | **Qué acción pulsó**, con su texto literal |
-| `selected` | 0/1 | `1` = la marcó · `0` = la desmarcó |
-| `correct` | 0/1 | Si esa acción formaba parte de la solución |
+| `option` | texto | **Qué acción marcó**, con su texto literal |
+| `correct` | `true`/`false` | Si esa acción formaba parte de la solución |
+| `durationSeconds` | decimal | **Segundos desde la acción marcada anterior** del escenario; en la primera, desde que se abrió el escenario |
 | `timestamp` | fecha | Cuándo |
 
-**Por qué se registran también las deselecciones.** Desmarcar una acción es un acto de
-autocorrección: el niño la puso, la miró junto a las demás y decidió que no tocaba. Sin el
-campo `selected` ese momento sería indistinguible de no haber tocado nunca esa opción, y es
-justo la evidencia de razonamiento condicional que interesa medir.
+**Los errores se cuentan sobre la lista:** son las entradas con `correct: false`. Ya no hay un
+contador `wrongSelections` aparte, porque decía lo mismo.
+
+**Las deselecciones no se registran.** Ni la automática de una acción incorrecta, ni la manual
+de una correcta (que solo puede darse en intermedia, donde hay dos correctas por módulo). Por
+eso tampoco existe ya el campo `selected`: valdría siempre `true`. Si un niño desmarca una
+correcta y la vuelve a marcar, esa acción aparece dos veces en la lista.
 
 **Utilidad para el diseño pedagógico:** el escenario está construido sobre *fading worked
 examples*. Como se guarda el orden y el módulo de cada pulsación, se puede comprobar si los
 errores **disminuyen del primer módulo al tercero**, que es exactamente la predicción del
 modelo. También permite ver si hay distractores concretos que confunden sistemáticamente y,
-gracias a `selected`, distinguir a quien duda y se corrige de quien acierta a la primera.
+con `durationSeconds`, distinguir a quien lee y decide de quien pulsa por descarte.
 
 ---
 
@@ -205,9 +212,8 @@ como error de lógica.
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `failedAttempts` | entero | Ejecuciones que **no clasificaron ningún objeto**. Una pasada que mueve algunos pero no todos no cuenta como fallida: es menos óptima, no errónea |
-| `blocksGrabbed` / `blocksReleased` | entero | Manipulación de bloques **y de fichas de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
+| `blocksGrabbed` / `blocksConnected` | entero | Veces que agarró y veces que encajó en un hueco un bloque **o una ficha de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
 | `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha o con 0 repeticiones. Al poner la ficha las repeticiones vuelven a 0, así que ejecutar sin elegirlas cuenta aquí y **no** como intento |
-| `errorCollisionBot`, `errorIncompleteSequence` | entero | No se usan en este escenario. Siempre 0 |
 
 Soltar un objeto en el lado equivocado **no se consuma**: el objeto vuelve a su pila y solo se
 registra el error. Así el niño ve la consecuencia sin tener que rescatar el objeto.
@@ -219,7 +225,7 @@ registra el error. Así el niño ve la consecuencia sin tener que rescatar el ob
 | `itemType` | texto | **Con qué ficha se ejecutó**: `"Barril"` o `"Caja"` |
 | `sequence` | lista de textos | **Las instrucciones del bucle, en orden** |
 | `repetitions` | entero | **Cuántas repeticiones eligió** |
-| `solved` | 0/1 | 1 solo en la ejecución que completó el escenario |
+| `solved` | `true`/`false` | `true` solo en la ejecución que completó el escenario |
 | `durationSeconds` | decimal | Tiempo de preparación del intento |
 | `timestamp` | fecha | Cuándo |
 
@@ -256,11 +262,17 @@ visual**: hay que comparar el detalle, no reconocer una forma conocida.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `wrongPlacements` | entero | Colocaciones incorrectas |
+| `chipsGrabbed` | entero | Cuántas veces cogió una ficha: la señal de duda y tanteo |
 | `socket` | texto | En qué hueco intentó colocar |
 | `chip` | texto | Qué figura colocó |
-| `correct` | 0/1 | Si encajaba |
-| `chipsGrabbed` / `chipsReleased` | entero | Cuántas veces cogió y soltó una ficha: la señal de duda y tanteo |
+| `correct` | `true`/`false` | Si encajaba |
+| `durationSeconds` | decimal | **Segundos desde la colocación anterior**; en la primera, desde que se abrió el escenario |
+| `timestamp` | fecha | Cuándo |
+
+Las tres últimas filas y `socket`/`chip` van en la lista `placements`, una entrada por ficha
+encajada. Las colocaciones incorrectas son las que tienen `correct: false`; ya no hay un
+contador `wrongPlacements` aparte, ni uno de fichas soltadas: una ficha encajada ya es una
+entrada de la lista.
 
 Se guarda **qué figura fue a qué hueco**, no solo el acierto. Ese par es el dato pedagógico
 del escenario: saber **cuál confundió con cuál** dice qué detalle no llegó a distinguir, y de
@@ -285,7 +297,10 @@ Estas no se guardan, pero se calculan directamente desde lo anterior:
 | **Eficiencia de la solución** | Longitud de la `sequence` ganadora vs la óptima del nivel | Optimización, abstracción |
 | **Uso de "Avanzar 2"** | Buscar `"Avanzar 2"` en la `sequence` | **Abstracción**: agrupar dos pasos en una instrucción |
 | **Distancia entre intentos** | Comparar `sequence` de intentos consecutivos | Distingue corrección **sistemática** de ensayo-error aleatorio |
+| **Errores del Esc. 2** | Contar en `selections` las entradas con `correct: false` | Sustituye al antiguo `wrongSelections` |
 | **Tasa de error por módulo** | Agrupar `selections` por `module` | Validar el efecto del *fading* (Esc. 2) |
+| **Tiempo de decisión** | `durationSeconds` de cada selección o colocación | Si el error llega tras pensar o por pulsar rápido (Esc. 2 y 4) |
+| **Errores del Esc. 4** | Contar en `placements` las entradas con `correct: false` | Sustituye al antiguo `wrongPlacements` |
 | **Convergencia del bucle** | Serie de `repetitions` por intento | Estrategia de aproximación (Esc. 3) |
 | **Eficiencia de pasadas** | Nº de intentos del Esc. 3 frente al óptimo de 2, uno por `itemType` | Si usa el bucle o lo sustituye por ejecuciones repetidas (Esc. 3) |
 | **Transferencia del parámetro** | Comparar la `sequence` de los intentos con distinto `itemType` | Si entiende que el mismo programa sirve cambiando el dato (Esc. 3, intermedia) |
@@ -302,25 +317,25 @@ variable simple los separa.
 
 Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
 
-1. **`errorIncompleteSequence` siempre vale 0.** Está declarado pero nunca se registra: no
-   hemos acordado una definición operativa que distinga "faltaron instrucciones" de "el orden
-   estaba mal". **Es una decisión pedagógica pendiente**, y si os interesa esa distinción hay
-   que definirla antes de recoger datos.
-
-2. **No hay identificación nominal.** Cada sesión lleva el `pin` que tecleó el supervisor. El
+1. **No hay identificación nominal.** Cada sesión lleva el `pin` que tecleó el supervisor. El
    emparejamiento con encuestas u otros instrumentos depende del registro PIN → participante
    que lleve el supervisor. Las sesiones recogidas antes del 30/09/2026 salieron todas con
    `"0000"` y solo las distingue `sessionId`.
 
-3. **`blocksGrabbed` / `blocksReleased` miden manipulación, no colocaciones válidas.** Incluyen
-   agarrar un bloque y volver a dejarlo sin usarlo. Sirven como indicador de exploración o de
-   dificultad motriz, no de decisiones lógicas.
+2. **Salirse del tablero y chocar van en el mismo contador.** `errorCollisionBot` suma los dos
+   y no se pueden separar después. "Usar" mal sí va aparte, en `errorInvalidUse`.
+
+3. **`blocksGrabbed` mide manipulación, no decisiones.** Incluye agarrar un bloque y volver a
+   dejarlo sin usarlo. `blocksConnected` es el que dice cuántas veces puso un bloque en la
+   fila; la diferencia entre los dos es lo que cogió y no llegó a colocar.
 
 4. **No se registra el estado "abandonado".** Si un participante no termina, queda
-   `completed: 0` pero no hay un campo que distinga *se acabó el tiempo* de *lo dejó*.
+   `completed: false` pero no hay un campo que distinga *se acabó el tiempo* de *lo dejó*.
 
-5. **No se registran las pausas.** Quitarse el visor un momento no queda reflejado, así que
-   `totalSeconds` incluye ese tiempo.
+5. **No se registran las pausas.** Quitarse el visor un momento no queda reflejado. Los
+   tiempos (`totalSeconds`, `durationSeconds`) usan el reloj del juego, que se detiene mientras
+   la aplicación está en pausa; las fechas (`startedUtc`, `timestamp`) usan el reloj real. Si
+   la diferencia entre dos fechas es mayor que los segundos registrados, hubo una pausa.
 
 6. **No hay vídeo, audio, mirada ni posición del jugador.** Solo eventos lógicos.
 
@@ -331,10 +346,12 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
 ```json
 {
     "pin": "0004",
+    "deviceId": "3F9A1",
     "sessionId": 187,
     "difficulty": 1,
     "startedUtc": "2026-08-26T09:12:03.4410000Z",
     "endedUtc": "2026-08-26T09:26:44.8820000Z",
+    "totalSeconds": 881.4,
 
     "escenario1": {
         "started": true,
@@ -342,22 +359,20 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "totalSeconds": 149.8,
         "failedAttempts": 1,
         "blocksGrabbed": 9,
-        "blocksReleased": 9,
+        "blocksConnected": 7,
+        "blockResets": 1,
         "errorCollisionBot": 1,
-        "errorIncompleteSequence": 0,
-        "errorInvalidCommand": 1,
+        "errorInvalidUse": 1,
         "attempts": [
             {
-                "difficulty": 1,
                 "sequence": ["Avanzar", "Girar Derecha"],
-                "solved": 0,
+                "solved": false,
                 "durationSeconds": 21.4,
                 "timestamp": "2026-08-26T09:13:41.0000000Z"
             },
             {
-                "difficulty": 1,
                 "sequence": ["Avanzar", "Girar Derecha", "Avanzar 2", "Usar"],
-                "solved": 1,
+                "solved": true,
                 "durationSeconds": 38.2,
                 "timestamp": "2026-08-26T09:14:32.0000000Z"
             }
@@ -368,12 +383,10 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "started": true,
         "completed": true,
         "totalSeconds": 84.2,
-        "wrongSelections": 1,
         "selections": [
-            { "module": "motores", "option": "Agregar agua",     "selected": 1, "correct": 0, "timestamp": "..." },
-            { "module": "motores", "option": "Agregar agua",     "selected": 0, "correct": 0, "timestamp": "..." },
-            { "module": "motores", "option": "Agregar gasolina", "selected": 1, "correct": 1, "timestamp": "..." },
-            { "module": "motores", "option": "Agregar aceite",   "selected": 1, "correct": 1, "timestamp": "..." }
+            { "module": "motores", "option": "Agregar agua",        "correct": false, "durationSeconds": 17.3, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar combustible", "correct": true,  "durationSeconds": 9.1,  "timestamp": "..." },
+            { "module": "motores", "option": "Agregar aceite",      "correct": true,  "durationSeconds": 4.6,  "timestamp": "..." }
         ]
     },
 
@@ -382,11 +395,13 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "completed": true,
         "totalSeconds": 121.7,
         "failedAttempts": 1,
+        "blocksGrabbed": 3,
+        "blocksConnected": 2,
         "errorInvalidCommand": 3,
         "attempts": [
-            { "itemType": "Caja",   "repetitions": 7, "solved": 0, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
-            { "itemType": "Caja",   "repetitions": 3, "solved": 0, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
-            { "itemType": "Barril", "repetitions": 3, "solved": 1, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." }
+            { "itemType": "Caja",   "repetitions": 7, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Caja",   "repetitions": 3, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Barril", "repetitions": 3, "solved": true,  "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." }
         ]
     },
 
@@ -394,17 +409,19 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "started": true,
         "completed": true,
         "totalSeconds": 73.9,
-        "wrongPlacements": 1,
         "chipsGrabbed": 6,
-        "chipsReleased": 6,
         "placements": [
-            { "socket": "circulo_rombo", "chip": "circulo_rombo", "correct": 1, "timestamp": "..." },
-            { "socket": "cuadrado_circulo", "chip": "cuadrado_punto", "correct": 0, "timestamp": "..." },
-            { "socket": "cuadrado_circulo", "chip": "cuadrado_circulo", "correct": 1, "timestamp": "..." }
+            { "socket": "circulo_rombo",    "chip": "circulo_rombo",    "correct": true,  "durationSeconds": 18.3, "timestamp": "..." },
+            { "socket": "cuadrado_circulo", "chip": "cuadrado_punto",   "correct": false, "durationSeconds": 17.5, "timestamp": "..." },
+            { "socket": "cuadrado_circulo", "chip": "cuadrado_circulo", "correct": true,  "durationSeconds": 13.9, "timestamp": "..." }
         ]
     }
 }
 ```
+
+El ejemplo está abreviado (faltan `startedUtc`/`endedUtc` de cada escenario y algunos campos
+de los intentos del Escenario 3). El archivo completo, con el formato exacto, es
+`ejemplo_run_telemetria.json`.
 
 En el Escenario 4 se lee de un vistazo lo que mide el escenario: confundió `cuadrado_punto` con
 `cuadrado_circulo` y acertó al segundo intento. Ese par concreto es lo que interesa, porque señala qué
@@ -426,4 +443,26 @@ que falta algo, es mejor decirlo ahora.
 Dos cosas que ya sabemos que se pueden añadir con poco esfuerzo si os sirven:
 
 - **Marca de abandono** con su motivo (tiempo agotado / reinicio del supervisor)
-- **Tiempo entre intentos**, para separar el tiempo de reflexión del de manipulación
+
+---
+
+# Cambios de formato del 06/10/2026
+
+Para leer archivos anteriores a esa fecha junto a los nuevos:
+
+| Antes | Ahora |
+|---|---|
+| Archivo `{pin}_{sessionId}.json` | `{pin}_{sessionId}_{deviceId}.json` |
+| — | `deviceId` y `totalSeconds` en la raíz |
+| `solved`, `correct` como 0/1 | `true`/`false` |
+| `difficulty` en cada intento | Solo en la raíz |
+| `blocksReleased` (cada suelta) | `blocksConnected` (solo al encajar en un hueco). No son comparables |
+| Esc. 1: `errorCollisionBot` (salirse) y `errorInvalidCommand` (chocar y usar mal) | `errorCollisionBot` (salirse y chocar) y `errorInvalidUse` (usar mal). Los totales de antes y de ahora no son comparables contador a contador, solo su suma |
+| `errorIncompleteSequence` (siempre 0) | Eliminado |
+| Esc. 3: `errorCollisionBot` (siempre 0) | Eliminado; queda `errorInvalidCommand` |
+| — | Esc. 1: `blockResets` |
+| Esc. 2: `wrongSelections` | Eliminado: contar `correct: false` en `selections` |
+| Esc. 2: la incorrecta se desmarcaba a mano y quedaba registrada | Se desmarca sola |
+| Esc. 2: campo `selected`, con las deselecciones registradas | Eliminado: solo se registra lo que se marca |
+| — | Esc. 2 y 4: `durationSeconds` en cada selección y colocación |
+| Esc. 4: `wrongPlacements`, `chipsReleased` | Eliminados: contar `correct: false` en `placements` |
