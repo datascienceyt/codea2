@@ -419,7 +419,10 @@ public class Narrator : MonoBehaviour, IStepAction
     private string FindText(string id)
     {
         id = id?.Trim();
-        if (string.IsNullOrEmpty(id) || id == "0") return null;
+        // Solo el vacío significa "sin texto". El "0" también lo significaba cuando el id era
+        // un entero y 0 era su valor por defecto; hoy es un id como cualquier otro, y es el de
+        // la frase del tutorial.
+        if (string.IsNullOrEmpty(id)) return null;
 
         NarrativeLine line = lines.Find(l => l.id == id);
         return line?.text;

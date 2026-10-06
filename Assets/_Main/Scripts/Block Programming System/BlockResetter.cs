@@ -49,6 +49,11 @@ public class BlockResetter : MonoBehaviour
     [ContextMenu("Reset Blocks")]
     public void ResetBlocks()
     {
+        // Desde código y no por UnityEvent: el botón de reiniciar ya llama aquí, y un segundo
+        // cable a la telemetría es justo el que se olvida. TelemetryManager decide si cuenta.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.RegisterBlockReset();
+
         // Lo que el juego bloqueó se queda donde está: una ficha acertada del Escenario 4 o un
         // bloque fijo de la fila. Devolverla dejaba el hueco marcado como resuelto pero vacío,
         // y el escenario ya no se podía terminar. Para un reinicio completo, quien lo pida

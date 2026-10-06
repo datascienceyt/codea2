@@ -11,7 +11,7 @@ using UnityEngine.UI;
 /// script sigue sirviendo si mañana cambia la primitiva de interacción.
 ///
 /// El PIN identifica al participante y da nombre a su archivo de telemetría
-/// ({pin}_{sessionId}.json), así que se exige completo: uno a medias no identifica a nadie.
+/// ({pin}_{sessionId}_{deviceId}.json), así que se exige completo: uno a medias no identifica a nadie.
 /// </summary>
 public class PinEntry : MonoBehaviour
 {

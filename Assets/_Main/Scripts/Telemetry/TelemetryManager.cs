@@ -17,16 +17,18 @@ public enum SessionResult
     Abandonado
 }
 
+// Valores explícitos: el 1 era SecuenciaIncompleta, que nunca llegó a registrarse. Se quitó sin
+// renumerar para no reasignar en silencio cualquier RegisterLogicError(int) cableado en escena.
 public enum LogicErrorType
 {
-    ColisionBot,
-    SecuenciaIncompleta,
-    ComandoInvalido
+    ColisionBot = 0,
+    ComandoInvalido = 2,
+    UsoInvalido = 3
 }
 
 /// <summary>
 /// Registra la telemetría de la sesión en un JSON por participante, en
-/// Application.persistentDataPath/{pin}_{sessionId}.json.
+/// Application.persistentDataPath/{pin}_{sessionId}_{deviceId}.json.
 ///
 /// El archivo se reescribe entero en cada evento crítico: son unos pocos KB y así un cierre
 /// inesperado del visor no se lleva por delante los intentos ya hechos. Los eventos de alta
@@ -50,10 +52,14 @@ public class TelemetryManager : MonoBehaviour
     // Divergencia deliberada con RF-01 del SRS, que pide un username de 3-12 letras. Se decidió
     // mantener el PIN y corregir el documento, no al revés: cambiarlo obligaría a construir la
     // UI de entrada de texto y rompería los JSON ya recogidos, porque 'pin' es además parte del
-    // nombre de archivo ({pin}_{sessionId}.json). No lo "arregles" sin hablarlo con el equipo.
+    // nombre de archivo ({pin}_{sessionId}_{deviceId}.json). No lo "arregles" sin hablarlo con el equipo.
     private const string SessionCounterKey = "telemetry_session_counter";
     private const string PinCounterKey = "telemetry_pin_counter";
     private const string DifficultyPrefKey = "telemetry_difficulty";
+    private const string DeviceIdPrefKey = "telemetry_device_id";
+
+    /// <summary>Caracteres del código del visor. Corto para que quepa en una etiqueta.</summary>
+    private const int DeviceIdLength = 5;
 
     [Header("Persistencia")]
     [Tooltip("Segundos mínimos entre escrituras diferidas. Los eventos críticos (intento, " +
@@ -77,9 +83,13 @@ public class TelemetryManager : MonoBehaviour
     /// <summary>Time.time del inicio de cada reto. Fuera del JSON: es estado de runtime.</summary>
     private readonly Dictionary<string, float> _challengeStartTimes = new Dictionary<string, float>();
 
+    /// <summary>Time.time en que se abrió la run, para su totalSeconds.</summary>
+    private float _runStartTime;
+
     /// <summary>
     /// Time.time en que empezó el ciclo del intento en curso: el momento desde el que se
-    /// cuenta cuánto tarda el jugador en preparar su siguiente ejecución.
+    /// cuenta cuánto tarda el jugador en preparar su siguiente ejecución. En los escenarios 2
+    /// y 4 hace el mismo papel entre una selección o una colocación y la siguiente.
     /// </summary>
     private float _attemptCycleStart;
 
@@ -147,9 +157,12 @@ public class TelemetryManager : MonoBehaviour
         PlayerPrefs.SetInt(SessionCounterKey, _sessionId);
         PlayerPrefs.Save();
 
+        string deviceId = GetDeviceId();
+
         _run = new RunRecord
         {
             pin = pin,
+            deviceId = deviceId,
             sessionId = _sessionId,
             difficulty = ToDifficultyValue(_currentDifficulty),
             startedUtc = NowUtc(),
@@ -158,14 +171,60 @@ public class TelemetryManager : MonoBehaviour
 
         _challengeStartTimes.Clear();
         _currentChallengeId = null;
+        _runStartTime = Time.time;
         _attemptCycleStart = Time.time;
         _warnedManipulationWithoutChallenge = false;
 
-        // El sessionId evita que dos participantes con el mismo PIN se pisen el archivo.
-        _filePath = Path.Combine(Application.persistentDataPath, $"{pin}_{_sessionId}.json");
+        // El sessionId evita que un PIN repetido en este visor pise el archivo anterior, y el
+        // código del visor, que dos visores con el mismo PIN y el mismo contador se pisen en
+        // el servidor.
+        _filePath = Path.Combine(Application.persistentDataPath,
+                                 $"{pin}_{_sessionId}_{deviceId}.json");
+
         Save();
 
         Debug.Log($"[Telemetry] Run iniciada: {_filePath}");
+    }
+
+    /// <summary>
+    /// Código que identifica a este visor, el mismo en todas sus sesiones.
+    ///
+    /// Sale de SystemInfo.deviceUniqueIdentifier, que en Quest deriva del ANDROID_ID: sobrevive
+    /// a reinicios, a actualizaciones de la app y a borrar sus datos. Cambia con un
+    /// restablecimiento de fábrica, y también si la app se instala firmada con otra clave,
+    /// porque Android da un ANDROID_ID distinto por clave de firma.
+    ///
+    /// Si el sistema no da identificador, se genera uno y se guarda en PlayerPrefs: ese dura
+    /// lo que dure la instalación.
+    /// </summary>
+    public static string GetDeviceId()
+    {
+        string id = SystemInfo.deviceUniqueIdentifier;
+
+        if (string.IsNullOrEmpty(id) || id == SystemInfo.unsupportedIdentifier)
+        {
+            id = PlayerPrefs.GetString(DeviceIdPrefKey, string.Empty);
+
+            if (string.IsNullOrEmpty(id))
+            {
+                id = Guid.NewGuid().ToString("N");
+                PlayerPrefs.SetString(DeviceIdPrefKey, id);
+                PlayerPrefs.Save();
+            }
+        }
+
+        // Solo letras y cifras: va en un nombre de archivo.
+        StringBuilder code = new StringBuilder(DeviceIdLength);
+
+        foreach (char c in id)
+        {
+            if (!char.IsLetterOrDigit(c)) continue;
+
+            code.Append(char.ToUpperInvariant(c));
+            if (code.Length == DeviceIdLength) break;
+        }
+
+        return code.ToString();
     }
 
     /// <summary>Cierra la run. Idempotente.</summary>
@@ -173,6 +232,9 @@ public class TelemetryManager : MonoBehaviour
     {
         if (_run == null || !string.IsNullOrEmpty(_run.endedUtc)) return;
 
+        // El tiempo total se fija antes de marcar el fin: Save() deja de tocarlo en cuanto la
+        // run tiene endedUtc.
+        _run.totalSeconds = Time.time - _runStartTime;
         _run.endedUtc = NowUtc();
         Save();
 
@@ -204,7 +266,8 @@ public class TelemetryManager : MonoBehaviour
         int warnings = 0;
 
         report.AppendLine($"[Telemetry] Resumen de la run · pin {_run.pin} · " +
-                          $"sesión {_run.sessionId} · dificultad {_run.difficulty}");
+                          $"visor {_run.deviceId} · sesión {_run.sessionId} · " +
+                          $"dificultad {_run.difficulty} · {_run.totalSeconds:0.0}s");
 
         warnings += ReportScenario(report, "escenario1", _run.escenario1);
         warnings += ReportScenario(report, "escenario2", _run.escenario2);
@@ -273,13 +336,23 @@ public class TelemetryManager : MonoBehaviour
         }
         else if (scenario is Scenario2Record s2)
         {
-            detalle = $"{s2.selections.Count} selección(es), {s2.wrongSelections} incorrecta(s)";
+            int wrong = 0;
+
+            foreach (SelectionRecord selection in s2.selections)
+                if (!selection.correct) wrong++;
+
+            detalle = $"{s2.selections.Count} selección(es), {wrong} incorrecta(s)";
 
             if (scenario.started && s2.selections.Count == 0) warnings++;
         }
         else if (scenario is Scenario4Record s4)
         {
-            detalle = $"{s4.placements.Count} colocación(es), {s4.wrongPlacements} incorrecta(s), " +
+            int wrong = 0;
+
+            foreach (PlacementRecord placement in s4.placements)
+                if (!placement.correct) wrong++;
+
+            detalle = $"{s4.placements.Count} colocación(es), {wrong} incorrecta(s), " +
                       $"{s4.chipsGrabbed} agarre(s)";
 
             if (scenario.started && s4.placements.Count == 0) warnings++;
@@ -339,12 +412,12 @@ public class TelemetryManager : MonoBehaviour
         scenario.totalSeconds = ElapsedIn(challengeId);
 
         // Escenarios de bloques: el intento en curso es, por definición, el que lo resolvió.
-        // ProgramTrigger los registra con solved = 0 al pulsar, porque su corrutina no sobrevive
-        // al momento en que el Director desactiva la estación de bloques.
+        // ProgramTrigger los registra con solved = false al pulsar, porque su corrutina no
+        // sobrevive al momento en que el Director desactiva la estación de bloques.
         if (scenario is Scenario1Record blocks && blocks.attempts.Count > 0)
-            blocks.attempts[blocks.attempts.Count - 1].solved = 1;
+            blocks.attempts[blocks.attempts.Count - 1].solved = true;
         else if (scenario is Scenario3Record loops && loops.attempts.Count > 0)
-            loops.attempts[loops.attempts.Count - 1].solved = 1;
+            loops.attempts[loops.attempts.Count - 1].solved = true;
 
         Save();
     }
@@ -372,9 +445,8 @@ public class TelemetryManager : MonoBehaviour
         {
             blocks.attempts.Add(new AttemptRecord
             {
-                difficulty = _run.difficulty,
                 sequence = Copy(sequence),
-                solved = 0,
+                solved = false,
                 durationSeconds = duration,
                 timestamp = NowUtc()
             });
@@ -383,11 +455,10 @@ public class TelemetryManager : MonoBehaviour
         {
             loops.attempts.Add(new LoopAttemptRecord
             {
-                difficulty = _run.difficulty,
                 sequence = Copy(sequence),
                 repetitions = repetitions,
                 itemType = itemType,
-                solved = 0,
+                solved = false,
                 durationSeconds = duration,
                 timestamp = NowUtc()
             });
@@ -420,11 +491,11 @@ public class TelemetryManager : MonoBehaviour
     // --- Escenario 2: selecciones en los módulos ---
 
     /// <summary>
-    /// Una pulsación de botón en un módulo. Se registran también los fallos: son el dato
-    /// pedagógico del escenario, no ruido.
+    /// Una acción que el niño marcó en un módulo. Se registran también los fallos: son el dato
+    /// pedagógico del escenario, no ruido. Las deselecciones no se registran.
     /// </summary>
     public void RegisterSelection(string challengeId, string moduleId, string option,
-                                  bool selected, bool correct)
+                                  bool correct)
     {
         Scenario2Record scenario = GetScenario2(challengeId);
         if (scenario == null) return;
@@ -433,14 +504,12 @@ public class TelemetryManager : MonoBehaviour
         {
             module = moduleId,
             option = option,
-            selected = selected ? 1 : 0,
-            correct = correct ? 1 : 0,
+            correct = correct,
+            durationSeconds = Time.time - _attemptCycleStart,
             timestamp = NowUtc()
         });
 
-        // Solo cuentan como error las veces que SELECCIONA una acción incorrecta. Deseleccionarla
-        // después es la corrección, no un error añadido.
-        if (selected && !correct) scenario.wrongSelections++;
+        _attemptCycleStart = Time.time;
 
         Save();
     }
@@ -450,10 +519,6 @@ public class TelemetryManager : MonoBehaviour
     /// <summary>
     /// Una ficha colocada en un hueco. Se registran también los fallos: qué figuras confundió
     /// el jugador entre sí es el dato pedagógico del escenario.
-    ///
-    /// Ya no recibe el número de lados de la ficha ni el del hueco: el escenario empareja por
-    /// figura idéntica y ese atributo dejó de existir. PlacementRecord conserva los dos campos
-    /// para no mover el esquema del JSON, que el equipo evaluador ya tiene documentado.
     /// </summary>
     public void RegisterPlacement(string challengeId, string socketId, string chipId,
                                   bool correct)
@@ -465,11 +530,12 @@ public class TelemetryManager : MonoBehaviour
         {
             socket = socketId,
             chip = chipId,
-            correct = correct ? 1 : 0,
+            correct = correct,
+            durationSeconds = Time.time - _attemptCycleStart,
             timestamp = NowUtc()
         });
 
-        if (!correct) scenario.wrongPlacements++;
+        _attemptCycleStart = Time.time;
 
         Save();
     }
@@ -482,10 +548,11 @@ public class TelemetryManager : MonoBehaviour
     /// </summary>
     public void RegisterFailedAttempt()
     {
-        BlockScenarioRecord scenario = GetBlockScenario(_currentChallengeId);
-        if (scenario == null) return;
+        ScenarioRecord scenario = GetScenario(_currentChallengeId);
 
-        scenario.failedAttempts++;
+        if (scenario is Scenario1Record grid) grid.failedAttempts++;
+        else if (scenario is Scenario3Record loops) loops.failedAttempts++;
+        else return;
 
         // El fallo abre un ciclo nuevo: a partir de aquí se cuenta lo que tarda en montar
         // el siguiente intento.
@@ -504,20 +571,38 @@ public class TelemetryManager : MonoBehaviour
     {
         ScenarioRecord scenario = GetManipulationScenario();
 
-        if (scenario is BlockScenarioRecord blocks) blocks.blocksGrabbed++;
+        if (scenario is Scenario1Record grid) grid.blocksGrabbed++;
+        else if (scenario is Scenario3Record loops) loops.blocksGrabbed++;
         else if (scenario is Scenario4Record shapes) shapes.chipsGrabbed++;
         else return;
 
         MarkDirty();
     }
 
-    public void RegisterBlockReleased()
+    /// <summary>
+    /// El jugador encajó un bloque en un hueco. Solo cuenta en los escenarios de bloques: en
+    /// el 4 cada ficha encajada ya queda como una entrada de placements[].
+    /// </summary>
+    public void RegisterBlockConnected()
     {
         ScenarioRecord scenario = GetManipulationScenario();
 
-        if (scenario is BlockScenarioRecord blocks) blocks.blocksReleased++;
-        else if (scenario is Scenario4Record shapes) shapes.chipsReleased++;
+        if (scenario is Scenario1Record grid) grid.blocksConnected++;
+        else if (scenario is Scenario3Record loops) loops.blocksConnected++;
         else return;
+
+        MarkDirty();
+    }
+
+    /// <summary>
+    /// Una pulsación del botón que devuelve los bloques a su sitio. Lo llama BlockResetter
+    /// desde código; solo se cuenta en el Escenario 1.
+    /// </summary>
+    public void RegisterBlockReset()
+    {
+        if (!(GetScenario(_currentChallengeId) is Scenario1Record scenario)) return;
+
+        scenario.blockResets++;
 
         MarkDirty();
     }
@@ -547,23 +632,22 @@ public class TelemetryManager : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// El destino lo decide primero el reto activo: el Escenario 3 solo tiene
+    /// errorInvalidCommand. En el 1, "Usar" mal va a errorInvalidUse y todo lo demás
+    /// (salirse, chocar) a errorCollisionBot.
+    /// </summary>
     public void RegisterLogicError(LogicErrorType errorType)
     {
-        BlockScenarioRecord scenario = GetBlockScenario(_currentChallengeId);
-        if (scenario == null) return;
+        ScenarioRecord scenario = GetScenario(_currentChallengeId);
 
-        switch (errorType)
+        if (scenario is Scenario1Record grid)
         {
-            case LogicErrorType.ColisionBot:
-                scenario.errorCollisionBot++;
-                break;
-            case LogicErrorType.SecuenciaIncompleta:
-                scenario.errorIncompleteSequence++;
-                break;
-            case LogicErrorType.ComandoInvalido:
-                scenario.errorInvalidCommand++;
-                break;
+            if (errorType == LogicErrorType.UsoInvalido) grid.errorInvalidUse++;
+            else grid.errorCollisionBot++;
         }
+        else if (scenario is Scenario3Record loops) loops.errorInvalidCommand++;
+        else return;
 
         MarkDirty();
     }
@@ -689,6 +773,11 @@ public class TelemetryManager : MonoBehaviour
     {
         if (_run == null) return;
 
+        // Con la run abierta el total avanza en cada escritura: si el visor se apaga sin
+        // cerrar, queda el tiempo jugado hasta el último guardado en vez de un 0.
+        if (string.IsNullOrEmpty(_run.endedUtc))
+            _run.totalSeconds = Time.time - _runStartTime;
+
         File.WriteAllText(_filePath, JsonUtility.ToJson(_run, true), Encoding.UTF8);
 
         _dirty = false;
@@ -714,13 +803,6 @@ public class TelemetryManager : MonoBehaviour
         Debug.LogWarning($"[Telemetry] '{challengeId}' todavía no tiene métricas definidas; registro descartado.");
         return null;
     }
-
-    /// <summary>
-    /// Registro de un escenario de bloques (1 o 3), para las métricas que comparten:
-    /// reinicios, manipulación de bloques y errores de lógica.
-    /// </summary>
-    private BlockScenarioRecord GetBlockScenario(string challengeId) =>
-        GetScenario(challengeId) as BlockScenarioRecord;
 
     /// <summary>Registro del escenario 2, para las métricas propias de selección.</summary>
     private Scenario2Record GetScenario2(string challengeId) => GetScenario(challengeId) as Scenario2Record;
@@ -809,10 +891,10 @@ public class TelemetryManager : MonoBehaviour
         // Intento 2: llega al final pero usa sobre una casilla vacía.
         SimulateBlockHandling(3);
         RegisterAttempt(Scenario1Id, new List<string> { "Avanzar 2", "Girar Izquierda", "Usar" }, false);
-        RegisterLogicError(LogicErrorType.ComandoInvalido);
+        RegisterLogicError(LogicErrorType.UsoInvalido);
         RegisterFailedAttempt();
 
-        // Intento 3: resuelve. CompleteChallenge le pondrá solved = 1.
+        // Intento 3: resuelve. CompleteChallenge le pondrá solved = true.
         SimulateBlockHandling(4);
         RegisterAttempt(Scenario1Id, new List<string> { "Avanzar", "Girar Derecha", "Avanzar 2", "Usar" }, false);
 
@@ -827,7 +909,7 @@ public class TelemetryManager : MonoBehaviour
         for (int i = 0; i < blocks; i++)
         {
             RegisterBlockGrabbed();
-            RegisterBlockReleased();
+            RegisterBlockConnected();
         }
     }
 

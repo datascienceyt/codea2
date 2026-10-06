@@ -27,9 +27,24 @@ public class Director : MonoBehaviour
             Play();
     }
 
+    /// <summary>Si el recorrido está en marcha.</summary>
+    public bool IsPlaying { get; private set; }
+
+    // Desactivar el objeto mata sus corrutinas: el recorrido ya no está en marcha.
+    void OnDisable() => IsPlaying = false;
+
     [ContextMenu("Play")]
     public void Play()
     {
+        // Un segundo Play con el recorrido en marcha lanzaba otro en paralelo desde el
+        // principio: basta con pulsar dos veces el botón de inicio.
+        if (IsPlaying)
+        {
+            Debug.LogWarning("[Director] Play ignorado: el recorrido ya está en marcha.", this);
+            return;
+        }
+
+        IsPlaying = true;
         currentScenarioIndex = 0;
         currentStepIndex = 0;
 
@@ -75,6 +90,7 @@ public class Director : MonoBehaviour
     public void Stop()
     {
         StopAllCoroutines();
+        IsPlaying = false;
 
         Debug.Log($"[Director] Detenido · escenario {currentScenarioIndex} · paso {currentStepIndex}", this);
     }
@@ -92,6 +108,8 @@ public class Director : MonoBehaviour
             currentScenarioIndex++;
             currentStepIndex = 0;
         }
+
+        IsPlaying = false;
 
         Debug.Log("[Director] Todo terminado");
     }

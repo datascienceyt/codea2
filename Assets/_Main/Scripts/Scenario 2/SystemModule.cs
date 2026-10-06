@@ -50,14 +50,16 @@ public class SystemModule : MonoBehaviour, IStepAction
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
     [SerializeField] private ModuleOptionButton[] optionButtons;
 
+    [Tooltip("Segundos que un botón incorrecto se queda marcado antes de soltarse solo. " +
+             "Con 0 se suelta en el acto y el niño no llega a ver qué pulsó.")]
+    [SerializeField] private float wrongOptionSeconds = 0.8f;
+
     [Header("Eventos")]
     [Tooltip("Al seleccionar o deseleccionar cualquier acción: sonido, parpadeo...")]
     public UnityEvent OnSelectionChanged;
 
     [Tooltip("Al SELECCIONAR una acción que no forma parte de la solución. Aquí va la frase de " +
-             "error del narrador, o un sonido.\n\n" +
-             "No salta al deseleccionarla: quitar una opción equivocada es autocorrección, y " +
-             "regañar por acertar sería justo al revés.")]
+             "error del narrador, o un sonido.")]
     public UnityEvent OnWrongOption;
 
     [Tooltip("Al quedar reparado.")]
@@ -67,6 +69,13 @@ public class SystemModule : MonoBehaviour, IStepAction
     public event Action<SystemModule, int, bool, bool> OnOptionToggled;
 
     private readonly HashSet<int> selected = new HashSet<int>();
+
+    /// <summary>
+    /// Incorrectas que se están mostrando marcadas hasta soltarse solas. Nunca entran en
+    /// 'selected': para la solución es como si no se hubieran pulsado, y así el módulo no
+    /// depende de que una corrutina llegue a terminar para poder resolverse.
+    /// </summary>
+    private readonly HashSet<int> wrongShown = new HashSet<int>();
 
     public ModuleData Data => data;
     public bool IsSolved { get; private set; }
@@ -130,7 +139,8 @@ public class SystemModule : MonoBehaviour, IStepAction
             if (button == null) continue;
 
             button.SetLabel(data.LabelAt(button.OptionIndex));
-            button.SetSelected(selected.Contains(button.OptionIndex));
+            button.SetSelected(selected.Contains(button.OptionIndex) ||
+                               wrongShown.Contains(button.OptionIndex));
             button.SetInteractable(!IsSolved);
         }
     }
@@ -178,7 +188,8 @@ public class SystemModule : MonoBehaviour, IStepAction
     }
 
     /// <summary>
-    /// Lo llaman los botones. Alterna entre seleccionada y no seleccionada.
+    /// Lo llaman los botones. Una acción correcta alterna entre seleccionada y no
+    /// seleccionada; una incorrecta se registra, se queda marcada un momento y se suelta sola.
     /// Un módulo ya reparado ignora las pulsaciones.
     /// </summary>
     public void ToggleOption(int optionIndex)
@@ -192,6 +203,15 @@ public class SystemModule : MonoBehaviour, IStepAction
 
         if (IsSolved) return;
 
+        // Mientras se muestra marcada no admite otra pulsación: se va a soltar sola.
+        if (wrongShown.Contains(optionIndex)) return;
+
+        if (!data.IsCorrectAt(optionIndex))
+        {
+            SelectWrongOption(optionIndex);
+            return;
+        }
+
         bool nowSelected = !selected.Contains(optionIndex);
 
         if (nowSelected) selected.Add(optionIndex);
@@ -202,19 +222,56 @@ public class SystemModule : MonoBehaviour, IStepAction
         // todavía sin resolver.
         if (MatchesSolution()) IsSolved = true;
 
+        // Reparado, lo que quedara marcado por error se suelta ya: el módulo está cerrado.
+        if (IsSolved) wrongShown.Clear();
+
         Refresh();
 
-        bool wasCorrect = data.IsCorrectAt(optionIndex);
-
-        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, wasCorrect);
+        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, true);
         OnSelectionChanged?.Invoke();
 
-        // Solo al seleccionarla, y solo si el módulo no quedó resuelto de todos modos: una
-        // incorrecta nunca puede formar parte de la solución, pero el guardia deja el evento a
-        // salvo si algún día una opción cuenta de otra forma.
-        if (nowSelected && !wasCorrect && !IsSolved) OnWrongOption?.Invoke();
-
         if (IsSolved) OnSolved?.Invoke();
+    }
+
+    /// <summary>
+    /// Una acción incorrecta: cuenta como selección para la telemetría y dispara la frase de
+    /// error, pero el niño no tiene que quitarla. Su desmarcado no se avisa a nadie, porque
+    /// no es una decisión suya.
+    /// </summary>
+    private void SelectWrongOption(int optionIndex)
+    {
+        wrongShown.Add(optionIndex);
+        RefreshButtons();
+
+        OnOptionToggled?.Invoke(this, optionIndex, true, false);
+        OnSelectionChanged?.Invoke();
+        OnWrongOption?.Invoke();
+
+        // Con el módulo apagado (una pulsación de prueba desde el inspector) no hay corrutina
+        // que la suelte después.
+        if (isActiveAndEnabled) StartCoroutine(ReleaseWrongOption(optionIndex));
+        else wrongShown.Remove(optionIndex);
+    }
+
+    private IEnumerator ReleaseWrongOption(int optionIndex)
+    {
+        if (wrongOptionSeconds > 0f)
+            yield return new WaitForSeconds(wrongOptionSeconds);
+
+        wrongShown.Remove(optionIndex);
+        RefreshButtons();
+    }
+
+    /// <summary>
+    /// Si el módulo se apaga con un botón incorrecto aún marcado, su corrutina muere y se
+    /// quedaría marcado y sin responder para siempre.
+    /// </summary>
+    private void OnDisable()
+    {
+        if (wrongShown.Count == 0) return;
+
+        wrongShown.Clear();
+        RefreshButtons();
     }
 
     /// <summary>
@@ -253,6 +310,7 @@ public class SystemModule : MonoBehaviour, IStepAction
     {
         IsSolved = false;
         selected.Clear();
+        wrongShown.Clear();
         Refresh();
     }
 }

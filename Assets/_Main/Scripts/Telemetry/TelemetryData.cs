@@ -17,14 +17,10 @@ using System.Collections.Generic;
 [Serializable]
 public class AttemptRecord
 {
-    /// <summary>1 = básica, 2 = intermedia. Hoy solo existe la 1.</summary>
-    public int difficulty;
-
     /// <summary>Instrucciones en lenguaje natural: "Avanzar", "Girar Derecha", "Avanzar 2"...</summary>
     public List<string> sequence = new List<string>();
 
-    /// <summary>0/1 en vez de bool, tal como se pidió el formato.</summary>
-    public int solved;
+    public bool solved;
 
     /// <summary>
     /// Segundos que el jugador tardó en preparar este intento: desde que empezó el escenario
@@ -59,11 +55,14 @@ public class ScenarioRecord
 }
 
 /// <summary>
-/// Métricas comunes a los escenarios que se resuelven con bloques (1 y 3). El escenario 2
-/// no las hereda: se resuelve pulsando botones, no montando secuencias.
+/// Escenario 1 — Secuencialidad. Se resuelve montando bloques en el SocketRow.
+///
+/// No comparte clase con el Escenario 3 aunque los dos usen bloques: hubo una base común
+/// (BlockScenarioRecord) y cada cambio pedido para uno arrastraba al otro. Los campos que
+/// coinciden hoy se declaran en los dos, y así cada escenario puede cambiar por su cuenta.
 /// </summary>
 [Serializable]
-public class BlockScenarioRecord : ScenarioRecord
+public class Scenario1Record : ScenarioRecord
 {
     /// <summary>
     /// Ejecuciones que terminaron sin resolver el escenario. Como el reinicio es automático
@@ -71,22 +70,27 @@ public class BlockScenarioRecord : ScenarioRecord
     /// </summary>
     public int failedAttempts;
 
-    // Manipulación de bloques. Se cablean desde VRGrabEvents.onGrabbed / onReleased.
+    /// <summary>Veces que el jugador agarró un bloque.</summary>
     public int blocksGrabbed;
-    public int blocksReleased;
 
-    // RF-04, taxonomía cerrada actual.
+    /// <summary>
+    /// Veces que el jugador encajó un bloque en un hueco. Sustituye a blocksReleased: soltar
+    /// un bloque en cualquier parte no dice nada, conectarlo sí.
+    /// </summary>
+    public int blocksConnected;
+
+    /// <summary>Pulsaciones del botón que devuelve los bloques a su sitio.</summary>
+    public int blockResets;
+
+    /// <summary>
+    /// Movimientos imposibles del robot: salirse de la rejilla o chocar con un muro o un
+    /// peligro.
+    /// </summary>
     public int errorCollisionBot;
-    public int errorIncompleteSequence;
-    public int errorInvalidCommand;
-}
 
-/// <summary>
-/// Escenario 1 — Secuencialidad. Se resuelve montando bloques en el SocketRow.
-/// </summary>
-[Serializable]
-public class Scenario1Record : BlockScenarioRecord
-{
+    /// <summary>"Usar" donde no hay nada que usar, o delante de algo que no lo admite.</summary>
+    public int errorInvalidUse;
+
     public List<AttemptRecord> attempts = new List<AttemptRecord>();
 }
 
@@ -102,17 +106,17 @@ public class SelectionRecord
     /// <summary>Texto de la acción, p. ej. "Agregar gasolina".</summary>
     public string option;
 
-    /// <summary>
-    /// 1 = la seleccionó, 0 = la deselecionó.
-    ///
-    /// Deseleccionar es señal de autocorrección: el niño se dio cuenta de que esa acción no
-    /// tocaba. Sin este campo, seleccionar y arrepentirse sería indistinguible de no haberla
-    /// tocado nunca.
-    /// </summary>
-    public int selected;
+    // No hay campo 'selected': solo se registran las veces que el niño MARCA una acción. Las
+    // deselecciones no van al JSON, ni la automática de una incorrecta ni la manual de una
+    // correcta, así que el campo valdría siempre true.
 
     /// <summary>Si esa acción formaba parte de la solución.</summary>
-    public int correct;
+    public bool correct;
+
+    /// <summary>
+    /// Segundos desde la pulsación anterior del escenario, o desde su inicio si es la primera.
+    /// </summary>
+    public float durationSeconds;
 
     /// <summary>ISO-8601 UTC.</summary>
     public string timestamp;
@@ -125,9 +129,6 @@ public class SelectionRecord
 [Serializable]
 public class Scenario2Record : ScenarioRecord
 {
-    /// <summary>Elecciones incorrectas acumuladas. Es el indicador de error del escenario.</summary>
-    public int wrongSelections;
-
     public List<SelectionRecord> selections = new List<SelectionRecord>();
 }
 
@@ -141,8 +142,6 @@ public class Scenario2Record : ScenarioRecord
 [Serializable]
 public class LoopAttemptRecord
 {
-    public int difficulty;
-
     /// <summary>Instrucciones de la fila, en orden. Es el cuerpo del bucle.</summary>
     public List<string> sequence = new List<string>();
 
@@ -158,7 +157,7 @@ public class LoopAttemptRecord
     /// </summary>
     public string itemType;
 
-    public int solved;
+    public bool solved;
 
     /// <summary>Mismo criterio que AttemptRecord.durationSeconds: tiempo de preparación.</summary>
     public float durationSeconds;
@@ -171,8 +170,23 @@ public class LoopAttemptRecord
 /// además el cuerpo del bucle y el número de repeticiones.
 /// </summary>
 [Serializable]
-public class Scenario3Record : BlockScenarioRecord
+public class Scenario3Record : ScenarioRecord
 {
+    /// <summary>Ejecuciones que no clasificaron ningún objeto.</summary>
+    public int failedAttempts;
+
+    /// <summary>Veces que el jugador agarró un bloque o una ficha de tipo.</summary>
+    public int blocksGrabbed;
+
+    /// <summary>Veces que el jugador encajó un bloque o una ficha de tipo en un hueco.</summary>
+    public int blocksConnected;
+
+    /// <summary>
+    /// Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha
+    /// o con 0 repeticiones.
+    /// </summary>
+    public int errorInvalidCommand;
+
     public List<LoopAttemptRecord> attempts = new List<LoopAttemptRecord>();
 }
 
@@ -180,7 +194,7 @@ public class Scenario3Record : BlockScenarioRecord
 /// Una ficha colocada en un hueco del panel del Escenario 4.
 ///
 /// Guarda qué figura fue a qué hueco, no solo el acierto: con figuras abstractas que se
-/// parecen entre sí, saber cuál confundió con cuál dice mucho más que un simple 0/1.
+/// parecen entre sí, saber cuál confundió con cuál dice mucho más que un simple acierto o fallo.
 /// </summary>
 [Serializable]
 public class PlacementRecord
@@ -191,8 +205,12 @@ public class PlacementRecord
     /// <summary>Id de la figura que se intentó colocar.</summary>
     public string chip;
 
-    /// <summary>0/1, mismo criterio que el resto de escenarios.</summary>
-    public int correct;
+    public bool correct;
+
+    /// <summary>
+    /// Segundos desde la colocación anterior, o desde el inicio del escenario si es la primera.
+    /// </summary>
+    public float durationSeconds;
 
     public string timestamp;
 }
@@ -203,19 +221,14 @@ public class PlacementRecord
 [Serializable]
 public class Scenario4Record : ScenarioRecord
 {
-    /// <summary>Colocaciones incorrectas acumuladas.</summary>
-    public int wrongPlacements;
-
     /// <summary>
-    /// Manipulación de fichas, el equivalente de blocksGrabbed/Released de los escenarios de
-    /// bloques: cuántas veces cogió y soltó una ficha, que es la señal de duda y tanteo.
+    /// Veces que cogió una ficha: la señal de duda y tanteo. No hay contador de conexiones
+    /// porque cada ficha encajada ya es una entrada de placements[].
     ///
-    /// Van aquí con nombre propio en vez de heredar de BlockScenarioRecord: este escenario no
-    /// tiene intentos, ni reinicios, ni errores de lógica, y heredarlos solo llenaría el JSON
-    /// de ceros permanentes que nadie puede interpretar.
+    /// Lleva nombre propio y no el blocksGrabbed de los escenarios 1 y 3: aquí se agarran
+    /// fichas, no bloques.
     /// </summary>
     public int chipsGrabbed;
-    public int chipsReleased;
 
     public List<PlacementRecord> placements = new List<PlacementRecord>();
 }
@@ -227,10 +240,20 @@ public class Scenario4Record : ScenarioRecord
 public class RunRecord
 {
     public string pin;
+
+    /// <summary>Código del visor. Es también la última parte del nombre del archivo.</summary>
+    public string deviceId;
+
     public int sessionId;
     public int difficulty;
     public string startedUtc;
     public string endedUtc;
+
+    /// <summary>
+    /// Tiempo total de juego, en segundos, desde que se abre la run hasta que se cierra.
+    /// Se actualiza en cada escritura, así que un cierre inesperado deja el último valor.
+    /// </summary>
+    public float totalSeconds;
 
     public Scenario1Record escenario1 = new Scenario1Record();
     public Scenario2Record escenario2 = new Scenario2Record();

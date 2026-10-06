@@ -410,8 +410,8 @@ RectTransform:
   m_GameObject: {fileID: 3113204898634146392}
   m_LocalRotation: {x: 0.5, y: 0.5, z: -0.5, w: 0.5}
   m_LocalPosition: {x: 0, y: 0, z: -0}
-  m_LocalScale: {x: 1, y: 2, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 3207294903066024153}
   m_LocalEulerAnglesHint: {x: 90, y: 90, z: 0}
@@ -1021,6 +1021,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ModuleOptionButton
   module: {fileID: 0}
+  standalone: 0
   optionIndex: 0
   label: {fileID: 4497417791256653332}
   pressTarget: {fileID: 8219903025127008146}
@@ -1048,7 +1049,6 @@ GameObject:
   - component: {fileID: 8898031297551604158}
   - component: {fileID: 8802293185711760776}
   - component: {fileID: 1518947296354278257}
-  - component: {fileID: 1519606045247406634}
   m_Layer: 4
   m_Name: Button
   m_TagString: Untagged
@@ -1151,24 +1151,6 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -2647713218672058600, guid: 0af2421bd0dffc04da059c5af9475fd2, type: 3}
---- !u!114 &1519606045247406634
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7788837069777767607}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bb5261d7cd290b4eacc0fd20e2db09f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _interactableView: {fileID: 3593714732661572262}
-  _renderer: {fileID: 8802293185711760776}
-  _normalColor: {r: 1, g: 1, b: 1, a: 1}
-  _hoverColor: {r: 1, g: 1, b: 1, a: 1}
-  _selectColor: {r: 0.509434, g: 0.509434, b: 0.509434, a: 1}
-  _disabledColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &8524503775415314488
 GameObject:
   m_ObjectHideFlags: 0

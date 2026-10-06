@@ -65,6 +65,7 @@ MonoBehaviour:
   - {fileID: 1738772292794010981}
   - {fileID: 6490474288696921597}
   - {fileID: 419413420541077220}
+  wrongOptionSeconds: 0.8
   OnSelectionChanged:
     m_PersistentCalls:
       m_Calls: []

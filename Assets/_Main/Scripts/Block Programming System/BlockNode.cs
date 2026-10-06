@@ -63,10 +63,7 @@ public abstract class BlockNode : MonoBehaviour
     {
         isGrabbed = false;
 
-        if (TelemetryManager.Instance != null)
-            TelemetryManager.Instance.RegisterBlockReleased();
-
-        if (IsValidTarget(candidate)) AttachTo(candidate);
+        if (IsValidTarget(candidate)) AttachTo(candidate, true);
         candidate = null;
     }
 
@@ -84,7 +81,7 @@ public abstract class BlockNode : MonoBehaviour
         isGrabbed = false;
         if (IsValidTarget(candidate))
         {
-            AttachTo(candidate);
+            AttachTo(candidate, true);
         }
         candidate = null;
     }
@@ -133,7 +130,7 @@ public abstract class BlockNode : MonoBehaviour
     {
         if (socket == null || !socket.IsEmpty) return;
 
-        AttachTo(socket);
+        AttachTo(socket, false);
     }
 
     bool IsValidTarget(Socket socket)
@@ -181,8 +178,22 @@ public abstract class BlockNode : MonoBehaviour
     /// </summary>
     public virtual void OnReturnedHome() { }
 
-    void AttachTo(Socket socket)
+    // Frame de la última conexión contada. El prefab Block cablea además TryAtattch en
+    // onReleased, así que una misma suelta puede pasar dos veces por AttachTo.
+    int lastConnectionFrame = -1;
+
+    /// <param name="byPlayer">
+    /// Si lo encajó el jugador al soltarlo. Solo esas conexiones van a la telemetría: las que
+    /// monta SocketRow por código al preparar la fila no son una acción del niño.
+    /// </param>
+    void AttachTo(Socket socket, bool byPlayer)
     {
+        if (byPlayer && lastConnectionFrame != Time.frameCount && TelemetryManager.Instance != null)
+        {
+            lastConnectionFrame = Time.frameCount;
+            TelemetryManager.Instance.RegisterBlockConnected();
+        }
+
         // Encajado, el bloque no puede ser dinámico: un Rigidbody con física ignora al padre
         // del que cuelga, y la gravedad lo sacaba del hueco en el siguiente paso de física.
         // Pasó en el Escenario 4 al dar física a todas las fichas: parecían no encajar nunca.

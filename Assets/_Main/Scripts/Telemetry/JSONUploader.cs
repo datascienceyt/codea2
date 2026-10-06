@@ -104,11 +104,11 @@ public class JSONUploader : MonoBehaviour
             return;
         }
 
-        // El nombre imita el de una sesión real: '{pin}_{sessionId}.json', con pin 9999 para
-        // reconocerlo. Un nombre libre no serviría de prueba — si el servidor deduce algo del
+        // El nombre imita el de una sesión real: '{pin}_{sessionId}_{deviceId}.json', con pin
+        // 9999 y sesión 0 para reconocerlo. Un nombre libre no serviría de prueba — si el servidor deduce algo del
         // nombre, un formato distinto falla por un motivo que la subida real no tendría.
         string path = Path.Combine(Application.temporaryCachePath,
-                                   $"9999_{DateTime.UtcNow:HHmmss}.json");
+                                   $"9999_0_{TelemetryManager.GetDeviceId()}.json");
 
         File.WriteAllText(path, $"{{\"test\":true,\"sentUtc\":\"{DateTime.UtcNow:o}\"}}");
 

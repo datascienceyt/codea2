@@ -16,6 +16,10 @@ public class ModuleOptionButton : MonoBehaviour
     [Tooltip("Si queda vacío se busca en los padres.")]
     [SerializeField] private SystemModule module;
 
+    [Tooltip("Sin módulo: el botón se alterna solo al pulsarlo y avisa por OnSelected / " +
+             "OnDeselected. Es como se usa en el tutorial, donde no hay avería que reparar.")]
+    [SerializeField] private bool standalone;
+
     [Tooltip("Posición de esta acción dentro de ModuleData.options.")]
     [SerializeField] private int optionIndex;
 
@@ -57,10 +61,12 @@ public class ModuleOptionButton : MonoBehaviour
 
     private void Awake()
     {
-        if (module == null)
+        if (standalone)
+            module = null;
+        else if (module == null)
             module = GetComponentInParent<SystemModule>();
 
-        if (module == null)
+        if (module == null && !standalone)
             Debug.LogError($"[Escenario2] El botón '{name}' no encuentra su SystemModule.", this);
 
         if (pressTarget == null) pressTarget = transform;
@@ -143,6 +149,12 @@ public class ModuleOptionButton : MonoBehaviour
     [ContextMenu("Press")]
     public void Press()
     {
+        if (standalone)
+        {
+            if (interactable) SetSelected(!IsSelected);
+            return;
+        }
+
         if (module == null)
         {
             Debug.LogError($"[Escenario2] '{name}' no tiene SystemModule: ni cuelga de uno ni " +

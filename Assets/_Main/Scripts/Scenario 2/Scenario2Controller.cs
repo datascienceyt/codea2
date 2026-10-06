@@ -85,16 +85,16 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
 
     private void HandleOptionToggled(SystemModule module, int optionIndex, bool selected, bool correct)
     {
-        if (TelemetryManager.Instance != null)
+        // Solo se registra lo que el niño marca. Desmarcar una acción correcta no va a la
+        // telemetría (pedido 5 del 01/10/2026).
+        if (selected && TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterSelection(
                 challengeId,
                 module.ModuleId,
                 module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString(),
-                selected,
                 correct);
 
-        // Se comprueba en cada pulsación, no solo en los aciertos: con selección múltiple, el
-        // módulo puede resolverse al DESELECCIONAR una acción que sobraba.
+        // Se comprueba en cada pulsación: es barato y no obliga a saber aquí cuál resuelve.
         CheckCompletion();
     }
 

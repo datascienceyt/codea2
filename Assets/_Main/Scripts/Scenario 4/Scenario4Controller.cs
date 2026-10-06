@@ -34,7 +34,14 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     [SerializeField] private Vector3 rejectLocalDirection = new Vector3(0f, 0.5f, -1f);
 
     [Header("Telemetría")]
+    [Tooltip("Vacío: no registra nada. Es como se usa en el cuarto del tutorial, donde el " +
+             "panel funciona igual (acierto, rechazo) pero no es un reto que medir.")]
     [SerializeField] private string challengeId = "escenario4";
+
+    public string ChallengeId => challengeId;
+
+    private bool HasTelemetry =>
+        !string.IsNullOrEmpty(challengeId) && TelemetryManager.Instance != null;
 
     [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento.")]
     [SerializeField] private bool startChallengeOnStart = false;
@@ -102,14 +109,14 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
     public void StartScenario()
     {
-        if (TelemetryManager.Instance == null) return;
+        if (!HasTelemetry) return;
 
         TelemetryManager.Instance.StartChallenge(challengeId);
     }
 
     private void HandleChipEvaluated(ShapeSocket socket, ShapeChip chip, bool correct)
     {
-        if (TelemetryManager.Instance != null)
+        if (HasTelemetry)
             TelemetryManager.Instance.RegisterPlacement(
                 challengeId,
                 socket.SocketId,
@@ -169,10 +176,14 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
 
         scenarioFinished = true;
 
-        Debug.Log($"[Escenario 4] COMPLETADO · {sockets.Length} huecos encajados · " +
-                  $"challengeId '{challengeId}'", this);
+        // El panel del tutorial no lleva la etiqueta del escenario: ese aviso es el que se
+        // busca en consola para comprobar que el Escenario 4 de verdad se completó.
+        Debug.Log(string.IsNullOrEmpty(challengeId)
+            ? $"[Tutorial] Panel '{name}' completado · {sockets.Length} hueco(s)"
+            : $"[Escenario 4] COMPLETADO · {sockets.Length} huecos encajados · " +
+              $"challengeId '{challengeId}'", this);
 
-        if (TelemetryManager.Instance != null)
+        if (HasTelemetry)
             TelemetryManager.Instance.CompleteChallenge(challengeId);
 
         PlayCompletedSound();

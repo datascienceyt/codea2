@@ -18,8 +18,12 @@ using UnityEngine.SceneManagement;
 ///     blocks de interacción, y monta la pantalla del supervisor con su teclado ya cableado.
 /// 2 - Preparar escena de juego abierta: añade a Basico o Intermedio lo que falta para el
 ///     ciclo de sesión (dificultad, tiempo agotado, vuelta a Setup).
+/// 3 - Convertir escena abierta a Intermedia.
+/// 4 - Montar piezas del tutorial: las cuatro interacciones y su TutorialController.
+/// 5 - Guardar el tutorial de la escena abierta en Prefabs/Tutorial.prefab.
+/// 6 - Poner ese prefab en la escena abierta, sustituyendo el cuarto que hubiera.
 ///
-/// Las dos son repetibles: lo que ya existe no se duplica.
+/// Todas son repetibles: lo que ya existe no se duplica.
 /// </summary>
 public static class CodeaSceneTools
 {
@@ -436,7 +440,7 @@ public static class CodeaSceneTools
         {
             ("Escenario 2", Object.FindAnyObjectByType<Scenario2Controller>(FindObjectsInactive.Include), null),
             ("Escenario 3", Object.FindAnyObjectByType<Scenario3Controller>(FindObjectsInactive.Include), null),
-            ("Escenario 4", Object.FindAnyObjectByType<Scenario4Controller>(FindObjectsInactive.Include), null),
+            ("Escenario 4", FindScenario4(), null),
         };
 
         foreach (var (scenarioName, controller, _) in starts)
@@ -580,7 +584,9 @@ public static class CodeaSceneTools
 
         // Los bloques nuevos se duplican de uno de la misma acción: así heredan el rótulo, el
         // prefab y los eventos, y cuelgan del mismo BlockResetter que los devuelve a su sitio.
-        List<GridBlock> blocks = Object.FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
+        List<GridBlock> blocks = Object.FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                                       .Where(b => b.GetComponentInParent<TutorialController>(true) == null)
+                                       .ToList();
 
         foreach (KeyValuePair<GridActionType, int> wanted in IntermediatePalette)
         {
@@ -688,6 +694,548 @@ public static class CodeaSceneTools
             PrefabUtility.RecordPrefabInstancePropertyModifications(text);
         }
     }
+
+    // --- 4. Tutorial ---
+
+    private const string ChipPrefab = "Assets/_Main/Prefabs/Blocks/ShapeChip.prefab";
+    private const string SocketPrefab = "Assets/_Main/Prefabs/Blocks/ShapeSocket.prefab";
+    private const string BlockSocketPrefab = "Assets/_Main/Prefabs/Blocks/socket.prefab";
+    private const string ProgramButtonPrefab = "Assets/_Main/Prefabs/Scenario3/Button.prefab";
+    private const string OptionButtonPrefab = "Assets/_Main/Prefabs/Scenario2/Button.prefab";
+    private const string ShapesSheet = "Assets/_Main/Scripts/Scenario 4/Figuras/symbols.png";
+
+    // El cuarto se llamó Start hasta que pasó a ser el tutorial.
+    private static readonly string[] TutorialRoomNames = { "Tutorial", "Start" };
+    private const string TutorialPrefab = "Assets/_Main/Prefabs/Tutorial.prefab";
+    private const string TutorialDesk = "Desk";
+    private const string TutorialProgramButton = "Boton del Escenario 1";
+    private const string TutorialOptionButton = "Boton del Escenario 2";
+
+    // Una figura que no sale en el Escenario 4: aquí se aprende el gesto de encajar, no a
+    // distinguir figuras.
+    private const string TutorialShape = "flecha_sola";
+
+    /// <summary>
+    /// Deja el cuarto del tutorial con sus cuatro interacciones, el TutorialController que
+    /// las vigila y el arranque del Director al terminarlas:
+    ///
+    ///   · un botón como el de ejecutar del Escenario 1
+    ///   · un botón como los de los módulos del Escenario 2
+    ///   · un bloque y un hueco del Escenario 1
+    ///   · un hueco y su ficha del Escenario 4
+    ///
+    /// Lo que ya esté en el cuarto se respeta tal cual —ni se mueve ni cambia de padre— y
+    /// solo se cablea; lo que falte se crea en fila sobre la mesa. No guarda la escena.
+    /// </summary>
+    [MenuItem("Tools/Codea/4 - Montar piezas del tutorial")]
+    private static void BuildTutorial()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        GameObject room = FindTutorialRoom(scene);
+
+        if (room == null)
+        {
+            EditorUtility.DisplayDialog("Tutorial",
+                $"'{scene.name}' no tiene un objeto raíz llamado 'Tutorial' (ni 'Start'), que es " +
+                "el cuarto del tutorial.", "Vale");
+            return;
+        }
+
+        StringBuilder log = new StringBuilder($"[Codea] Tutorial en '{scene.name}/{room.name}':\n");
+
+        // Lo nuevo sale en fila sobre la mesa. Es orientativo.
+        Transform desk = room.transform.Find(TutorialDesk);
+        Vector3 rowStart = desk != null
+            ? desk.localPosition + new Vector3(-0.3f, 0.5f, -0.3f)
+            : new Vector3(0f, 1f, 0f);
+        int slot = 0;
+        Vector3 NextSlot() => rowStart + new Vector3(0f, 0f, -0.2f * slot++);
+
+        ShapeSocket shapeSocket = BuildTutorialShapes(room, NextSlot, log);
+        Socket blockSocket = BuildTutorialBlock(room, NextSlot, log);
+        InteractableUnityEventWrapper programButton = BuildTutorialProgramButton(room.transform, NextSlot, log);
+        ModuleOptionButton optionButton = BuildTutorialOptionButton(room, NextSlot, log);
+
+        if (!room.TryGetComponent(out TutorialController tutorial))
+        {
+            tutorial = Undo.AddComponent<TutorialController>(room);
+            log.AppendLine("  añadido TutorialController");
+        }
+
+        SetField(tutorial, "programButton", programButton);
+        SetField(tutorial, "optionButton", optionButton);
+        SetField(tutorial, "blockSocket", blockSocket);
+        SetField(tutorial, "shapeSocket", shapeSocket);
+
+        ConnectTutorial(room, log);
+
+        Selection.activeGameObject = room;
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        log.AppendLine("  ⚠ Falta a mano: recolocar sobre la mesa lo que se haya creado (si se creó " +
+                       "algo) y guardar la escena.");
+        Debug.Log(log.ToString(), room);
+    }
+
+    /// <summary>
+    /// Guarda en Prefabs/Tutorial.prefab el cuarto del tutorial de la escena abierta, tal como
+    /// está ahora mismo. Es la mitad de "lo ajusto aquí y lo llevo a la otra escena"; la otra
+    /// mitad es la herramienta 6.
+    ///
+    /// El cuarto de esta escena queda enlazado al prefab. Si ya lo estaba, se le aplican los
+    /// cambios hechos desde la última vez.
+    /// </summary>
+    [MenuItem("Tools/Codea/5 - Guardar el tutorial de esta escena en el prefab")]
+    private static void SaveTutorialPrefab()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        GameObject room = FindTutorialRoom(scene);
+
+        if (room == null)
+        {
+            EditorUtility.DisplayDialog("Guardar el tutorial",
+                $"'{scene.name}' no tiene un objeto raíz llamado 'Tutorial' (ni 'Start').", "Vale");
+            return;
+        }
+
+        StringBuilder log = new StringBuilder($"[Codea] Tutorial de '{scene.name}' → {TutorialPrefab}:\n");
+
+        // Antes de guardar, para que el prefab ya lleve el BlockResetter y no arrastre cables.
+        ConnectTutorial(room, log);
+
+        GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(TutorialPrefab);
+        bool linked = asset != null && PrefabUtility.IsOutermostPrefabInstanceRoot(room) &&
+                      PrefabUtility.GetCorrespondingObjectFromSource(room) == asset;
+
+        if (linked)
+        {
+            PrefabUtility.ApplyPrefabInstance(room, InteractionMode.UserAction);
+            log.AppendLine("  aplicados al prefab los cambios de esta escena");
+        }
+        else
+        {
+            // Un cuarto que ya es instancia de OTRO prefab no se puede guardar encima sin soltarlo.
+            if (PrefabUtility.IsOutermostPrefabInstanceRoot(room))
+                PrefabUtility.UnpackPrefabInstance(room, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
+
+            PrefabUtility.SaveAsPrefabAssetAndConnect(room, TutorialPrefab, InteractionMode.UserAction, out bool saved);
+
+            if (!saved)
+            {
+                Debug.LogError($"[Codea] No se pudo guardar {TutorialPrefab}.");
+                return;
+            }
+
+            log.AppendLine(asset != null
+                ? "  prefab sobrescrito con el cuarto de esta escena, que queda enlazado a él"
+                : "  prefab creado; el cuarto de esta escena queda enlazado a él");
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        log.AppendLine("  ⚠ Falta: guardar esta escena, y en la otra escena de juego pasar " +
+                       "Tools → Codea → 6.");
+        Debug.Log(log.ToString(), room);
+    }
+
+    /// <summary>
+    /// Pone en la escena abierta el cuarto del tutorial que hay en Prefabs/Tutorial.prefab, en
+    /// la posición con la que se guardó. Si la escena ya tenía un cuarto ('Start' o
+    /// 'Tutorial'), se sustituye; así no queda nada de la versión anterior.
+    /// </summary>
+    [MenuItem("Tools/Codea/6 - Poner el tutorial del prefab en esta escena")]
+    private static void PlaceTutorialPrefab()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TutorialPrefab);
+
+        if (prefab == null)
+        {
+            EditorUtility.DisplayDialog("Poner el tutorial",
+                $"Todavía no existe {TutorialPrefab}. Abre la escena donde tienes el tutorial " +
+                "montado y pasa antes Tools → Codea → 5.", "Vale");
+            return;
+        }
+
+        List<GameObject> old = scene.GetRootGameObjects().Where(r => TutorialRoomNames.Contains(r.name)).ToList();
+
+        if (old.Count > 0 && !EditorUtility.DisplayDialog("Poner el tutorial",
+                $"En '{scene.name}' se va a sustituir '{old[0].name}' por el tutorial del prefab. " +
+                "Lo que hayas cambiado en el cuarto de ESTA escena y no hayas guardado en el " +
+                "prefab (herramienta 5) se pierde.", "Sustituir", "Cancelar"))
+            return;
+
+        StringBuilder log = new StringBuilder($"[Codea] {TutorialPrefab} → '{scene.name}':\n");
+
+        foreach (GameObject room in old)
+        {
+            log.AppendLine($"  quitado el cuarto anterior '{room.name}'");
+            Undo.DestroyObjectImmediate(room);
+        }
+
+        GameObject placed = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+        Undo.RegisterCreatedObjectUndo(placed, "Tutorial");
+        log.AppendLine($"  puesto '{placed.name}' en {placed.transform.position}");
+
+        ConnectTutorial(placed, log);
+
+        Selection.activeGameObject = placed;
+        EditorSceneManager.MarkSceneDirty(scene);
+
+        log.AppendLine("  ⚠ Falta: comprobar que la sala y la mesa se ven (son mallas de ProBuilder) " +
+                       "y guardar la escena.");
+        Debug.Log(log.ToString(), placed);
+    }
+
+    private static GameObject FindTutorialRoom(Scene scene) =>
+        scene.GetRootGameObjects().FirstOrDefault(r => TutorialRoomNames.Contains(r.name));
+
+    /// <summary>
+    /// Deja el cuarto listo para funcionar en su escena:
+    ///
+    ///   · El Director sin arranque automático: lo arranca TutorialController al terminar,
+    ///     buscándolo en la escena. No se cablea, y si hubiera un cable de antes se quita.
+    ///   · Un BlockResetter en la raíz, que es a donde vuelve sola una ficha que se cae al
+    ///     suelo. Va en la raíz y no en un contenedor para no tocar la jerarquía; nadie llama
+    ///     a su ResetBlocks, así que la sala y la mesa no se ven afectadas.
+    ///   · El Scenario4Controller sin telemetría SOLO si en el cuarto hay alguna ficha que no
+    ///     encaja: su único papel aquí es expulsarla. Sin fichas incorrectas, sobra.
+    /// </summary>
+    private static void ConnectTutorial(GameObject room, StringBuilder log)
+    {
+        if (!room.TryGetComponent(out BlockResetter resetter))
+        {
+            resetter = Undo.AddComponent<BlockResetter>(room);
+            log.AppendLine("  añadido BlockResetter: una ficha caída vuelve sola a su sitio");
+        }
+
+        ShapeSocket shapeSocket = room.GetComponentInChildren<ShapeSocket>(true);
+        ShapeChip[] chips = room.GetComponentsInChildren<ShapeChip>(true);
+        bool hasWrongChip = shapeSocket != null && chips.Any(c => c.Shape != shapeSocket.Expected);
+
+        if (shapeSocket != null && chips.Length > 0 && !chips.Any(c => c.Shape == shapeSocket.Expected))
+            log.AppendLine("  ⚠ Ninguna ficha del cuarto lleva la figura del hueco: no se puede acertar");
+
+        Scenario4Controller rejecter = room.GetComponent<Scenario4Controller>();
+
+        if (hasWrongChip)
+        {
+            if (rejecter == null)
+            {
+                rejecter = Undo.AddComponent<Scenario4Controller>(room);
+                Scenario4Controller scenario4 = FindScenario4();
+
+                if (scenario4 != null)
+                {
+                    // Mismo rechazo que en el escenario, para que el tutorial enseñe lo que va a pasar.
+                    SerializedObject from = new SerializedObject(scenario4);
+                    SerializedObject to = new SerializedObject(rejecter);
+
+                    foreach (string field in new[] { "rejectDelay", "rejectSpeed", "rejectLocalDirection" })
+                        to.CopyFromSerializedProperty(from.FindProperty(field));
+
+                    to.ApplyModifiedProperties();
+                }
+
+                log.AppendLine("  añadido Scenario4Controller sin telemetría: expulsa la ficha incorrecta");
+            }
+
+            SetField(rejecter, "chipResetter", resetter);
+            SetString(rejecter, "challengeId", string.Empty);
+        }
+        else if (rejecter != null && string.IsNullOrEmpty(rejecter.ChallengeId))
+        {
+            Undo.DestroyObjectImmediate(rejecter);
+            log.AppendLine("  quitado Scenario4Controller: no hay ficha incorrecta que expulsar");
+        }
+
+        TutorialController tutorial = room.GetComponent<TutorialController>();
+        Director director = Find<Director>(log);
+
+        if (tutorial == null)
+        {
+            log.AppendLine("  ⚠ El cuarto no tiene TutorialController: pásale Tools → Codea → 4");
+            return;
+        }
+
+        if (director == null) return;
+
+        if (new SerializedObject(director).FindProperty("playOnStart").boolValue)
+        {
+            SetBool(director, "playOnStart", false);
+            log.AppendLine("  Director: playOnStart desactivado, arranca al terminar el tutorial");
+        }
+
+        // TutorialController arranca el Director él solo. Un cable además lo arrancaría dos
+        // veces, con dos recorridos en paralelo.
+        if (RemoveListener(tutorial, tutorial.OnTutorialFinished, director, nameof(Director.Play)))
+        {
+            PrefabUtility.RecordPrefabInstancePropertyModifications(tutorial);
+            log.AppendLine("  quitado OnTutorialFinished → Director.Play: ya lo hace el propio TutorialController");
+        }
+    }
+
+    /// <summary>El hueco de figura y sus dos fichas. Devuelve el hueco.</summary>
+    private static ShapeSocket BuildTutorialShapes(GameObject room, System.Func<Vector3> nextSlot,
+                                                   StringBuilder log)
+    {
+        Sprite[] sheet = AssetDatabase.LoadAllAssetsAtPath(ShapesSheet).OfType<Sprite>().ToArray();
+        Sprite shape = sheet.FirstOrDefault(s => s.name == TutorialShape);
+
+        Scenario4Controller scenario4 = FindScenario4();
+        ShapeChip sampleChip = scenario4 != null ? scenario4.GetComponentInChildren<ShapeChip>(true) : null;
+        ShapeSocket sampleSocket = scenario4 != null ? scenario4.GetComponentInChildren<ShapeSocket>(true) : null;
+
+        ShapeSocket socket = room.GetComponentInChildren<ShapeSocket>(true);
+        if (socket == null)
+        {
+            socket = PlacePiece<ShapeSocket>(SocketPrefab, room.transform, "Hueco de figura", nextSlot(),
+                sampleSocket != null ? sampleSocket.transform : null, log);
+
+            if (socket != null)
+            {
+                SetField(socket, "expectedShape", shape);
+                socket.ApplyShapeToChild();
+                log.AppendLine($"  creado el hueco de figura ({TutorialShape})");
+            }
+        }
+
+        // Una sola ficha, la que encaja. Si el usuario añade otra que no encaje, ConnectTutorial
+        // pone lo necesario para expulsarla.
+        if (room.GetComponentsInChildren<ShapeChip>(true).Length == 0)
+        {
+            AddTutorialChip(room.transform, "Ficha correcta", nextSlot(), shape, sampleChip, log);
+            log.AppendLine($"  creada la ficha ({TutorialShape})");
+        }
+
+        return socket;
+    }
+
+    private static void AddTutorialChip(Transform parent, string name, Vector3 localPosition, Sprite shape,
+                                        ShapeChip sample, StringBuilder log)
+    {
+        ShapeChip chip = PlacePiece<ShapeChip>(ChipPrefab, parent, name, localPosition,
+            sample != null ? sample.transform : null, log);
+
+        if (chip == null) return;
+
+        SetField(chip, "shape", shape);
+        chip.ApplyShapeToChild();
+
+        // La física se copia de una ficha del escenario: en el prefab viene sin gravedad.
+        if (sample != null && sample.TryGetComponent(out Rigidbody from) && chip.TryGetComponent(out Rigidbody to))
+        {
+            Undo.RecordObject(to, "Física de la ficha");
+            to.useGravity = from.useGravity;
+            to.isKinematic = from.isKinematic;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(to);
+        }
+    }
+
+    /// <summary>Un bloque del Escenario 1 y un hueco suelto donde encajarlo. Devuelve el hueco.</summary>
+    private static Socket BuildTutorialBlock(GameObject room, System.Func<Vector3> nextSlot,
+                                             StringBuilder log)
+    {
+        GridBlock block = room.GetComponentInChildren<GridBlock>(true);
+
+        if (block == null)
+        {
+            // Se duplica uno del escenario: hereda rótulo, tamaño, prefab y eventos.
+            GridBlock[] all = Object.FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            GridBlock source = all.FirstOrDefault(b => b.action == GridActionType.MoveForward) ?? all.FirstOrDefault();
+            GameObject copy = source != null ? Duplicate(source.gameObject) : null;
+
+            if (copy == null)
+            {
+                log.AppendLine("  ⚠ No hay ningún bloque del Escenario 1 que duplicar: falta el bloque del tutorial");
+            }
+            else
+            {
+                Undo.SetTransformParent(copy.transform, room.transform, "Tutorial");
+                copy.name = "Bloque";
+                copy.transform.localPosition = nextSlot();
+                log.AppendLine($"  creado el bloque '{source.InstructionLabel}'");
+            }
+        }
+
+        // Los huecos de figura también llevan Socket: el de bloque es el que no es ShapeSocket.
+        Socket socket = room.GetComponentsInChildren<Socket>(true)
+                            .FirstOrDefault(s => s.GetComponent<ShapeSocket>() == null);
+
+        if (socket == null)
+        {
+            // El mismo prefab con el que la fila del Escenario 1 genera sus huecos al arrancar.
+            string path = BlockSocketPrefab;
+            ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario1Id);
+
+            if (trigger != null && trigger.socketRow != null)
+            {
+                Object rowPrefab = new SerializedObject(trigger.socketRow).FindProperty("socketPrefab").objectReferenceValue;
+                if (rowPrefab != null) path = AssetDatabase.GetAssetPath(rowPrefab);
+            }
+
+            socket = PlacePiece<Socket>(path, room.transform, "Hueco de bloque", nextSlot(), null, log);
+            if (socket != null) log.AppendLine("  creado el hueco de bloque");
+        }
+
+        return socket;
+    }
+
+    /// <summary>
+    /// Copia del botón de ejecutar del Escenario 1, sin su cable: en el tutorial no ejecuta
+    /// nada, solo lo escucha el TutorialController.
+    /// </summary>
+    private static InteractableUnityEventWrapper BuildTutorialProgramButton(Transform room,
+        System.Func<Vector3> nextSlot, StringBuilder log)
+    {
+        Transform existing = room.Find(TutorialProgramButton);
+        if (existing != null)
+            return existing.GetComponentInChildren<InteractableUnityEventWrapper>(true);
+
+        ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario1Id);
+        InteractableUnityEventWrapper source = trigger == null ? null :
+            Object.FindObjectsByType<InteractableUnityEventWrapper>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                  .FirstOrDefault(w => Calls(w.WhenSelect, trigger));
+
+        GameObject copy = null;
+
+        if (source != null)
+        {
+            GameObject sourceRoot = PrefabUtility.GetNearestPrefabInstanceRoot(source.gameObject);
+            copy = Duplicate(sourceRoot != null ? sourceRoot : source.gameObject);
+        }
+
+        if (copy != null)
+        {
+            Undo.SetTransformParent(copy.transform, room, "Tutorial");
+        }
+        else
+        {
+            // Sin el del escenario a mano, el prefab tal cual: mismo botón, sin sus ajustes.
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ProgramButtonPrefab);
+            if (prefab == null)
+            {
+                log.AppendLine($"  ⚠ No encuentro el botón del Escenario 1 ni {ProgramButtonPrefab}");
+                return null;
+            }
+
+            copy = (GameObject)PrefabUtility.InstantiatePrefab(prefab, room);
+            Undo.RegisterCreatedObjectUndo(copy, "Tutorial");
+            log.AppendLine("  ⚠ No encuentro el botón de ejecutar del Escenario 1: se usa el prefab sin ajustar");
+        }
+
+        copy.name = TutorialProgramButton;
+        copy.transform.localPosition = nextSlot();
+
+        InteractableUnityEventWrapper wrapper = copy.GetComponentInChildren<InteractableUnityEventWrapper>(true);
+
+        // Imprescindible: la copia hereda el cable al ProgramTrigger, y pulsarla en el
+        // tutorial ejecutaría el programa del Escenario 1.
+        if (wrapper != null && trigger != null)
+        {
+            while (RemoveListener(wrapper, wrapper.WhenSelect, trigger, nameof(ProgramTrigger.OnPlayPressed))) { }
+            PrefabUtility.RecordPrefabInstancePropertyModifications(wrapper);
+
+            if (Calls(wrapper.WhenSelect, trigger))
+                log.AppendLine($"  ⚠ '{TutorialProgramButton}' sigue cableado al ProgramTrigger del " +
+                               "Escenario 1: quítale ese evento a mano");
+        }
+
+        log.AppendLine("  creado el botón del Escenario 1");
+        return wrapper;
+    }
+
+    /// <summary>Un botón de módulo en modo 'standalone': se marca solo, sin avería detrás.</summary>
+    private static ModuleOptionButton BuildTutorialOptionButton(GameObject room,
+        System.Func<Vector3> nextSlot, StringBuilder log)
+    {
+        ModuleOptionButton button = room.GetComponentInChildren<ModuleOptionButton>(true);
+
+        if (button == null)
+        {
+            ModuleOptionButton sample = Object.FindAnyObjectByType<ModuleOptionButton>(FindObjectsInactive.Include);
+            Transform sampleRoot = sample == null ? null :
+                (PrefabUtility.GetNearestPrefabInstanceRoot(sample.gameObject) ?? sample.gameObject).transform;
+
+            button = PlacePiece<ModuleOptionButton>(OptionButtonPrefab, room.transform, TutorialOptionButton,
+                nextSlot(), sampleRoot, log);
+
+            if (button == null) return null;
+
+            // El rótulo solo al crearlo: si ya existía, el texto es del usuario.
+            SerializedProperty label = new SerializedObject(button).FindProperty("label");
+            if (label != null && label.objectReferenceValue is TMP_Text text)
+            {
+                Undo.RecordObject(text, "Tutorial");
+                text.text = "Púlsame";
+                PrefabUtility.RecordPrefabInstancePropertyModifications(text);
+            }
+
+            log.AppendLine("  creado el botón del Escenario 2");
+        }
+
+        SetField(button, "module", null);
+        SetBool(button, "standalone", true);
+        return button;
+    }
+
+    private static bool Calls(UnityEvent unityEvent, Object target)
+    {
+        for (int i = 0; i < unityEvent.GetPersistentEventCount(); i++)
+            if (unityEvent.GetPersistentTarget(i) == target) return true;
+
+        return false;
+    }
+
+    /// <summary>Duplica en la escena conservando el enlace al prefab y sus ajustes.</summary>
+    private static GameObject Duplicate(GameObject source)
+    {
+        Selection.activeGameObject = source;
+        Unsupported.DuplicateGameObjectsUsingPasteboard();
+        GameObject copy = Selection.activeGameObject;
+
+        return copy != null && copy != source ? copy : null;
+    }
+
+    /// <summary>Instancia el prefab enlazado, con el giro y el tamaño de una pieza ya ajustada.</summary>
+    private static T PlacePiece<T>(string prefabPath, Transform parent, string name, Vector3 localPosition,
+                                   Transform sample, StringBuilder log) where T : Component
+    {
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (prefab == null)
+        {
+            log.AppendLine($"  ⚠ No encuentro {prefabPath}: falta '{name}'");
+            return null;
+        }
+
+        GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+        Undo.RegisterCreatedObjectUndo(instance, "Tutorial");
+        instance.name = name;
+        instance.transform.localPosition = localPosition;
+
+        if (sample != null)
+        {
+            instance.transform.localRotation = sample.localRotation;
+            instance.transform.localScale = sample.localScale;
+        }
+
+        return instance.GetComponentInChildren<T>(true);
+    }
+
+    private static void SetBool(Object owner, string field, bool value)
+    {
+        SerializedObject so = new SerializedObject(owner);
+        so.FindProperty(field).boolValue = value;
+        so.ApplyModifiedProperties();
+    }
+
+    /// <summary>
+    /// El controlador del Escenario 4 de verdad. Desde que el tutorial tiene el suyo hay dos
+    /// en la escena, y una búsqueda por tipo puede devolver cualquiera.
+    /// </summary>
+    private static Scenario4Controller FindScenario4() =>
+        Object.FindObjectsByType<Scenario4Controller>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+              .FirstOrDefault(c => c.ChallengeId == TelemetryManager.Scenario4Id);
 
     private static ProgramTrigger FindTrigger(string challengeId) =>
         Object.FindObjectsByType<ProgramTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None)

@@ -53,7 +53,7 @@ public class LevelManager : MonoBehaviour
             return true;
 
         print("Ilegal move, cant reach [" + grid[y][x] + "]");
-        RegisterError(LogicErrorType.ComandoInvalido);
+        RegisterError(LogicErrorType.ColisionBot);
         return false;
     }
 

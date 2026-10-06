@@ -88,13 +88,13 @@ public class Bot : MonoBehaviour
 
         if (!levelManager.TryGetInteractable(targetPos, out IInteractable interactable))
         {
-            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.ComandoInvalido);
+            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
             yield break;
         }
 
         if (!interactable.CanInteract())
         {
-            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.ComandoInvalido);
+            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
             yield break;
         }
 
