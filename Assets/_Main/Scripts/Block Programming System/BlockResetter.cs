@@ -58,8 +58,10 @@ public class BlockResetter : MonoBehaviour
         // bloque fijo de la fila. Devolverla dejaba el hueco marcado como resuelto pero vacío,
         // y el escenario ya no se podía terminar. Para un reinicio completo, quien lo pida
         // desbloquea antes (Scenario4Controller.ResetScenario).
+        // Las piezas de la otra dificultad están apagadas y no se tocan.
         foreach (BlockHome home in homes)
-            if (home.node == null || home.node.IsInteractable)
+            if (home.block != null && (home.node == null || home.node.IsInteractable) &&
+                !DifficultyOnly.IsExcluded(home.block.gameObject))
                 Restore(home);
     }
 

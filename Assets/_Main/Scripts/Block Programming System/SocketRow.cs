@@ -62,6 +62,11 @@ public class SocketRow : MonoBehaviour
              "de giro libres para que el niño decida hacia dónde.")]
     [SerializeField] private List<InitialBlock> initialBlocks = new List<InitialBlock>();
 
+    [Tooltip("Desactivado: la fila y sus bloques no se ven, pero se ejecutan igual. Es la " +
+             "dificultad básica del Escenario 3: el niño elige tipo y repeticiones sin ver las " +
+             "instrucciones. Combínalo con la fila bloqueada, o se podrían agarrar sin verlas.")]
+    [SerializeField] private bool visible = true;
+
     /// <summary>
     /// Con qué arranca un socket de la fila. Un elemento por socket, en orden.
     ///
@@ -83,8 +88,31 @@ public class SocketRow : MonoBehaviour
 
     public int Repetitions => repetitions;
     public bool IsEditable => editable;
+    public int SocketsQuantity => socketsQuantity;
+    public IReadOnlyList<InitialBlock> InitialBlocks => initialBlocks;
 
     private List<Socket> sockets = new List<Socket>();
+
+    // --- Dificultad. Lo llama DifficultyApplier antes de Awake ---
+
+    /// <summary>
+    /// Número de huecos. Solo sirve antes de que la fila cree sus sockets, en Awake: por eso
+    /// lo pone DifficultyApplier, que corre antes que nadie.
+    /// </summary>
+    public void SetSocketsQuantity(int value)
+    {
+        if (sockets.Count > 0)
+            Debug.LogWarning($"[SocketRow] '{name}' ya creó sus {sockets.Count} sockets; " +
+                             $"el cambio a {value} no se aplica hasta recargar la escena.", this);
+
+        socketsQuantity = value;
+    }
+
+    /// <summary>Con qué bloques arranca la fila. Se colocan en Start.</summary>
+    public void SetInitialBlocks(IEnumerable<InitialBlock> blocks)
+    {
+        initialBlocks = new List<InitialBlock>(blocks);
+    }
 
     private void Awake()
     {
@@ -95,7 +123,54 @@ public class SocketRow : MonoBehaviour
     {
         PlaceInitialBlocks();
         ApplyEditable();
+        ApplyVisible();
         RefreshLabel();
+    }
+
+    // --- Visibilidad ---
+
+    // Lo que esta fila apagó, para encender solo eso al volver a mostrarla: una pieza que ya
+    // estaba apagada en la escena tiene que seguir apagada.
+    private readonly List<Renderer> hiddenRenderers = new List<Renderer>();
+    private readonly List<Canvas> hiddenCanvases = new List<Canvas>();
+
+    public bool IsVisible => visible;
+
+    /// <summary>
+    /// Muestra u oculta la fila con todo lo que cuelga de ella (huecos, bloques, marcadores)
+    /// sin apagar nada: la fila tiene que seguir activa para crear sus huecos y ejecutarse.
+    /// </summary>
+    public void SetVisible(bool value)
+    {
+        visible = value;
+        ApplyVisible();
+    }
+
+    private void ApplyVisible()
+    {
+        if (visible)
+        {
+            foreach (Renderer r in hiddenRenderers) if (r != null) r.enabled = true;
+            foreach (Canvas c in hiddenCanvases) if (c != null) c.enabled = true;
+            hiddenRenderers.Clear();
+            hiddenCanvases.Clear();
+            return;
+        }
+
+        // Se repite en Start: los huecos se crean en Awake, después de la primera llamada.
+        foreach (Renderer r in GetComponentsInChildren<Renderer>(true))
+            if (r.enabled)
+            {
+                r.enabled = false;
+                hiddenRenderers.Add(r);
+            }
+
+        foreach (Canvas c in GetComponentsInChildren<Canvas>(true))
+            if (c.enabled)
+            {
+                c.enabled = false;
+                hiddenCanvases.Add(c);
+            }
     }
 
     // --- Repeticiones. Cablear a los PokeInteractable de + y - ---

@@ -8,9 +8,8 @@ using UnityEngine.Events;
 /// todos los huecos del panel tienen la ficha correcta.
 ///
 /// La dificultad no se declara aquí. La mecánica es idéntica en las dos: lo único que cambia
-/// es qué figuras se arrastran a los huecos de cada escena. Quién lo registra es
-/// DifficultyScene, que además corrige la telemetría si la escena y el selector no coinciden;
-/// un segundo indicador en este componente solo podría contradecirlo.
+/// es el juego de figuras. Los huecos y fichas de una sola dificultad llevan DifficultyOnly,
+/// y los de la otra no cuentan para terminar el panel.
 /// </summary>
 public class Scenario4Controller : MonoBehaviour, IStepAction
 {
@@ -66,6 +65,10 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     {
         if (sockets == null || sockets.Length == 0)
             sockets = GetComponentsInChildren<ShapeSocket>(true);
+
+        // GetComponentsInChildren(true) devuelve también los huecos apagados por ser de la otra
+        // dificultad, y uno de ellos sin resolver dejaría el panel esperando para siempre.
+        sockets = System.Array.FindAll(sockets, s => s != null && !DifficultyOnly.IsExcluded(s.gameObject));
 
         // Deliberadamente NO se adivina cuando el campo está vacío.
         //

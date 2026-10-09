@@ -20,13 +20,10 @@ public class SessionSetup : MonoBehaviour
     [Tooltip("Si queda vacío se busca en los hijos.")]
     [SerializeField] private PinEntry pinEntry;
 
-    [Header("Escenas de destino")]
-    [Tooltip("Deben estar añadidas en File > Build Settings, o LoadScene falla.")]
-    [SerializeField] private string basicSceneName = "Basico";
-
-    [Tooltip("Si un día unificas las dos dificultades en una sola escena, pon aquí el mismo " +
-             "nombre que arriba: la dificultad se seguirá registrando bien.")]
-    [SerializeField] private string intermediateSceneName = "Intermedio";
+    [Header("Escena de juego")]
+    [Tooltip("La misma para las dos dificultades: DifficultyApplier la monta con la elegida " +
+             "aquí. Debe estar añadida en File > Build Settings, o LoadScene falla.")]
+    [SerializeField] private string gameSceneName = "Juego";
 
     [Header("Pantalla")]
     [Tooltip("Opcional. Muestra la dificultad elegida y qué falta para poder empezar.")]
@@ -128,11 +125,11 @@ public class SessionSetup : MonoBehaviour
             return;
         }
 
-        string sceneName = SceneFor(SelectedDifficulty);
+        string sceneName = gameSceneName;
 
         if (string.IsNullOrWhiteSpace(sceneName))
         {
-            Debug.LogError($"[Sesión] No hay escena configurada para {SelectedDifficulty}.", this);
+            Debug.LogError("[Sesión] No hay escena de juego configurada.", this);
 
             OnRejected?.Invoke();
             return;
@@ -184,11 +181,8 @@ public class SessionSetup : MonoBehaviour
         }
 
         Debug.Log($"[Sesión] PIN {pin:D4} - dificultad {SelectedDifficulty} - " +
-                  $"escena {SceneFor(SelectedDifficulty)}", this);
+                  $"escena {gameSceneName}", this);
     }
-
-    private string SceneFor(Difficulty difficulty) =>
-        difficulty == Difficulty.Basica ? basicSceneName : intermediateSceneName;
 
     private IEnumerator LoadAfterDelay(string sceneName)
     {

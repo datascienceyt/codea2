@@ -14,22 +14,27 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Montaje automático de lo que antes había que cablear a mano, en Tools → Codea.
 ///
-/// 1 - Crear escena Setup: copia Basico, se queda solo con el rig del jugador y los building
-///     blocks de interacción, y monta la pantalla del supervisor con su teclado ya cableado.
-/// 2 - Preparar escena de juego abierta: añade a Basico o Intermedio lo que falta para el
-///     ciclo de sesión (dificultad, tiempo agotado, vuelta a Setup).
-/// 3 - Convertir escena abierta a Intermedia.
+/// 1 - Crear escena Setup: copia la escena de juego, se queda solo con el rig del jugador y los
+///     building blocks de interacción, y monta la pantalla del supervisor con su teclado.
+/// 2 - Preparar escena de juego abierta: añade lo que falta para el ciclo de sesión
+///     (aplicador de dificultad, tiempo agotado, vuelta a Setup).
+/// 3 - Unificar dificultades: trae a la escena abierta lo que tenía Intermedio y la deja
+///     como única escena de juego, Juego.unity. Se pasa una vez.
 /// 4 - Montar piezas del tutorial: las cuatro interacciones y su TutorialController.
-/// 5 - Guardar el tutorial de la escena abierta en Prefabs/Tutorial.prefab.
-/// 6 - Poner ese prefab en la escena abierta, sustituyendo el cuarto que hubiera.
+/// Ver como básica / intermedia / todo: oculta en la vista de escena las piezas de la otra
+///     dificultad, sin tocar la escena.
 ///
 /// Todas son repetibles: lo que ya existe no se duplica.
 /// </summary>
 public static class CodeaSceneTools
 {
+    private const string GameScene = "Assets/Scenes/Juego.unity";
+    private const string GameSceneName = "Juego";
+    private const string SetupScene = "Assets/Scenes/Setup.unity";
+
+    // Las dos escenas de antes de unificar. Solo las usa la herramienta 3.
     private const string BasicScene = "Assets/Scenes/Basico.unity";
     private const string IntermediateScene = "Assets/Scenes/Intermedio.unity";
-    private const string SetupScene = "Assets/Scenes/Setup.unity";
     private const string ButtonPrefab = "Assets/_Main/Prefabs/Buttons/TextButton.prefab";
 
     private const float KeySpacing = 0.12f;
@@ -54,9 +59,9 @@ public static class CodeaSceneTools
             return;
 
         AssetDatabase.DeleteAsset(SetupScene);
-        if (!AssetDatabase.CopyAsset(BasicScene, SetupScene))
+        if (!AssetDatabase.CopyAsset(GameScene, SetupScene))
         {
-            Debug.LogError($"[Codea] No se pudo copiar {BasicScene}.");
+            Debug.LogError($"[Codea] No se pudo copiar {GameScene}.");
             return;
         }
 
@@ -253,17 +258,18 @@ public static class CodeaSceneTools
         List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>
         {
             new EditorBuildSettingsScene(SetupScene, true),
-            new EditorBuildSettingsScene(BasicScene, true),
-            new EditorBuildSettingsScene(IntermediateScene, true),
+            new EditorBuildSettingsScene(GameScene, true),
         };
 
+        // Las escenas de antes de unificar no se vuelven a añadir aunque sigan en disco.
         foreach (EditorBuildSettingsScene existing in EditorBuildSettings.scenes)
-            if (scenes.All(s => s.path != existing.path))
+            if (scenes.All(s => s.path != existing.path) &&
+                existing.path != BasicScene && existing.path != IntermediateScene)
                 scenes.Add(existing);
 
         EditorBuildSettings.scenes = scenes.ToArray();
 
-        log.AppendLine("  Build Settings: Setup (0), Basico (1), Intermedio (2), las tres activas");
+        log.AppendLine($"  Build Settings: Setup (0), {GameSceneName} (1), las dos activas");
     }
 
     // --- 2. Escena de juego ---
@@ -272,16 +278,19 @@ public static class CodeaSceneTools
     private static void PrepareGameScene()
     {
         Scene scene = SceneManager.GetActiveScene();
-        bool intermediate = scene.name.ToLowerInvariant().Contains("intermed");
-        Difficulty difficulty = intermediate ? Difficulty.Avanzada : Difficulty.Basica;
 
         if (!EditorUtility.DisplayDialog("Preparar escena de juego",
-                $"Escena '{scene.name}' → dificultad {(intermediate ? "INTERMEDIA" : "BÁSICA")}.\n\n" +
-                "Se añaden DifficultyScene, SceneLoader y TimeUpSequence, y se cablean el " +
+                $"Escena '{scene.name}'.\n\n" +
+                "Se añaden DifficultyApplier, SceneLoader y TimeUpSequence, y se cablean el " +
                 "tiempo agotado y la vuelta a Setup.",
                 "Preparar", "Cancelar"))
             return;
 
+        PrepareGameScene(scene);
+    }
+
+    private static void PrepareGameScene(Scene scene)
+    {
         StringBuilder log = new StringBuilder($"[Codea] Preparando '{scene.name}':\n");
 
         Director director = Find<Director>(log);
@@ -296,8 +305,7 @@ public static class CodeaSceneTools
             Undo.RegisterCreatedObjectUndo(session, "Sesion");
         }
 
-        DifficultyScene difficultyScene = GetOrAdd<DifficultyScene>(session, log);
-        SetEnum(difficultyScene, "difficulty", (int)difficulty);
+        GetOrAdd<DifficultyApplier>(session, log);
 
         SceneLoader loader = GetOrAdd<SceneLoader>(session, log);
         SetString(loader, "sceneName", "Setup");
@@ -470,207 +478,476 @@ public static class CodeaSceneTools
         }
     }
 
-    // --- 3. Conversión a intermedia ---
-
-    private const string IntermediateLevel = "Assets/_Main/Levels/escenario1_intermedio.json";
-
-    /// <summary>Huecos de la fila del escenario 1 en intermedia: los 11 de la solución.</summary>
-    private const int IntermediateSockets = 11;
+    // --- 3. Unificar dificultades ---
 
     /// <summary>
-    /// Paleta del escenario 1 en intermedia: 13 bloques. Los 11 de la solución (el camino de
-    /// arriba) y un Girar Derecha y un Avanzar 2 de sobra, que tientan hacia el camino de
-    /// abajo: simétrico al bueno, pero de 14 bloques, así que no cabe en la fila.
+    /// Deja la escena abierta (Basico) como la única escena de juego, con las dos dificultades.
+    /// Lee de Intermedio lo que allí era distinto y lo declara en la propia escena:
+    ///
+    ///   · Narración: NarrationDifficulty con la lista de cada dificultad, y la frase 0 del
+    ///     tutorial también al principio de la lista intermedia
+    ///   · Esc. 1: Scenario1Difficulty (nivel y huecos), y los bloques de la paleta que solo
+    ///     están en una de las dos con DifficultyOnly, en la posición que tenían en su escena
+    ///   · Esc. 2: Scenario2Difficulty con los ModuleData de cada dificultad
+    ///   · Esc. 3: Scenario3Difficulty (fila editable y bloques iniciales), y los giros
+    ///     literales de intermedia como bloques propios con DifficultyOnly
+    ///   · Esc. 4: solo compara las figuras; si difieren, avisa
+    ///
+    /// Después pasa la herramienta 2, renombra la escena a Juego y deja Build Settings con
+    /// Setup y Juego. Intermedio.unity no se borra: se borra a mano tras comprobar el resultado.
+    /// Repetible: lo que ya está unificado no se duplica.
     /// </summary>
-    private static readonly Dictionary<GridActionType, int> IntermediatePalette = new Dictionary<GridActionType, int>
-    {
-        { GridActionType.RotateLeft, 4 },
-        { GridActionType.RotateRight, 2 },
-        { GridActionType.MoveForwardTwice, 4 },
-        { GridActionType.MoveForward, 2 },
-        { GridActionType.Use, 1 },
-    };
-
-    /// <summary>
-    /// Deja la escena abierta (una copia de Basico) en dificultad intermedia: todo lo que
-    /// cambia entre las dos salvo las figuras del escenario 4, que son una elección de diseño.
-    /// Repetible: lo que ya está en intermedia no se toca.
-    /// </summary>
-    [MenuItem("Tools/Codea/3 - Convertir escena abierta a Intermedia")]
-    private static void ConvertToIntermediate()
+    [MenuItem("Tools/Codea/3 - Unificar dificultades en esta escena")]
+    private static void UnifyDifficultiesMenu()
     {
         Scene scene = SceneManager.GetActiveScene();
 
-        // Protección: convertir Basico por error la dejaría en intermedia sin avisar.
-        if (!scene.name.ToLowerInvariant().Contains("intermed"))
+        if (scene.path != BasicScene && scene.path != GameScene)
         {
-            EditorUtility.DisplayDialog("Convertir a Intermedia",
-                $"La escena abierta es '{scene.name}'. Solo se convierte una escena cuyo nombre " +
-                "contenga 'Intermed'. Duplica Basico, renómbrala a Intermedio y ábrela.", "Vale");
+            EditorUtility.DisplayDialog("Unificar dificultades",
+                $"La escena abierta es '{scene.name}'. Abre {BasicScene} (o {GameScene}) y vuelve " +
+                "a pasar la herramienta.", "Vale");
             return;
         }
 
-        if (!EditorUtility.DisplayDialog("Convertir a Intermedia",
-                $"Se va a pasar '{scene.name}' a dificultad intermedia:\n\n" +
-                "• Narrador: lista 2\n• Esc. 2: módulos *_Intermedia\n" +
-                "• Esc. 1: nivel intermedio, 11 huecos y paleta de 13 bloques\n" +
-                "• Esc. 3: fila editable con los bloques desordenados\n\n" +
-                "Las figuras del escenario 4 se cambian a mano.", "Convertir", "Cancelar"))
-            return;
-
-        StringBuilder log = new StringBuilder($"[Codea] Convirtiendo '{scene.name}' a intermedia:\n");
-
-        Narrator narrator = Object.FindAnyObjectByType<Narrator>(FindObjectsInactive.Include);
-        if (narrator != null)
+        if (!File.Exists(IntermediateScene))
         {
-            SetInt(narrator, "listIndex", 2);
-            log.AppendLine("  Narrador: lista 2 (Intermedia)");
+            EditorUtility.DisplayDialog("Unificar dificultades",
+                $"No existe {IntermediateScene}: no hay de dónde leer la intermedia.", "Vale");
+            return;
         }
 
-        ConvertModules(log);
-        ConvertScenario1(log);
-        ConvertScenario3(log);
+        if (!EditorUtility.DisplayDialog("Unificar dificultades",
+                $"'{scene.name}' pasa a tener las dos dificultades, leyendo de Intermedio lo que " +
+                "allí era distinto, y se renombra a Juego.\n\nIntermedio no se toca ni se borra.",
+                "Unificar", "Cancelar"))
+            return;
+
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+
+        UnifyDifficulties(scene);
+    }
+
+    /// <summary>
+    /// La misma herramienta sin abrir Unity:
+    /// Unity.exe -batchmode -quit -projectPath . -executeMethod CodeaSceneTools.UnifyDifficultiesBatch
+    /// </summary>
+    public static void UnifyDifficultiesBatch()
+    {
+        string path = File.Exists(GameScene) ? GameScene : BasicScene;
+        UnifyDifficulties(EditorSceneManager.OpenScene(path, OpenSceneMode.Single));
+    }
+
+    private static void UnifyDifficulties(Scene scene)
+    {
+        StringBuilder log = new StringBuilder($"[Codea] Unificando dificultades en '{scene.name}':\n");
+
+        Scene intermediate = EditorSceneManager.OpenScene(IntermediateScene, OpenSceneMode.Additive);
+        SceneManager.SetActiveScene(scene);
+
+        try
+        {
+            UnifyNarration(scene, intermediate, log);
+            UnifyScenario1(scene, intermediate, log);
+            UnifyScenario2(scene, intermediate, log);
+            UnifyScenario3(scene, intermediate, log);
+            CompareScenario4(scene, intermediate, log);
+        }
+        finally
+        {
+            // Antes de la herramienta 2: sus búsquedas recorren todas las escenas abiertas.
+            EditorSceneManager.CloseScene(intermediate, true);
+        }
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
+        Debug.Log(log.ToString());
 
-        log.AppendLine("  Escena guardada.");
-        log.AppendLine("  ⚠ Falta a mano: las figuras del escenario 4 (huecos y fichas) y colocar en la " +
-                       "mesa los bloques nuevos del escenario 1, que salen apilados sobre su original.");
+        PrepareGameScene(scene);
+
+        log = new StringBuilder("[Codea] Unificación, cierre:\n");
+
+        if (scene.path == BasicScene)
+        {
+            string error = AssetDatabase.RenameAsset(BasicScene, GameSceneName);
+            log.AppendLine(string.IsNullOrEmpty(error)
+                ? $"  {BasicScene} renombrada a {GameScene}"
+                : $"  ⚠ No se pudo renombrar la escena: {error}");
+        }
+
+        SetBuildScenes(log);
+        AssetDatabase.SaveAssets();
+
+        log.AppendLine("  ⚠ Falta: comprobar con Tools → Codea → Ver como básica / intermedia, probar " +
+                       "las dos en Play (DifficultyApplier → Editor Difficulty) y borrar Intermedio.unity.");
         Debug.Log(log.ToString());
     }
 
-    private static void ConvertModules(StringBuilder log)
+    private static void UnifyNarration(Scene scene, Scene intermediate, StringBuilder log)
     {
-        foreach (SystemModule module in Object.FindObjectsByType<SystemModule>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        Narrator narrator = InScene<Narrator>(scene).FirstOrDefault();
+        Narrator other = InScene<Narrator>(intermediate).FirstOrDefault();
+
+        if (narrator == null)
         {
-            SerializedObject so = new SerializedObject(module);
-            SerializedProperty data = so.FindProperty("data");
-            if (data == null || data.objectReferenceValue == null) continue;
-
-            string path = AssetDatabase.GetAssetPath(data.objectReferenceValue);
-            if (!path.Contains("_Basica")) continue;
-
-            string intermediatePath = path.Replace("_Basica", "_Intermedia");
-            ModuleData intermediate = AssetDatabase.LoadAssetAtPath<ModuleData>(intermediatePath);
-            if (intermediate == null)
-            {
-                log.AppendLine($"  ⚠ Esc. 2: no existe {intermediatePath}");
-                continue;
-            }
-
-            data.objectReferenceValue = intermediate;
-            so.ApplyModifiedProperties();
-            log.AppendLine($"  Esc. 2: {module.name} → {intermediate.name}");
-        }
-    }
-
-    private static void ConvertScenario1(StringBuilder log)
-    {
-        ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario1Id);
-        if (trigger != null && trigger.socketRow != null)
-        {
-            SetInt(trigger.socketRow, "socketsQuantity", IntermediateSockets);
-            log.AppendLine($"  Esc. 1: {IntermediateSockets} huecos en la fila");
-        }
-
-        LevelLoader loader = Object.FindAnyObjectByType<LevelLoader>(FindObjectsInactive.Include);
-        TextAsset level = AssetDatabase.LoadAssetAtPath<TextAsset>(IntermediateLevel);
-        if (loader != null && level != null)
-        {
-            SetField(loader, "levelJson", level);
-            log.AppendLine($"  Esc. 1: nivel {level.name}");
-        }
-
-        // Los bloques nuevos se duplican de uno de la misma acción: así heredan el rótulo, el
-        // prefab y los eventos, y cuelgan del mismo BlockResetter que los devuelve a su sitio.
-        List<GridBlock> blocks = Object.FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                                       .Where(b => b.GetComponentInParent<TutorialController>(true) == null)
-                                       .ToList();
-
-        foreach (KeyValuePair<GridActionType, int> wanted in IntermediatePalette)
-        {
-            List<GridBlock> same = blocks.Where(b => b.action == wanted.Key).ToList();
-            if (same.Count == 0)
-            {
-                log.AppendLine($"  ⚠ Esc. 1: no hay ningún bloque '{wanted.Key}' que duplicar");
-                continue;
-            }
-
-            for (int copy = 0; same.Count < wanted.Value; copy++)
-            {
-                GridBlock source = same[0];
-
-                Selection.activeGameObject = source.gameObject;
-                Unsupported.DuplicateGameObjectsUsingPasteboard();
-                GameObject duplicate = Selection.activeGameObject;
-
-                if (duplicate == null || duplicate == source.gameObject) break;
-
-                duplicate.transform.position = source.transform.position + Vector3.up * (0.08f * (copy + 1));
-                same.Add(duplicate.GetComponent<GridBlock>());
-                log.AppendLine($"  Esc. 1: añadido bloque '{source.InstructionLabel}'");
-            }
-        }
-    }
-
-    private static void ConvertScenario3(StringBuilder log)
-    {
-        ProgramTrigger trigger = FindTrigger(TelemetryManager.Scenario3Id);
-        if (trigger == null || trigger.socketRow == null)
-        {
-            log.AppendLine("  ⚠ Esc. 3: no encuentro su ProgramTrigger o su fila");
+            log.AppendLine("  ⚠ Narración: no hay Narrator en la escena");
             return;
         }
 
-        SerializedObject row = new SerializedObject(trigger.socketRow);
-        row.FindProperty("editable").boolValue = true;
+        int basicIndex = new SerializedObject(narrator).FindProperty("listIndex").intValue;
+        int intermediateIndex = other != null ? new SerializedObject(other).FindProperty("listIndex").intValue : 2;
 
-        SerializedProperty initial = row.FindProperty("initialBlocks");
-        List<ArmBlock> armBlocks = new List<ArmBlock>();
+        NarrationDifficulty variant = GetOrAddOn<NarrationDifficulty>(narrator.gameObject, log);
+        Undo.RecordObject(variant, "Narración");
+        variant.SetNarrator(narrator);
+        variant.SetSettings(new NarrationDifficulty.Settings { listIndex = basicIndex },
+                            new NarrationDifficulty.Settings { listIndex = intermediateIndex });
+        EditorUtility.SetDirty(variant);
+        log.AppendLine($"  Narración: lista {basicIndex} en básica, {intermediateIndex} en intermedia");
 
-        for (int i = 0; i < initial.arraySize; i++)
-            if (initial.GetArrayElementAtIndex(i).FindPropertyRelative("block").objectReferenceValue is ArmBlock armBlock)
-                armBlocks.Add(armBlock);
+        // El Director espera al Narrator una vez por entrada: la lista intermedia tiene que
+        // empezar también por la frase del tutorial, o todo lo demás sale desplazado.
+        SerializedObject so = new SerializedObject(narrator);
+        SerializedProperty lists = so.FindProperty("lists");
+        if (basicIndex >= lists.arraySize || intermediateIndex >= lists.arraySize) return;
 
-        // Los giros automáticos de básica pasan a giros literales: en intermedia el niño decide
-        // hacia dónde gira el brazo. Se cambia también el rótulo, que es un texto puesto a mano.
-        foreach (ArmBlock block in armBlocks)
+        SerializedProperty basic = lists.GetArrayElementAtIndex(basicIndex).FindPropertyRelative("entries");
+        SerializedProperty inter = lists.GetArrayElementAtIndex(intermediateIndex).FindPropertyRelative("entries");
+
+        bool StartsWithTutorial(SerializedProperty entries) =>
+            entries.arraySize > 0 && entries.GetArrayElementAtIndex(0).FindPropertyRelative("textId").stringValue == "0";
+
+        if (StartsWithTutorial(basic) && !StartsWithTutorial(inter))
         {
-            ArmActionType before = block.action;
-            if (before == ArmActionType.RotateToDestination) SetArmAction(block, ArmActionType.RotateLeft);
-            if (before == ArmActionType.RotateToOrigin) SetArmAction(block, ArmActionType.RotateRight);
-
-            if (block.action != before)
-                log.AppendLine($"  Esc. 3: bloque '{block.name}' pasa a '{block.InstructionLabel}'");
+            SerializedProperty source = basic.GetArrayElementAtIndex(0);
+            inter.InsertArrayElementAtIndex(0);
+            SerializedProperty added = inter.GetArrayElementAtIndex(0);
+            added.FindPropertyRelative("clip").objectReferenceValue = source.FindPropertyRelative("clip").objectReferenceValue;
+            added.FindPropertyRelative("textId").stringValue = "0";
+            so.ApplyModifiedProperties();
+            log.AppendLine("  Narración: frase 0 del tutorial añadida al principio de la lista intermedia");
         }
 
-        // Desordenada a propósito: la solución de una pasada es Recoger · Girar · Soltar · Girar
-        // de vuelta, y el niño tiene que encontrar ese orden.
-        ArmActionType[] shuffled = { ArmActionType.Drop, ArmActionType.RotateRight, ArmActionType.Pick, ArmActionType.RotateLeft };
-        List<ArmBlock> ordered = shuffled
-            .Select(a => armBlocks.FirstOrDefault(b => b.action == a))
-            .Where(b => b != null)
-            .ToList();
+        log.AppendLine(basic.arraySize == inter.arraySize
+            ? $"  Narración: las dos listas tienen {basic.arraySize} entradas"
+            : $"  ⚠ Narración: la lista básica tiene {basic.arraySize} entradas y la intermedia " +
+              $"{inter.arraySize}. Tienen que coincidir");
+    }
 
-        if (ordered.Count == armBlocks.Count)
+    private static void UnifyScenario1(Scene scene, Scene intermediate, StringBuilder log)
+    {
+        ProgramTrigger trigger = TriggerIn(scene, TelemetryManager.Scenario1Id);
+        ProgramTrigger otherTrigger = TriggerIn(intermediate, TelemetryManager.Scenario1Id);
+        LevelLoader loader = InScene<LevelLoader>(scene).FirstOrDefault();
+        LevelLoader otherLoader = InScene<LevelLoader>(intermediate).FirstOrDefault();
+
+        if (trigger == null || trigger.socketRow == null || loader == null ||
+            otherTrigger == null || otherTrigger.socketRow == null || otherLoader == null)
         {
-            for (int i = 0; i < ordered.Count; i++)
+            log.AppendLine("  ⚠ Esc. 1: falta el ProgramTrigger, su fila o el LevelLoader en alguna escena");
+            return;
+        }
+
+        Scenario1Controller controller = InScene<Scenario1Controller>(scene).FirstOrDefault();
+        GameObject host = controller != null ? controller.gameObject : trigger.gameObject;
+
+        Scenario1Difficulty variant = GetOrAddOn<Scenario1Difficulty>(host, log);
+        Undo.RecordObject(variant, "Escenario 1");
+        variant.SetTargets(loader, trigger.socketRow);
+        variant.SetSettings(
+            new Scenario1Difficulty.Settings { level = loader.levelJson, sockets = trigger.socketRow.SocketsQuantity },
+            new Scenario1Difficulty.Settings { level = otherLoader.levelJson, sockets = otherTrigger.socketRow.SocketsQuantity });
+        EditorUtility.SetDirty(variant);
+
+        log.AppendLine($"  Esc. 1: básica '{Name(loader.levelJson)}' con {trigger.socketRow.SocketsQuantity} huecos, " +
+                       $"intermedia '{Name(otherLoader.levelJson)}' con {otherTrigger.socketRow.SocketsQuantity}");
+
+        // Paleta. Un bloque que está en las dos escenas con la misma acción y en el mismo sitio
+        // es común; uno que solo está en Intermedio se crea aquí, copiando uno de la misma
+        // acción, y uno que solo está en Basico pasa a ser de básica.
+        List<GridBlock> blocks = InScene<GridBlock>(scene).Where(b => !InTutorial(b)).ToList();
+        List<GridBlock> others = InScene<GridBlock>(intermediate).Where(b => !InTutorial(b)).ToList();
+        HashSet<GridBlock> used = new HashSet<GridBlock>();
+        int shared = 0, created = 0;
+
+        foreach (GridBlock wanted in others)
+        {
+            GridBlock same = blocks.FirstOrDefault(b => !used.Contains(b) && b.action == wanted.action &&
+                                                        OnlyIn(b) != Difficulty.Basica &&
+                                                        Vector3.Distance(b.transform.position, wanted.transform.position) < 0.01f);
+            if (same != null)
             {
-                SerializedProperty element = initial.GetArrayElementAtIndex(i);
-                element.FindPropertyRelative("block").objectReferenceValue = ordered[i];
-                element.FindPropertyRelative("fixedInPlace").boolValue = false;
+                used.Add(same);
+                if (OnlyIn(same) == null) shared++;
+                continue;
             }
 
-            log.AppendLine("  Esc. 3: fila editable, bloques desordenados (Soltar · Girar Der · Recoger · Girar Izq)");
+            GridBlock source = blocks.FirstOrDefault(b => b.action == wanted.action);
+            GameObject copy = source != null ? DuplicateAnywhere(source.gameObject) : null;
+            if (copy == null)
+            {
+                log.AppendLine($"  ⚠ Esc. 1: no se pudo crear el bloque '{wanted.name}' ({wanted.action})");
+                continue;
+            }
+
+            copy.name = wanted.name;
+            copy.transform.SetPositionAndRotation(wanted.transform.position, wanted.transform.rotation);
+            MarkOnly(copy, Difficulty.Avanzada);
+
+            GridBlock block = copy.GetComponent<GridBlock>();
+            used.Add(block);
+            blocks.Add(block);
+            created++;
+        }
+
+        int basicOnly = 0;
+        foreach (GridBlock block in blocks)
+        {
+            if (used.Contains(block) || OnlyIn(block) != null) continue;
+
+            MarkOnly(block.gameObject, Difficulty.Basica);
+            basicOnly++;
+        }
+
+        log.AppendLine($"  Esc. 1: paleta con {shared} bloques comunes, {created} nuevos de intermedia y " +
+                       $"{basicOnly} pasados a solo básica " +
+                       $"(básica {blocks.Count(b => OnlyIn(b) != Difficulty.Avanzada)}, " +
+                       $"intermedia {blocks.Count(b => OnlyIn(b) != Difficulty.Basica)})");
+    }
+
+    private static void UnifyScenario2(Scene scene, Scene intermediate, StringBuilder log)
+    {
+        Scenario2Controller controller = InScene<Scenario2Controller>(scene).FirstOrDefault();
+        if (controller == null)
+        {
+            log.AppendLine("  ⚠ Esc. 2: no hay Scenario2Controller");
+            return;
+        }
+
+        List<SystemModule> modules = controller.GetComponentsInChildren<SystemModule>(true).ToList();
+        List<SystemModule> others = InScene<SystemModule>(intermediate);
+
+        Scenario2Difficulty.Settings basic = new Scenario2Difficulty.Settings();
+        Scenario2Difficulty.Settings inter = new Scenario2Difficulty.Settings();
+
+        foreach (SystemModule module in modules)
+        {
+            ModuleData data = module.Data;
+            ModuleData other = others.Where(m => m.Data != null && data != null && m.Data.moduleId == data.moduleId)
+                                     .Select(m => m.Data).FirstOrDefault();
+
+            if (other == null && data != null)
+                other = AssetDatabase.LoadAssetAtPath<ModuleData>(AssetDatabase.GetAssetPath(data).Replace("_Basica", "_Intermedia"));
+
+            basic.modules.Add(data);
+            inter.modules.Add(other);
+            log.AppendLine(other != null
+                ? $"  Esc. 2: {module.name} → {Name(data)} / {Name(other)}"
+                : $"  ⚠ Esc. 2: {module.name} sin datos de intermedia");
+        }
+
+        Scenario2Difficulty variant = GetOrAddOn<Scenario2Difficulty>(controller.gameObject, log);
+        Undo.RecordObject(variant, "Escenario 2");
+        variant.SetModules(modules);
+        variant.SetSettings(basic, inter);
+        EditorUtility.SetDirty(variant);
+    }
+
+    private static void UnifyScenario3(Scene scene, Scene intermediate, StringBuilder log)
+    {
+        ProgramTrigger trigger = TriggerIn(scene, TelemetryManager.Scenario3Id);
+        ProgramTrigger otherTrigger = TriggerIn(intermediate, TelemetryManager.Scenario3Id);
+
+        if (trigger == null || trigger.socketRow == null || otherTrigger == null || otherTrigger.socketRow == null)
+        {
+            log.AppendLine("  ⚠ Esc. 3: falta el ProgramTrigger o su fila en alguna escena");
+            return;
+        }
+
+        SocketRow row = trigger.socketRow;
+        List<ArmBlock> blocks = InScene<ArmBlock>(scene).Where(b => !InTutorial(b)).ToList();
+
+        Scenario3Difficulty.Settings basic = new Scenario3Difficulty.Settings
+        {
+            editable = row.IsEditable,
+            initialBlocks = row.InitialBlocks
+                               .Select(i => new SocketRow.InitialBlock { block = i?.block, fixedInPlace = i != null && i.fixedInPlace })
+                               .ToList(),
+        };
+
+        // Cada bloque de la fila intermedia se busca aquí por su acción. Los giros literales no
+        // existen en Basico: se crean copiando el bloque del que salieron en Intermedio (mismo
+        // nombre, porque Intermedio es un duplicado de Basico), que pasa a ser de básica.
+        Scenario3Difficulty.Settings inter = new Scenario3Difficulty.Settings { editable = otherTrigger.socketRow.IsEditable };
+
+        foreach (SocketRow.InitialBlock wanted in otherTrigger.socketRow.InitialBlocks)
+        {
+            ArmBlock wantedBlock = wanted?.block as ArmBlock;
+            ArmBlock block = null;
+
+            if (wantedBlock != null)
+            {
+                block = blocks.FirstOrDefault(b => b.action == wantedBlock.action && OnlyIn(b) != Difficulty.Basica);
+
+                if (block == null)
+                {
+                    ArmBlock source = blocks.FirstOrDefault(b => b.name == wantedBlock.name) ??
+                                      blocks.FirstOrDefault(b => b.action == wantedBlock.action);
+                    GameObject copy = source != null ? DuplicateAnywhere(source.gameObject) : null;
+
+                    if (copy == null)
+                    {
+                        log.AppendLine($"  ⚠ Esc. 3: no se pudo crear el bloque '{wantedBlock.InstructionLabel}'");
+                    }
+                    else
+                    {
+                        block = copy.GetComponent<ArmBlock>();
+                        SetArmAction(block, wantedBlock.action);
+                        copy.name = $"{source.name} ({block.InstructionLabel})";
+                        MarkOnly(copy, Difficulty.Avanzada);
+                        blocks.Add(block);
+
+                        if (OnlyIn(source) == null) MarkOnly(source.gameObject, Difficulty.Basica);
+                        log.AppendLine($"  Esc. 3: creado '{block.InstructionLabel}' para intermedia; " +
+                                       $"'{source.InstructionLabel}' pasa a solo básica");
+                    }
+                }
+            }
+
+            inter.initialBlocks.Add(new SocketRow.InitialBlock { block = block, fixedInPlace = wanted != null && wanted.fixedInPlace });
+        }
+
+        Scenario3Controller controller = InScene<Scenario3Controller>(scene).FirstOrDefault();
+        Scenario3Difficulty variant = GetOrAddOn<Scenario3Difficulty>(controller != null ? controller.gameObject : trigger.gameObject, log);
+        Undo.RecordObject(variant, "Escenario 3");
+        variant.SetRow(row);
+        variant.SetSettings(basic, inter);
+        EditorUtility.SetDirty(variant);
+
+        string Row(Scenario3Difficulty.Settings s) =>
+            string.Join(" · ", s.initialBlocks.Select(i => i.block is ArmBlock a ? a.InstructionLabel : "(vacío)")) +
+            (s.editable ? ", editable" : ", bloqueada");
+
+        log.AppendLine($"  Esc. 3: básica {Row(basic)}");
+        log.AppendLine($"  Esc. 3: intermedia {Row(inter)}");
+    }
+
+    private static void CompareScenario4(Scene scene, Scene intermediate, StringBuilder log)
+    {
+        string Shapes(Scene s) => string.Join(", ", InScene<ShapeSocket>(s)
+            .Where(x => !InTutorial(x))
+            .Select(x => new SerializedObject(x).FindProperty("expectedShape").objectReferenceValue)
+            .Select(o => o != null ? o.name : "(sin figura)")
+            .OrderBy(n => n));
+
+        string basic = Shapes(scene), inter = Shapes(intermediate);
+
+        log.AppendLine(basic == inter
+            ? $"  Esc. 4: mismas figuras en las dos ({basic}). Para la intermedia propia (pedido 11), " +
+              "marca sus huecos y fichas con DifficultyOnly"
+            : $"  ⚠ Esc. 4: las figuras difieren. Básica: {basic}. Intermedia: {inter}. Monta las de " +
+              "intermedia aquí y márcalas con DifficultyOnly");
+    }
+
+    // --- Vista previa por dificultad ---
+
+    [MenuItem("Tools/Codea/Ver como básica")]
+    private static void ShowBasic() => ShowDifficulty(Difficulty.Basica);
+
+    [MenuItem("Tools/Codea/Ver como intermedia")]
+    private static void ShowIntermediate() => ShowDifficulty(Difficulty.Avanzada);
+
+    [MenuItem("Tools/Codea/Ver todas las piezas")]
+    private static void ShowAllPieces() => ShowDifficulty(null);
+
+    /// <summary>
+    /// Oculta en la vista de escena las piezas de la otra dificultad. Es solo visibilidad del
+    /// editor (el ojo de la jerarquía): no cambia la escena ni lo que pasa en Play.
+    /// </summary>
+    private static void ShowDifficulty(Difficulty? difficulty)
+    {
+        SceneVisibilityManager visibility = SceneVisibilityManager.instance;
+        int shown = 0, hidden = 0;
+
+        foreach (DifficultyOnly only in Object.FindObjectsByType<DifficultyOnly>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (difficulty == null || only.Difficulty == difficulty)
+            {
+                visibility.Show(only.gameObject, true);
+                shown++;
+            }
+            else
+            {
+                visibility.Hide(only.gameObject, true);
+                hidden++;
+            }
+        }
+
+        Debug.Log(difficulty == null
+            ? $"[Codea] Vista: todas las piezas ({shown} de una sola dificultad)"
+            : $"[Codea] Vista: {DifficultyApplier.Label(difficulty.Value)} · {shown} piezas propias visibles, " +
+              $"{hidden} de la otra ocultas. Para probarla en Play: DifficultyApplier → Editor Difficulty");
+    }
+
+    // --- Utilidades de la unificación ---
+
+    private static List<T> InScene<T>(Scene scene) where T : Component =>
+        scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<T>(true)).ToList();
+
+    private static ProgramTrigger TriggerIn(Scene scene, string challengeId) =>
+        InScene<ProgramTrigger>(scene).FirstOrDefault(t => t.ChallengeId == challengeId);
+
+    private static bool InTutorial(Component component) =>
+        component.GetComponentInParent<TutorialController>(true) != null ||
+        TutorialRoomNames.Contains(component.transform.root.name);
+
+    private static Difficulty? OnlyIn(Component component) =>
+        component.TryGetComponent(out DifficultyOnly only) ? only.Difficulty : (Difficulty?)null;
+
+    private static void MarkOnly(GameObject target, Difficulty difficulty)
+    {
+        if (!target.TryGetComponent(out DifficultyOnly only)) only = Undo.AddComponent<DifficultyOnly>(target);
+
+        Undo.RecordObject(only, "Dificultad");
+        only.Difficulty = difficulty;
+        EditorUtility.SetDirty(only);
+    }
+
+    /// <summary>GetOrAdd en un objeto concreto, sin buscar en las demás escenas abiertas.</summary>
+    private static T GetOrAddOn<T>(GameObject host, StringBuilder log) where T : Component
+    {
+        if (host.TryGetComponent(out T existing)) return existing;
+
+        log.AppendLine($"  añadido {typeof(T).Name} en '{host.name}'");
+        return Undo.AddComponent<T>(host);
+    }
+
+    /// <summary>
+    /// Duplica conservando el enlace al prefab. El portapapeles del editor no siempre está en
+    /// modo batch: entonces se instancia el mismo prefab con los mismos ajustes, o se clona.
+    /// </summary>
+    private static GameObject DuplicateAnywhere(GameObject source)
+    {
+        GameObject copy = Application.isBatchMode ? null : Duplicate(source);
+        if (copy != null) return copy;
+
+        if (PrefabUtility.IsOutermostPrefabInstanceRoot(source))
+        {
+            GameObject prefab = PrefabUtility.GetCorrespondingObjectFromSource(source);
+            copy = (GameObject)PrefabUtility.InstantiatePrefab(prefab, source.transform.parent);
+            PrefabUtility.SetPropertyModifications(copy, PrefabUtility.GetPropertyModifications(source));
         }
         else
         {
-            log.AppendLine("  ⚠ Esc. 3: la fila no tiene los 4 bloques esperados; solo se marcó editable");
+            copy = Object.Instantiate(source, source.transform.parent);
         }
 
-        row.ApplyModifiedProperties();
+        copy.transform.SetSiblingIndex(source.transform.GetSiblingIndex() + 1);
+        Undo.RegisterCreatedObjectUndo(copy, "Duplicar");
+        return copy;
     }
+
+    private static string Name(Object asset) => asset != null ? asset.name : "(nada)";
 
     private static void SetArmAction(ArmBlock block, ArmActionType action)
     {
@@ -706,7 +983,6 @@ public static class CodeaSceneTools
 
     // El cuarto se llamó Start hasta que pasó a ser el tutorial.
     private static readonly string[] TutorialRoomNames = { "Tutorial", "Start" };
-    private const string TutorialPrefab = "Assets/_Main/Prefabs/Tutorial.prefab";
     private const string TutorialDesk = "Desk";
     private const string TutorialProgramButton = "Boton del Escenario 1";
     private const string TutorialOptionButton = "Boton del Escenario 2";
@@ -775,116 +1051,6 @@ public static class CodeaSceneTools
         log.AppendLine("  ⚠ Falta a mano: recolocar sobre la mesa lo que se haya creado (si se creó " +
                        "algo) y guardar la escena.");
         Debug.Log(log.ToString(), room);
-    }
-
-    /// <summary>
-    /// Guarda en Prefabs/Tutorial.prefab el cuarto del tutorial de la escena abierta, tal como
-    /// está ahora mismo. Es la mitad de "lo ajusto aquí y lo llevo a la otra escena"; la otra
-    /// mitad es la herramienta 6.
-    ///
-    /// El cuarto de esta escena queda enlazado al prefab. Si ya lo estaba, se le aplican los
-    /// cambios hechos desde la última vez.
-    /// </summary>
-    [MenuItem("Tools/Codea/5 - Guardar el tutorial de esta escena en el prefab")]
-    private static void SaveTutorialPrefab()
-    {
-        Scene scene = SceneManager.GetActiveScene();
-        GameObject room = FindTutorialRoom(scene);
-
-        if (room == null)
-        {
-            EditorUtility.DisplayDialog("Guardar el tutorial",
-                $"'{scene.name}' no tiene un objeto raíz llamado 'Tutorial' (ni 'Start').", "Vale");
-            return;
-        }
-
-        StringBuilder log = new StringBuilder($"[Codea] Tutorial de '{scene.name}' → {TutorialPrefab}:\n");
-
-        // Antes de guardar, para que el prefab ya lleve el BlockResetter y no arrastre cables.
-        ConnectTutorial(room, log);
-
-        GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(TutorialPrefab);
-        bool linked = asset != null && PrefabUtility.IsOutermostPrefabInstanceRoot(room) &&
-                      PrefabUtility.GetCorrespondingObjectFromSource(room) == asset;
-
-        if (linked)
-        {
-            PrefabUtility.ApplyPrefabInstance(room, InteractionMode.UserAction);
-            log.AppendLine("  aplicados al prefab los cambios de esta escena");
-        }
-        else
-        {
-            // Un cuarto que ya es instancia de OTRO prefab no se puede guardar encima sin soltarlo.
-            if (PrefabUtility.IsOutermostPrefabInstanceRoot(room))
-                PrefabUtility.UnpackPrefabInstance(room, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
-
-            PrefabUtility.SaveAsPrefabAssetAndConnect(room, TutorialPrefab, InteractionMode.UserAction, out bool saved);
-
-            if (!saved)
-            {
-                Debug.LogError($"[Codea] No se pudo guardar {TutorialPrefab}.");
-                return;
-            }
-
-            log.AppendLine(asset != null
-                ? "  prefab sobrescrito con el cuarto de esta escena, que queda enlazado a él"
-                : "  prefab creado; el cuarto de esta escena queda enlazado a él");
-        }
-
-        EditorSceneManager.MarkSceneDirty(scene);
-
-        log.AppendLine("  ⚠ Falta: guardar esta escena, y en la otra escena de juego pasar " +
-                       "Tools → Codea → 6.");
-        Debug.Log(log.ToString(), room);
-    }
-
-    /// <summary>
-    /// Pone en la escena abierta el cuarto del tutorial que hay en Prefabs/Tutorial.prefab, en
-    /// la posición con la que se guardó. Si la escena ya tenía un cuarto ('Start' o
-    /// 'Tutorial'), se sustituye; así no queda nada de la versión anterior.
-    /// </summary>
-    [MenuItem("Tools/Codea/6 - Poner el tutorial del prefab en esta escena")]
-    private static void PlaceTutorialPrefab()
-    {
-        Scene scene = SceneManager.GetActiveScene();
-        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(TutorialPrefab);
-
-        if (prefab == null)
-        {
-            EditorUtility.DisplayDialog("Poner el tutorial",
-                $"Todavía no existe {TutorialPrefab}. Abre la escena donde tienes el tutorial " +
-                "montado y pasa antes Tools → Codea → 5.", "Vale");
-            return;
-        }
-
-        List<GameObject> old = scene.GetRootGameObjects().Where(r => TutorialRoomNames.Contains(r.name)).ToList();
-
-        if (old.Count > 0 && !EditorUtility.DisplayDialog("Poner el tutorial",
-                $"En '{scene.name}' se va a sustituir '{old[0].name}' por el tutorial del prefab. " +
-                "Lo que hayas cambiado en el cuarto de ESTA escena y no hayas guardado en el " +
-                "prefab (herramienta 5) se pierde.", "Sustituir", "Cancelar"))
-            return;
-
-        StringBuilder log = new StringBuilder($"[Codea] {TutorialPrefab} → '{scene.name}':\n");
-
-        foreach (GameObject room in old)
-        {
-            log.AppendLine($"  quitado el cuarto anterior '{room.name}'");
-            Undo.DestroyObjectImmediate(room);
-        }
-
-        GameObject placed = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
-        Undo.RegisterCreatedObjectUndo(placed, "Tutorial");
-        log.AppendLine($"  puesto '{placed.name}' en {placed.transform.position}");
-
-        ConnectTutorial(placed, log);
-
-        Selection.activeGameObject = placed;
-        EditorSceneManager.MarkSceneDirty(scene);
-
-        log.AppendLine("  ⚠ Falta: comprobar que la sala y la mesa se ven (son mallas de ProBuilder) " +
-                       "y guardar la escena.");
-        Debug.Log(log.ToString(), placed);
     }
 
     private static GameObject FindTutorialRoom(Scene scene) =>

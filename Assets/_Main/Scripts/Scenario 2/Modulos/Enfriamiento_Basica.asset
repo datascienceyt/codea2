@@ -16,7 +16,7 @@ MonoBehaviour:
   moduleName: Sistema de enfriamiento
   problem: "La nave se est\xE1 calentando demasiado y echa vapor."
   options:
-  - label: Agregar gasolina
+  - label: Agregar combustible
     isCorrect: 0
   - label: "Conectar una bater\xEDa cargada"
     isCorrect: 0

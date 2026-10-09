@@ -158,17 +158,10 @@ public class Director : MonoBehaviour
             foreach (IStepAction action in actions)
             {
                 // Se bombea a mano en vez de 'yield return action.Execute()'. Es la única forma
-                // de abandonar la acción entre dos yields: con el yield return directo, la
-                // corrutina anidada no se puede dejar a medias desde fuera, y el salto no
-                // funcionaría en los pasos en serie.
-                IEnumerator routine = action.Execute();
-
-                while (routine.MoveNext())
-                {
-                    if (skipRequested) break;
-
-                    yield return routine.Current;
-                }
+                // de abandonar la acción a medias: con el yield return directo, la corrutina
+                // anidada no se puede cortar desde fuera, y el salto no funcionaría en los
+                // pasos en serie.
+                yield return Pump(action.Execute());
 
                 if (skipRequested) break;
             }
@@ -206,6 +199,54 @@ public class Director : MonoBehaviour
         // Es deliberado: cortarlas a media corrutina dejaría estados a medias (un fundido
         // sin acabar, un audio cortado) sin forma limpia de revertirlos. Saltar un paso se
         // comporta igual, y por el mismo motivo.
+    }
+
+    /// <summary>
+    /// Ejecuta una acción como lo haría Unity con 'yield return', pero mirando el salto en cada
+    /// frame. No basta con mirarlo entre dos yields: casi todas las acciones esperan con un
+    /// único 'yield return new WaitUntil(...)' (los escenarios, el tutorial), y Unity no
+    /// devuelve el control hasta que la condición se cumple. Hasta el 09/10/2026 el salto se
+    /// quedaba esperando a que el niño resolviera el reto.
+    ///
+    /// Los WaitUntil y similares se esperan aquí frame a frame, y las corrutinas anidadas se
+    /// recorren en el mismo frame, como hace Unity. El resto (WaitForSeconds, null...) se
+    /// cede tal cual.
+    /// </summary>
+    private IEnumerator Pump(IEnumerator routine)
+    {
+        Stack<IEnumerator> stack = new Stack<IEnumerator>();
+        stack.Push(routine);
+
+        while (stack.Count > 0)
+        {
+            if (skipRequested) yield break;
+
+            IEnumerator top = stack.Peek();
+            if (!top.MoveNext())
+            {
+                stack.Pop();
+                continue;
+            }
+
+            switch (top.Current)
+            {
+                case CustomYieldInstruction wait:
+                    while (wait.keepWaiting)
+                    {
+                        if (skipRequested) yield break;
+                        yield return null;
+                    }
+                    break;
+
+                case IEnumerator nested:
+                    stack.Push(nested);
+                    break;
+
+                default:
+                    yield return top.Current;
+                    break;
+            }
+        }
     }
 
     private void LogSkipped(Step step)

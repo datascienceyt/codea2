@@ -20,7 +20,7 @@ MonoBehaviour:
     isCorrect: 0
   - label: Encender el ventilador
     isCorrect: 0
-  - label: Agregar gasolina
+  - label: Agregar combustible
     isCorrect: 0
   - label: "Conectar una bater\xEDa cargada"
     isCorrect: 1

@@ -120,26 +120,22 @@ public class TelemetryManager : MonoBehaviour
         // no existiera todavía, el reto se registraría contra null y se perdería en silencio.
 
         // Dificultad: configuración fija de la sesión, no varía por reto
-        _currentDifficulty = (Difficulty)PlayerPrefs.GetInt(DifficultyPrefKey, (int)Difficulty.Basica);
+        _currentDifficulty = GetPreparedDifficulty();
 
         BeginRun(PlayerPrefs.GetInt(PinCounterKey, 0).ToString("D4"));
     }
 
     private void Start()
     {
-        // La dificultad sale de PlayerPrefs, que la deja la pantalla del supervisor. Si esta
-        // escena se abre directamente —desde el editor, o porque se saltó el selector— ese
-        // valor es el de la ÚLTIMA sesión, y el JSON diría "básica" mientras el niño juega la
-        // intermedia. Ese error es indetectable al analizar, y por eso existe DifficultyScene.
-        //
-        // Se comprueba en Start y no en Awake: DifficultyScene corrige en su propio Start, y
-        // buscarla antes daría igual porque aún no se habría pronunciado.
-        if (FindAnyObjectByType<DifficultyScene>(FindObjectsInactive.Include) != null) return;
+        // La dificultad sale de PlayerPrefs, que la deja la pantalla del supervisor, y de ahí
+        // mismo la lee DifficultyApplier para montar los retos: escena y JSON no pueden
+        // discrepar. Sin aplicador, la escena se juega tal como se guardó mientras el JSON
+        // dice la dificultad de Setup, y ese error es indetectable al analizar.
+        if (FindAnyObjectByType<DifficultyApplier>(FindObjectsInactive.Include) != null) return;
 
-        Debug.LogWarning($"[Telemetry] Ninguna DifficultyScene en '{gameObject.scene.name}'. " +
-                         $"La run queda con dificultad '{_currentDifficulty}' heredada de " +
-                         "PlayerPrefs, sin nadie que la verifique. Añade un DifficultyScene a " +
-                         "la escena y declara la que le corresponde.", this);
+        Debug.LogWarning($"[Telemetry] Ningún DifficultyApplier en '{gameObject.scene.name}'. " +
+                         $"La run dice dificultad '{_currentDifficulty}', pero los retos no se " +
+                         "han montado para ella. Pasa Tools → Codea → 2 en esta escena.", this);
     }
 
     // --- Ciclo de la run ---
@@ -684,6 +680,13 @@ public class TelemetryManager : MonoBehaviour
     /// </summary>
     public static int GetLastPin() => PlayerPrefs.GetInt(PinCounterKey, 0);
 
+    /// <summary>
+    /// Dificultad que dejó elegida la pantalla del supervisor. La lee DifficultyApplier para
+    /// montar la escena con la misma que registrará la run.
+    /// </summary>
+    public static Difficulty GetPreparedDifficulty() =>
+        (Difficulty)PlayerPrefs.GetInt(DifficultyPrefKey, (int)Difficulty.Basica);
+
     // --- Manejo de PIN ---
 
     /// <summary>Siguiente participante: nuevo PIN y, por tanto, nueva run y nuevo archivo.</summary>
@@ -728,9 +731,19 @@ public class TelemetryManager : MonoBehaviour
 
     public void SetDifficulty(Difficulty difficulty)
     {
-        _currentDifficulty = difficulty;
         PlayerPrefs.SetInt(DifficultyPrefKey, (int)difficulty);
         PlayerPrefs.Save();
+
+        SetRunDifficulty(difficulty);
+    }
+
+    /// <summary>
+    /// Corrige la dificultad de la run en curso sin tocar la que dejó elegida Setup. Lo usa
+    /// DifficultyApplier cuando en el editor se fuerza otra para probar.
+    /// </summary>
+    public void SetRunDifficulty(Difficulty difficulty)
+    {
+        _currentDifficulty = difficulty;
 
         if (_run != null)
         {

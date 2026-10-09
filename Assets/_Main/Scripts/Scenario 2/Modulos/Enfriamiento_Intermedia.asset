@@ -18,7 +18,7 @@ MonoBehaviour:
   options:
   - label: Encender el ventilador
     isCorrect: 1
-  - label: Agregar gasolina
+  - label: Agregar combustible
     isCorrect: 0
   - label: "Cambiar la bater\xEDa"
     isCorrect: 0

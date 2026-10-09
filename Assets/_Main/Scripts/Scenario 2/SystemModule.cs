@@ -83,6 +83,20 @@ public class SystemModule : MonoBehaviour, IStepAction
     /// <summary>Id estable para telemetría. Cae al nombre del objeto si falta el asset.</summary>
     public string ModuleId => data != null ? data.moduleId : name;
 
+    // Si ya pasó Start. Antes, los botones aún no están resueltos y Start pintará solo.
+    private bool started;
+
+    /// <summary>
+    /// Cambia el problema y las opciones del módulo. Lo usa Scenario2Difficulty al cargar la
+    /// escena, antes de Awake; más tarde también vale, porque repinta.
+    /// </summary>
+    public void SetData(ModuleData value)
+    {
+        data = value;
+
+        if (started) Refresh();
+    }
+
     private void Awake()
     {
         if (optionButtons == null || optionButtons.Length == 0)
@@ -91,6 +105,8 @@ public class SystemModule : MonoBehaviour, IStepAction
 
     private void Start()
     {
+        started = true;
+
         WarnAboutDuplicateIndices();
         Refresh();
     }
