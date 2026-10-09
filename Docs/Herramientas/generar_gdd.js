@@ -80,7 +80,7 @@ const ficha = [
     ["Público", "Niñas, niños y adolescentes de 8 a 17 años, de contexto rural en Ecuador, mayoritariamente sin experiencia previa en VR"],
     ["Objetivo pedagógico", "Desarrollar pensamiento computacional: secuencialidad, condicionales, bucles con parámetros y reconocimiento de patrones"],
     ["Modalidad", "Un solo jugador · primera persona · sin avatar visible · con supervisor presente durante toda la sesión"],
-    ["Duración de una sesión", "15 minutos de juego, con cuenta atrás visible"],
+    ["Duración de una sesión", "5 minutos por sala, con cuenta atrás visible; si se agotan, se pasa a la siguiente sala"],
     ["Dificultades", "Básica e intermedia. La fija el supervisor antes de empezar y no cambia durante la sesión"],
   ]),
   gap(),
@@ -90,7 +90,7 @@ const ficha = [
   bullet("**Ejecutar y observar:** pulsar un botón y ver a un robot o a un brazo mecánico cumplir exactamente lo programado, incluidos los errores."),
   bullet("**Diagnosticar:** leer síntomas de un sistema averiado y deducir qué acciones lo reparan."),
   bullet("**Comparar con detalle:** encontrar, entre figuras muy parecidas, la idéntica a la que pide cada hueco."),
-  bullet("**Escapar contra reloj:** cuatro salas en secuencia antes de que se agoten los 15 minutos."),
+  bullet("**Escapar contra reloj:** cuatro salas en secuencia, cinco minutos para cada una."),
 ];
 
 const tecnico = [
@@ -123,7 +123,7 @@ const jugabilidad = [
     ["Elementos", "Bloques de instrucciones, fila de programa, botón de ejecutar, robot Roki, módulos de sistema, brazo robótico, fichas de tipo, contador de repeticiones, fichas de figuras y paneles con huecos."],
     ["Niveles", "Cuatro salas (sección 6), cada una en dos dificultades."],
     ["Controles", "Agarrar y soltar objetos, pulsar botones y teletransportarse (sección 5.7)."],
-    ["Victoria", "Resolver las cuatro salas antes de que se agoten los 15 minutos."],
+    ["Victoria", "Resolver las cuatro salas, cada una antes de que se agoten sus cinco minutos."],
     ["Derrota", "Se agota el tiempo. El narrador lo anuncia con un mensaje positivo y la sesión se cierra."],
     ["Fin", "En ambos casos se guardan los datos, se intentan subir al servidor y el visor vuelve a la pantalla del supervisor para el siguiente participante."],
     ["¿Por qué es divertido?", "El jugador ve sus propias instrucciones hacerse realidad, incluidos sus errores, que resultan evidentes y a menudo cómicos. Puede reintentar sin castigo, y la historia y el reloj dan un propósito a cada reto."],
@@ -153,7 +153,7 @@ const diseno = [
   bullet("**Alcance acotado:** ejecución estrictamente secuencial, sin bloques anidados. El único bucle es la fila entera."),
   h2("5.2 Definiciones de juego"),
   table(["Concepto", "Definición"], [
-    ["Ganar", "Completar las cuatro salas dentro de los 15 minutos."],
+    ["Ganar", "Completar cada sala dentro de sus cinco minutos."],
     ["Perder", "Agotar el tiempo con alguna sala sin resolver."],
     ["Transición", "Al resolver una sala se abre el paso y el guion traslada al jugador a la siguiente."],
     ["Intento", "Cada vez que se pulsa Ejecutar con un programa válido (salas 1 y 3), o cada vez que se encaja una ficha (sala 4)."],
@@ -174,7 +174,7 @@ const diseno = [
   p("El jugador no tiene salud, armas ni inventario. Su única acción sobre el mundo es manipular objetos y pulsar botones. No hay forma de morir ni de quedarse bloqueado: cualquier error se puede deshacer o se deshace solo."),
   h2("5.5 Propiedades del jugador"),
   table(["Propiedad", "Cómo cambia", "Retroalimentación"], [
-    ["Tiempo restante", "Baja desde 15:00 a partir de «Iniciar»", "Reloj visible en todas las salas"],
+    ["Tiempo restante", "Baja desde 05:00 al empezar cada sala", "Reloj visible en todas las salas"],
     ["Sala actual", "Avanza al resolver la sala", "Narración, apertura de puertas, traslado"],
     ["Progreso dentro de la sala", "Sube con cada acierto parcial", "Módulo en verde, objetos en su sitio, hueco iluminado"],
   ], [2600, 3200, WIDTH - 5800]),
@@ -249,7 +249,7 @@ const salas = [
 const guion = [
   ["1", "Inicio", "¡Bienvenido, astronauta! Tu misión está a punto de comenzar."],
   ["2", "Inicio", "Una tormenta espacial desordenó algunas cosas y provocó pequeñas fallas. Necesitamos tu ayuda para que la nave continúe su viaje."],
-  ["3", "Inicio", "Tienes 15 minutos para completar la misión. Cuando estés listo, presiona «Iniciar» y el tiempo comenzará a correr."],
+  ["3", "Inicio", "Tienes cinco minutos para reparar cada sistema. Si se acaba el tiempo, pasaremos al siguiente. ¡Adelante, astronauta!"],
   ["4", "Sala 1", "La puerta de tu habitación está cerrada. Para abrirla, debemos presionar el botón verde que está al otro lado de la habitación."],
   ["5", "Sala 1", "Roki, el robot de mantenimiento te ayudará. Puedes verlo a la derecha. Guíalo hasta el botón verde."],
   ["6", "Sala 1", "Ordena los bloques de la mesa para crear su recorrido. Cuando termines, inicia la secuencia."],
@@ -268,7 +268,8 @@ const guion = [
   ["17", "Sala 4", "Observa las figuras del panel y arrastra cada bloque hasta el espacio que tenga la misma figura."],
   ["18", "Sala 4 · fin", "¿Escuchas eso, astronauta? ¡Los motores están encendidos y todos los sistemas funcionan correctamente!"],
   ["19", "Final", "¡Misión cumplida! La nave puede continuar su viaje de regreso a la Tierra. ¡Excelente trabajo!"],
-  ["20", "Tiempo agotado", "¡Oh, no! El tiempo ha terminado. No logramos completar la misión, pero hiciste un gran trabajo hasta aquí. ¡Gracias por intentarlo!"],
+  ["20", "Tiempo agotado en la última sala", "¡Oh, no! El tiempo ha terminado. No logramos completar la misión, pero hiciste un gran trabajo hasta aquí. ¡Gracias por intentarlo!"],
+  ["21", "Tiempo agotado en una sala", "¡Se acabó el tiempo en esta sala! No te preocupes, astronauta: sigamos con la siguiente."],
 ];
 
 const narrativa = [

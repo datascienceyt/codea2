@@ -27,7 +27,7 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 
 ## Descripción
 
-El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra en menos de 15 minutos. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
+El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra, con un máximo de 5 minutos por sala. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
 
 | Escenario | Categoría | Pilar(es) de CT | Mecánica |
 |---|---|---|---|
@@ -86,7 +86,7 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 - **Bucles y parámetros (Escenario 3):** no hay bloque contenedor — **la fila entera es el bucle**. Aparte hay un `ArmTypeSocket` donde va una ficha (barril o caja): es el argumento del programa. En básica la fila viene hecha y el propio bloque *"Girar al destino"* resuelve el sentido; en intermedia el niño ordena giros explícitos. Hacen falta al menos dos ejecuciones, una por tipo.
 - **Discriminación visual (Escenario 4):** `ShapeChip` hereda de `BlockNode`, así que reutiliza agarre, acople y reinicio. La figura **es** el sprite: ficha y hueco encajan si llevan el mismo recorte del pliego de figuras. Sobran fichas a propósito, para que el último hueco no se resuelva por descarte.
 - **Narrativa:** `Director` orquesta escenarios → pasos, con acciones que bloquean el paso hasta terminar (`IStepAction`). `Narrator` reproduce la voz y escribe el texto en pantalla a la vez, emparejados por ID contra un CSV, y espera a la más larga de las dos. Tiene además un banco de frases de error que suenan sin avanzar la historia.
-- **Temporizador:** un único `Timer` de sesión (RF-06) que escribe en varias pantallas `TimerDisplay`, una por sala y otra en la muñeca del jugador.
+- **Temporizador:** un `Timer` (RF-06) que escribe en varias pantallas `TimerDisplay`, una por sala. Cuenta los 5 minutos de la sala en curso (`ScenarioTimeLimit`): al agotarse se deja terminar el intento en marcha y la historia pasa a la sala siguiente; en la última se cierra la sesión.
 
 ## Sistema de telemetría
 
@@ -138,7 +138,7 @@ Puntos críticos abiertos en el SRS:
 | Escenario 4 — Patrones | Funcional, probado en el APK. Falta el juego de figuras propio de intermedia |
 | Sistema narrativo | Funcional, con CSV y voces nuevas por dificultad |
 | Telemetría JSON + subida | Funcional de punta a punta |
-| Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
+| Temporizador visible en todas las salas | Implementado: 5 minutos por sala; al agotarse se pasa a la siguiente y en la última se cierra la sesión (RF-06) |
 | Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
 | Dificultad intermedia | En la misma escena que la básica: cada reto declara lo que cambia en su componente de dificultad |
 | Tutorial | Cuarto inicial donde se practican los cuatro gestos de la experiencia (dos botones, un bloque y una ficha) antes de empezar la misión. No se registra en la telemetría |

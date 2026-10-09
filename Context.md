@@ -21,24 +21,37 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
   combustible"; corregido el "Skip Step" del Director; dos herramientas de verificación
   (`Tools → Codea → Comprobar escena de juego` y `Probar las dos dificultades en Play`), las dos
   con **0 fallos**; recopilado el material del informe del mes 2
+- **09/10/2026, rama `informe-mes2`**: **`Docs/Informe-Mes2.docx` hecho**, con el formato del
+  informe del mes 1 y los entregables 2.1, 2.2 y 2.3 (18 tablas, 11 figuras con capturas reales de
+  la escena). Se genera con `node Docs/Herramientas/generar_informe_mes2.js`. Producto 2: "Informe
+  técnico de desarrollo funcional e integración del módulo inmersivo"; fecha 9/10/2026 **subrayada en
+  rojo** porque puede cambiar. El registro de pruebas usa solo las sesiones **0105** (Gabriela
+  Cajamarca, 30/09) y **1101** (ingeniero de realidad virtual de ESPOL, 02/10), leídas de sus JSON en
+  `Docs/JSON Samples/originales/`; las pruebas con estudiantes quedan como fila pendiente
+- **09/10/2026, tarde**: **5 minutos por sala** (`ScenarioTimeLimit`, sección 5, "Tiempo por sala").
+  Sustituye al límite de 15 minutos de la sesión. Probado en Play sin visor: la sala 1 cede el paso al
+  agotarse y la sala 3 espera a que termine el intento en curso; la telemetría registra `timedOut`
 - **Sin probar en el visor.** El APK de `Build/app.apk` es el del 30/09: formato viejo de
   telemetría, sin tutorial y carga `Basico`/`Intermedio`, que ya no existen como escenas de juego
 
 **Por dónde seguir, en este orden:**
 
-1. **Informe del mes 2 en Word** (`Docs/Informe-Mes2.docx`), con el **mismo formato** que
-   `Docs/Informe-Mes1.docx` y los entregables 2.1, 2.2 y 2.3. El contenido ya está reunido en
-   `Docs/Entregable-Mes2/Recopilacion_Producto2.md`; lo marcado ⟨pendiente⟩ lo tiene que dar el
-   usuario (nombre del Producto 2, fecha, participantes de las pruebas, fotos). Ver "Informe del
-   mes 2" en la sección 11 para el plan técnico
-2. **En el editor** (lo hace el usuario): abrir `Juego`, `Tools → Codea → Comprobar escena de
+1. **Cerrar el informe del mes 2** (`Docs/Informe-Mes2.docx`): abrirlo en Word (aceptar actualizar
+   los campos, para el índice), fijar la fecha definitiva (constantes `FECHA_*` y
+   `FECHA_PROVISIONAL = false` en `Docs/Herramientas/generar_informe_mes2.js`) y regenerar. Cuando
+   haya pruebas con estudiantes, añadir su JSON a `Docs/JSON Samples/originales/` y su fila en
+   `SESIONES`. Ver "Informe del mes 2" en la sección 11
+2. **Audios pendientes (los graba el usuario):** `3.wav` (frase 3 nueva: "Tienes cinco minutos para
+   reparar cada sistema…") en las dos listas del Narrator, y `21.wav` (frase nueva de tiempo agotado
+   por sala) en `Sesion → ScenarioTimeLimit → Time Up Line → Clip`. Hasta entonces la 3 suena con
+   el audio viejo ("15 minutos… presiona Iniciar") y la 21 solo se escribe en pantalla
+3. **En el editor** (lo hace el usuario): abrir `Juego`, `Tools → Codea → Comprobar escena de
    juego`, revisar la paleta del Esc. 1 con `Ver como básica / intermedia`, jugar las dos
    dificultades (`Sesion → DifficultyApplier → Editor Difficulty`, y dejarlo después en `De La
    Pantalla De Setup`) y **borrar `Assets/Scenes/Intermedio.unity`**
-3. **Recompilar el APK** (mismo keystore) y pasar en el visor la tabla de la sección 14 y el plan
+4. **Recompilar el APK** (mismo keystore) y pasar en el visor la tabla de la sección 14 y el plan
    de `Docs/Pruebas/`
-4. **Pendientes de la sección 11**, uno a uno con plan corto antes: frase 3 de la narración
-   (decisión del usuario), pedidos 7, 8 y 10 del Esc. 3, depurar logs del Esc. 1, textos y
+5. **Pendientes de la sección 11**, uno a uno con plan corto antes: pedidos 7, 8 y 10 del Esc. 3, depurar logs del Esc. 1, textos y
    paneles del Esc. 2, indicaciones del Esc. 1, glifos Yachay, perfil de render para Quest
 
 **Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
@@ -66,6 +79,8 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
 | Probar una dificultad en Play sin pasar por `Setup` | `Sesion → DifficultyApplier → Editor Difficulty` |
 | Revisar la escena de juego entera sin jugarla: llamadas de UnityEvent rotas, scripts perdidos, el Director paso a paso, narración contra el CSV, cada reto en cada dificultad, `Setup` | `Tools → Codea → Comprobar escena de juego` (`Editor/CodeaSceneCheck.cs`). Informe en `Logs/Codea_Comprobacion.txt`. **Pasarla tras tocar la escena o renombrar un método** |
 | Jugar las dos dificultades sin visor y recorrer el Director entero | `Tools → Codea → Probar las dos dificultades en Play` (`Editor/CodeaPlayCheck.cs`). Se para antes de subir el JSON; restaura las PlayerPrefs y borra sus JSON. Informe en `Logs/Codea_PruebaPlay.txt` |
+| Capturas de cada sala, en básica e intermedia, para informes | `Tools → Codea → Capturas para informes` (`Editor/CodeaCaptures.cs`). JPG 1600×900 en `Docs/Entregable-Mes2/capturas`. Sin abrir Unity: `-executeMethod CodeaCaptures.RunBatch`, **con gráficos** (sin `-nographics`) y sin `-quit` |
+| Generar el informe del mes 2 | `node Docs/Herramientas/generar_informe_mes2.js` (texto y datos de portada dentro del script) |
 | Las dos anteriores sin abrir Unity | `Unity.exe -batchmode -quit -nographics -projectPath . -executeMethod CodeaSceneCheck.CheckBatch` · la de Play igual pero **sin `-quit`** y con `CodeaPlayCheck.RunBatch` (sale sola; tarda ~5 min) |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
@@ -82,7 +97,7 @@ niños de 8-17 años de contexto rural en Ecuador. Respaldo de Yachay Tech.
 **Presentado el 30 de septiembre de 2026; en fase de ajustes.**
 
 El jugador es un astronauta en una nave que atravesó una tormenta espacial. Con la ayuda de
-Roki, el robot de mantenimiento, repara cuatro sistemas en 15 minutos para volver a la Tierra.
+Roki, el robot de mantenimiento, repara cuatro sistemas para volver a la Tierra, con 5 minutos para cada uno.
 Cada sala trabaja un pilar: secuencialidad, condicionales, bucles y patrones. Un supervisor
 teclea el PIN y fija la dificultad antes de entregar el visor; los datos se guardan en el
 visor y se suben solos al terminar si hay red.
@@ -186,7 +201,8 @@ dependencia:
 | `Session/SessionSetup.cs` | Pantalla del supervisor: PIN + dificultad, y lanza la escena (RI-03) |
 | `Session/PinEntry.cs` | Teclado numérico del PIN. `AppendDigit`, borrar, siguiente correlativo |
 | `Session/SceneLoader.cs` | Carga una escena cerrando antes la run y esperando a que acabe la subida. Para volver con el siguiente niño |
-| `Session/TimeUpSequence.cs` | Tiempo agotado: para Director y narración, cierra y sube la run, dice la frase y vuelve |
+| `Session/TimeUpSequence.cs` | Cierre por tiempo agotado en la **última** sala: para Director y narración, cierra y sube la run, dice la frase 20 y vuelve |
+| `Session/ScenarioTimeLimit.cs` · `Session/ITimeLimitedChallenge.cs` | 5 minutos por sala: reinicia el reloj al empezar cada reto, y al agotarse deja terminar el intento en curso y pasa a la sala siguiente (sección 5, "Tiempo por sala") |
 | `Difficulty/DifficultyApplier.cs` | Monta la escena en la dificultad de la sesión al cargar, antes que ningún otro script (orden -1000). Antes era `DifficultyScene` (mismo guid) |
 | `Difficulty/DifficultyVariant.cs` | Base de lo que cambia en un reto: un juego de datos `basica` y otro `intermedia` |
 | `Difficulty/Scenario1Difficulty.cs` · `Scenario2Difficulty.cs` · `Scenario3Difficulty.cs` · `NarrationDifficulty.cs` | Lo que cambia en cada reto y en la narración (sección 5, "Dificultad") |
@@ -196,7 +212,7 @@ dependencia:
 | `Telemetry/JSONUploader.cs` | Sube el JSON de la sesión por POST multipart, con reintentos |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
 | `VRConsole.cs` | Consola de errores dentro del visor |
-| `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` | Comprobación de la escena y prueba en Play de las dos dificultades (tabla de herramientas, sección 0) |
+| `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` · `Editor/CodeaCaptures.cs` | Comprobación de la escena, prueba en Play de las dos dificultades y capturas de cada sala para informes (tabla de herramientas, sección 0) |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
 | `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara la escena de juego (`DifficultyApplier`, tiempo agotado, vuelta a `Setup`). **3** unificó `Basico` e `Intermedio` en `Juego` (se pasó el 09/10/2026; no hace falta volver a pasarla y se puede quitar al borrar `Intermedio`). **4** monta en el cuarto del tutorial las cuatro interacciones y su `TutorialController`. **Ver como…** oculta en la vista de escena las piezas de la otra dificultad. Repetibles |
 
@@ -265,6 +281,32 @@ propios** (`… (Girar Izquierda)`, `… (Girar Derecha)`), no los de básica re
   `DifficultyApplier` corre antes que todos (orden -1000)
 - **No activar una pieza con `DifficultyOnly` desde el Director** (`Tools.SetActive`): volvería
   a aparecer en la dificultad que no le toca. Activar su padre
+
+### Tiempo por sala (09/10/2026)
+
+Cada sala tiene **5 minutos** (`Sesion → ScenarioTimeLimit → Seconds Per Scenario`). Sustituye al
+límite único de 15 minutos de la sesión: con él, quien se atascaba en una sala no llegaba a las
+demás. Funcionamiento:
+
+- El reloj (`Timer`, con sus cinco `TimerDisplay`) se reinicia a 5:00 cuando un reto **empieza de
+  verdad** (`TelemetryManager.ChallengeStarted`): la sala 1 en el paso "Iniciar temporizador", tras
+  su narración; las salas 2–4 al llegar, como su telemetría. Se pausa al terminar el reto
+- Al llegar a cero, si hay un intento ejecutándose (`ITimeLimitedChallenge.IsBusy`: el robot o el
+  brazo, salas 1 y 3) **se le deja terminar**. Si ese intento resuelve la sala, no pasa nada más
+- Si no, `TelemetryManager.TimeOutChallenge` la cierra con `timedOut: true` y `completed: false`,
+  y `ITimeLimitedChallenge.TimeOut()` suelta la espera del Director. Puertas y traslados siguen igual
+- La frase de felicitación que viene después (7, 10, 15, 18) se **sustituye** por
+  `ScenarioTimeLimit → Time Up Line` (`Narrator.ReplaceNextLine`): la **frase 21**, "¡Se acabó el
+  tiempo en esta sala! No te preocupes, astronauta: sigamos con la siguiente" (sin audio hasta que se
+  grabe `21.wav`; vacía, se omitiría). La
+  lista del Narrator avanza igual, así que las frases siguientes no se desplazan
+- En la **última sala** no hay siguiente: se llama a `TimeUpSequence`, que para la historia, dice la
+  frase 20 (`20.wav`, la ranura de audio que ya existía), cierra, sube y vuelve a `Setup`
+- El reloj ya **no** cierra la sesión por su cuenta: `Timer.OnTimeUp` no debe llamar a
+  `TimeUpSequence.Begin` (si quedara, la primera sala agotada cerraría la sesión). Lo comprueba
+  `Tools → Codea → Comprobar escena de juego`, y la herramienta 2 lo quita
+
+Para probar sin esperar: `ScenarioTimeLimit` → menú contextual "Agotar el tiempo de la sala actual".
 
 ### Escenario 1 — Secuencialidad *(funcional, verificado en visor)*
 
@@ -500,8 +542,8 @@ y los cuatro `ScenarioNController`.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 21 IDs (el `0` es la frase del tutorial) más 2 variantes
-por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el tiempo agotado.
+(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 22 IDs (el `0` es la frase del tutorial) más 2 variantes
+por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el tiempo agotado en la última sala (cierre de sesión) y el `21`, el tiempo agotado en las demás ("Tiempo por sala", sección 5). Ni el 20 ni el 21 están en las listas: los dicen `TimeUpSequence` y `ScenarioTimeLimit`. La frase 3 cambió el 09/10/2026 a "Tienes cinco minutos para reparar cada sistema. Si se acaba el tiempo, pasaremos al siguiente. ¡Adelante, astronauta!"
 
 **`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
 existía y la línea se saltaba en silencio. Los audios se nombran con su ID
@@ -540,7 +582,7 @@ cambiado el 06/10/2026; la tabla de equivalencias con el anterior está al final
 ### Jerarquía de registros
 
 ```
-ScenarioRecord            started, completed, totalSeconds, startedUtc, endedUtc
+ScenarioRecord            started, completed, timedOut, totalSeconds, startedUtc, endedUtc
 ├── Scenario1Record       + failedAttempts, blocksGrabbed, blocksConnected, blockResets,
 │                           errorCollisionBot, errorInvalidUse, attempts[]  (AttemptRecord)
 ├── Scenario2Record       + selections[]  (cada una con durationSeconds)
@@ -673,7 +715,8 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 
 | Componente | Métodos |
 |---|---|
-| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
+| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · `TimeOutChallenge(string)` · eventos `ChallengeStarted`, `ChallengeEnded` · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
+| `ScenarioTimeLimit` | `ForceTimeUp()` (menú contextual "Agotar el tiempo de la sala actual") · `CurrentChallengeId` |
 | `JSONUploader` | `UploadTelemetry()`, `UploadFile(string)` |
 | `ProgramTrigger` | `OnPlayPressed()`, `AddPrecondition(IRunPrecondition)` (desde código) |
 | `ProgramRunner` | `ResetRunner()` |
@@ -685,7 +728,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
 | `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()`, `DropInPlace(Vector3)` |
 | `ShapeSocket` | `Refresh()`, `ResetSocket()`, `Eject()`, `ApplyShapeToChild()` |
-| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` |
+| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` · desde código: `ReplaceNextLine(NarrationEntry)` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
 | `SessionSetup` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)`, `StartSession()` |
@@ -736,6 +779,12 @@ devuelve el control hasta que la condición se cumple: hasta el 09/10/2026 el sa
 en serie se quedaba esperando a que se resolviera el reto. `Director.Pump` recorre la acción
 como lo haría Unity (anidadas en el mismo frame, `WaitUntil` frame a frame) y corta al pedir
 el salto. Sin salto, el comportamiento es el mismo.
+
+**5 minutos por sala y no 15 por sesión** (09/10/2026). Con un límite único, quien se atascaba
+en una sala no llegaba a las siguientes y la sesión no medía las cuatro. Al agotarse se deja
+terminar el intento en curso (puede ser el ganador) y la frase de felicitación se sustituye en vez
+de saltarse, porque el Director espera al Narrator una vez por entrada: saltarla desplazaría todas
+las frases siguientes.
 
 **Una sola escena para las dos dificultades** (09/10/2026; antes, decisión del 08/09/2026).
 Con dos escenas, todo lo común —tutorial, Director, retoques visuales— había que hacerlo dos
@@ -928,6 +977,11 @@ Settings**: borrarla cuando `Juego` esté probada. `Main 2.unity` se borró; que
 | Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso grabadas) |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
+**Decidido el 09/10/2026 (tarde):** 5 minutos por sala; al agotarse se pasa a la siguiente, dejando
+terminar el intento en curso, y suena la frase 21. Frase 3 reescrita. Los audios 3 y 21 los graba el
+usuario. El informe del mes 2 no se sube todavía (queda solo en local). Producto 2 del informe: "Informe técnico de
+desarrollo funcional e integración del módulo inmersivo".
+
 **Decidido el 09/10/2026:** los relojes se quedan; en el Esc. 3 de básica la fila se oculta y
 funciona sola; "Sistema de motores" y "Agregar combustible".
 
@@ -1074,6 +1128,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | Esc. 1 · Fila de huecos horizontal | ✅ En escena (0°). 👓 |
 | Esc. 1 · Contar reinicios · unificar errores · quitar errorIncompleteSequence y la dificultad por intento | ✅ (`errorInvalidUse` aparte, confirmado el 06/10) |
 | Esc. 1 · Panel de botones sobre la mesa | 👓 Probablemente resuelto con la fila horizontal |
+| Esc. 1 · Paleta intermedia | ❌ Encontrado al hacer las capturas (09/10/2026): varios bloques de la paleta intermedia quedan **encima del reloj y de los botones** de la mesa. Se colocaron en `Intermedio`, que no tenía el reloj de mesa. Recolocarlos en el editor con `Ver como intermedia` (Figura 5 del informe del mes 2) |
 | Esc. 1 · Que se entienda que el objetivo es abrir la puerta · indicaciones visuales | 🟡 Lo dicen las frases 4 y 7; no hay indicador visual |
 | Esc. 1 · Depurar logs | ❌ Plan listo, abajo |
 | Esc. 2 · Instrucciones ambiguas · simplificar preguntas | ❌ Enunciados y frases 9.1/9.2 |
@@ -1114,39 +1169,27 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 - **Punto 6:** ¿qué es exactamente lo que no se ve: el icono, la luz o el texto "Sistema restablecido"? ¿Desde dónde mira el jugador?
 - **Punto 11:** ¿hay ya imágenes del alfabeto Yachay en glifos cuadrados? ¿Cuántos huecos y fichas tendrá la intermedia?
 
-**Informe del mes 2 (siguiente tarea, rama `informe-mes2`).** Pedido del usuario: `Docs/Informe-Mes2.docx`
-con el **mismo formato** que `Docs/Informe-Mes1.docx` y los entregables:
+**Informe del mes 2 (hecho el 09/10/2026, rama `informe-mes2`).** `Docs/Informe-Mes2.docx`, con el
+mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.3, hoja de firmas,
+índice, cabecera "Implementación, integración y pruebas del módulo" y tres capítulos (17 tablas, 11
+figuras). Cómo está hecho, para cambiarlo:
 
-- **2.1 Implementación de funcionalidades principales**: navegación, interacciones, elementos
-  educativos y lógica de funcionamiento
-- **2.2 Integración de recursos 3D e interacciones inmersivas**: recursos 3D, programación de
-  interacciones, controles y ajustes para Meta Quest
-- **2.3 Pruebas funcionales preliminares con usuarios clave**: errores, observaciones de uso,
-  limitaciones, ajustes aplicados y priorizados
-
-El contenido está en `Docs/Entregable-Mes2/Recopilacion_Producto2.md`; el GDD (`Docs/Codea2_GDD.docx`)
-sirve para controles, retroalimentación y salas. Plan técnico, ya estudiado:
-
-- **Usar el informe del mes 1 como plantilla**: un `.docx` es un zip. Desempaquetar con
-  `System.IO.Compression` (PowerShell), editar `word/document.xml` con Node y volver a empaquetar.
-  **En este equipo no hay Word, LibreOffice, pandoc ni Python**: no se puede pasar a PDF para
-  mirarlo; comprobar que el XML está bien formado y leerlo convertido a HTML (`mammoth` de npm)
-- `node Docs/Herramientas/esqueleto_docx.js <carpeta>/word/document.xml` lista el cuerpo. En el
-  del mes 1 (207 elementos): **0–22 portada** ("Proyecto:", título del proyecto, "Producto 1:" y
-  su nombre, "El presente informe contempla…", los tres entregables con su descripción en estilo
-  `1361` con viñetas, lugar y fecha, salto de página, tabla de fecha de entrega / elaborado por /
-  aprobado por); **23** salto de sección; **24–25** "Contenido" y el índice (`w:sdt` con campo TOC,
-  estilos `1348`–`1350`); **26** salto de sección; **27 en adelante, el cuerpo**
-- Estilos del cuerpo: `1173` título 1 (numerado solo: 1, 2, 3), `1174` título 2, `1175` título 3,
-  `1339` pie de figura o tabla (con campo SEQ), `1361` párrafo de lista. Las tablas y las figuras
-  (12 imágenes en `word/media`) se copian como modelo
-- **Quitar los comentarios de revisión** del mes 1: marcas `commentRangeStart/End` y
-  `commentReference` en el cuerpo, los cuatro `comments*.xml`, sus relaciones y sus entradas en
-  `[Content_Types].xml`
-- Conservar cabeceras (6, con logos) y pies (2). Poner `<w:updateFields w:val="true"/>` en
-  `settings.xml` para que Word rehaga el índice al abrir
-- Figuras de evidencia: capturas de cada sala renderizando desde Unity en modo batch (con
-  gráficos, sin `-nographics`), o fotos del visor que dé el usuario
+- **Se genera, no se edita a mano**: `node Docs/Herramientas/generar_informe_mes2.js` toma el
+  informe del mes 1 como plantilla (portada, firmas, estilos, cabeceras y pies), le cambia los
+  textos de portada y escribe el cuerpo con los mismos estilos (`1173`–`1175` títulos, `1361`
+  viñetas, `1339` pies, tablas `1185` con cabecera `EAEAEA`). Quita los comentarios de revisión
+  del mes 1. El texto y los datos de portada están en el script
+- **Figuras**: `Docs/Entregable-Mes2/capturas/`, hechas con `Tools → Codea → Capturas para informes`
+  en Play (la rejilla, el robot y los huecos solo existen al arrancar)
+- **Índice**: números de página estimados; el documento pide a Word actualizar los campos al
+  abrirse
+- **Sin Word en este equipo**: se verificó que las 32 partes XML están bien formadas, que no hay
+  relaciones, listas ni marcadores rotos, y se leyó de vuelta con `mammoth` (npm, instalado fuera
+  del proyecto en `X:/Backup/codea_tools/node`)
+- **Supuestos que debe confirmar el usuario**: fecha de entrega 9/10/2026; nombre del Producto 2
+  ("Informe técnico de implementación, integración de recursos inmersivos y pruebas funcionales
+  del módulo en Unity"); participantes de las pruebas ("Equipo de desarrollo" / "Equipo del
+  proyecto", sección 3.2)
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.
@@ -1173,6 +1216,7 @@ sirve para controles, retroalimentación y salas. Plan técnico, ya estudiado:
 | `Docs/Herramientas/` | Scripts de Node: `resolver_nivel.js` (caminos y bloques de un nivel del Escenario 1) `validar_json_telemetria.js` (comprueba un JSON contra `TelemetryData.cs`), `generar_gdd.js` (regenera el GDD), `recursos_escena.js` (qué recursos usa de verdad una escena) y `esqueleto_docx.js` (estructura de un `.docx`, para usar un informe como plantilla). Uso en su `LEEME.md` |
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
+| `Docs/Informe-Mes2.docx` | Informe técnico del mes 2 (Producto 2: 2.1, 2.2, 2.3). Se genera con `Docs/Herramientas/generar_informe_mes2.js`; las figuras están en `Docs/Entregable-Mes2/capturas/` |
 | `Docs/Entregable-Mes2/Recopilacion_Producto2.md` | Material reunido el 09/10/2026 para el informe del mes 2 (2.1 funcionalidades, 2.2 recursos 3D e interacciones, 2.3 pruebas). Marca con ⟨pendiente⟩ lo que debe aportar el equipo |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
 | `Docs/Investigaciones/` | Respaldo académico: *worked examples*, manipulativos físico-digitales |
@@ -1207,7 +1251,8 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 16 | Esc. 4: completar | Motores, frase 18, frase 19 | `completedSound`, Director |
 | 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |
 | 18 | Segunda partida seguida (otro PIN) | Todo igual que la primera | `TelemetryManager` por escena |
-| 19 | Tercera partida: dejar que se acabe el tiempo | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
+| 19 | Tercera partida: no resolver la sala 1 en 5 minutos | Pasa a la sala 2 (si el robot estaba ejecutando, termina antes); en el JSON, `escenario1.timedOut: true` | `ScenarioTimeLimit` |
+| 19b | Dejar que se agoten los 5 minutos de la sala 4 | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
 | 20 | Sacar los JSON del visor | Un archivo por partida, `{pin}_{sessionId}_{deviceId}.json`, con el mismo `deviceId` en todos, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
 | 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
 | 22 | `Setup` → **Intermedia** → EMPEZAR | Carga `Juego`; en logcat, `[Dificultad] Escena en intermedia`; en el JSON, `difficulty: 2` | `DifficultyApplier` |
@@ -1221,35 +1266,16 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 
 ### Compilar sin abrir Unity
 
-`Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de
-editor comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno
-a uno; un script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto"
-sin haberlo compilado. A 09/10/2026 faltan `Session/TimeUpSequence.cs`, `Story/TutorialController.cs`
-y los siete de `Difficulty/` (en el de runtime, que además lista `Session/DifficultyScene.cs`,
-ya movido), y `CodeaSceneTools.cs`, `CodeaSceneCheck.cs` y `CodeaPlayCheck.cs` (en el de editor): Unity sí los compila, pero el
-`.csproj` no se regeneró. Hasta que lo haga (en Unity: *Edit → Preferences → External Tools → Regenerate
-project files*), hay que añadirlos a mano a una copia, compilar y restaurar:
-
 ```powershell
-$r = "X:\Projects\Unity\Codea-2"
-Copy-Item "$r\Assembly-CSharp.csproj" "$env:TEMP\ac.bak"; Copy-Item "$r\Assembly-CSharp-Editor.csproj" "$env:TEMP\ace.bak"
-try {
-  $s = [IO.File]::ReadAllText("$r\Assembly-CSharp.csproj")
-  $a = '<Compile Include="Assets\_Main\Scripts\Session\SceneLoader.cs" />'
-  if (-not $s.Contains('TimeUpSequence.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Session\TimeUpSequence.cs" />') }
-  if (-not $s.Contains('TutorialController.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Story\TutorialController.cs" />') }
-  $s = $s.Replace('<Compile Include="Assets\_Main\Scripts\Session\DifficultyScene.cs" />', '')
-  foreach ($f in Get-ChildItem "$r\Assets\_Main\Scripts\Difficulty\*.cs") { if (-not $s.Contains($f.Name)) { $s = $s.Replace($a, $a + "<Compile Include=`"Assets\_Main\Scripts\Difficulty\$($f.Name)`" />") } }
-  [IO.File]::WriteAllText("$r\Assembly-CSharp.csproj", $s)
-  $e = [IO.File]::ReadAllText("$r\Assembly-CSharp-Editor.csproj")
-  $b = '<Compile Include="Assets\_Main\Editor\LevelEditorWindow.cs" />'
-  foreach ($f in Get-ChildItem "$r\Assets\_Main\Editor\*.cs") { if (-not $e.Contains($f.Name)) { $e = $e.Replace($b, $b + "<Compile Include=`"Assets\_Main\Editor\$($f.Name)`" />") } }
-  [IO.File]::WriteAllText("$r\Assembly-CSharp-Editor.csproj", $e)
-  dotnet build "$r\Assembly-CSharp-Editor.csproj" -v:q --nologo | Select-String "error|Compilaci"
-} finally {
-  Copy-Item "$env:TEMP\ac.bak" "$r\Assembly-CSharp.csproj" -Force; Copy-Item "$env:TEMP\ace.bak" "$r\Assembly-CSharp-Editor.csproj" -Force
-}
+powershell -ExecutionPolicy Bypass -File Docs/Herramientas/compilar.ps1
 ```
+
+`Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de editor
+comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno a uno; un
+script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto" sin haberlo
+compilado. El script añade a una copia todo lo que haya en `Assets/_Main/Scripts` y
+`Assets/_Main/Editor` (y quita lo que ya no existe), compila y deja los `.csproj` como estaban.
+Muestra solo los errores y el resumen: los avisos de API obsoleta del SDK son muchos y conocidos.
 
 Cualquier script nuevo creado fuera de Unity necesita además su `.meta` (dos líneas:
 `fileFormatVersion: 2` y `guid:` con 32 hexadecimales nuevos), para que su identificador sea el

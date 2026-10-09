@@ -1,5 +1,15 @@
 # Herramientas de apoyo
 
+## `compilar.ps1` — compilar sin abrir Unity
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Docs/Herramientas/compilar.ps1
+```
+
+Los `.csproj` los genera Unity y no incluyen los scripts creados fuera de él: `dotnet build` diría
+"correcto" sin compilarlos. El script añade a una copia todo lo de `Assets/_Main/Scripts` y
+`Assets/_Main/Editor`, compila y deja los `.csproj` como estaban. Muestra solo errores y el resumen.
+
 Scripts de Node que no forman parte del juego. Se ejecutan desde la raíz del repositorio.
 
 ## `resolver_nivel.js` — comprobar un nivel del Escenario 1
@@ -76,3 +86,38 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 ```bash
 node Docs/Herramientas/esqueleto_docx.js "$TEMP/informe/word/document.xml" 0 80
 ```
+
+## `generar_informe_mes2.js` — el informe del mes 2
+
+Genera `Docs/Informe-Mes2.docx` usando `Docs/Informe-Mes1.docx` como plantilla: conserva portada,
+hoja de firmas, estilos, cabeceras con logos y pies, y escribe el cuerpo con los mismos estilos
+(títulos numerados, Arial 10 justificado, viñetas, tablas con cabecera gris y pies de figura y
+tabla numerados). Regenera el índice y quita los comentarios de revisión del mes 1. No necesita
+Word ni nada instalado.
+
+```bash
+node Docs/Herramientas/generar_informe_mes2.js                 # escribe Docs/Informe-Mes2.docx
+node Docs/Herramientas/generar_informe_mes2.js otra/ruta.docx  # si el informe está abierto en Word, que lo bloquea
+```
+
+- **Datos de portada** (fecha, nombre del producto, cabecera): constantes al principio del script.
+  `FECHA_PROVISIONAL` subraya la fecha en rojo
+- **Registro de pruebas**: se calcula de los JSON de `Docs/JSON Samples/originales/`; para añadir una
+  sesión, poner su JSON ahí y su fila en `SESIONES`
+- **Citas**: el texto cita tablas, figuras y secciones por su título (`{{Título}}`, `{{§Título}}`) y el
+  número se pone al montar: añadir una tabla no descuadra nada
+- **Texto**: en el propio script, sección por sección. Para corregir algo, editar ahí y regenerar;
+  si se edita el `.docx` a mano, regenerar lo pisa
+- **Figuras**: `Docs/Entregable-Mes2/capturas/*.jpg`, que hace `Tools → Codea → Capturas para
+  informes` en Unity (en batch: `-executeMethod CodeaCaptures.RunBatch`, **con** gráficos: sin
+  `-nographics` y sin `-quit`)
+- **Números de página del índice**: son una estimación; Word los recalcula al abrir (el documento
+  lleva `updateFields`). Si Word pregunta si actualiza los campos, decir que sí
+
+Para el informe de otro mes, copiar el script y cambiar el contenido: el montaje sobre la plantilla
+(final del script) sirve igual.
+
+## `docx_lib.js` — utilidades compartidas
+
+Lectura y escritura de zip sin dependencias, troceado del cuerpo de un `document.xml` y
+escape de texto. La usa `generar_informe_mes2.js`.
