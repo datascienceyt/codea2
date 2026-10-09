@@ -67,7 +67,7 @@ Escena Setup: PIN y dificultad (supervisor)
    Fin de sesión y subida de datos
 ```
 
-El supervisor fija la dificultad antes de entregar el visor al estudiante; una vez seleccionada, queda fija para los 4 escenarios de la sesión y no es modificable por el jugador. Cada dificultad es **una escena distinta** (`Basico.unity` / `Intermedio.unity`). El avance entre escenarios es secuencial y obligatorio: completar el escenario activo es el único disparador para desbloquear el siguiente.
+El supervisor fija la dificultad antes de entregar el visor al estudiante; una vez seleccionada, queda fija para los 4 escenarios de la sesión y no es modificable por el jugador. Las dos dificultades comparten **una sola escena** (`Juego.unity`): al cargarla, cada reto se monta con los datos de la dificultad elegida. El avance entre escenarios es secuencial y obligatorio: completar el escenario activo es el único disparador para desbloquear el siguiente.
 
 ## Arquitectura técnica
 
@@ -140,7 +140,7 @@ Puntos críticos abiertos en el SRS:
 | Telemetría JSON + subida | Funcional de punta a punta |
 | Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
 | Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
-| Dificultad intermedia | Escena `Intermedio` generada desde la básica con las herramientas de `Tools → Codea` |
+| Dificultad intermedia | En la misma escena que la básica: cada reto declara lo que cambia en su componente de dificultad |
 | Tutorial | Cuarto inicial donde se practican los cuatro gestos de la experiencia (dos botones, un bloque y una ficha) antes de empezar la misión. No se registra en la telemetría |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | Sin implementar |
 
@@ -194,8 +194,7 @@ Assets/
 ├── _Recovery/               # Respaldos de escena (no son las escenas activas)
 ├── Scenes/
 │   ├── Setup.unity          # Pantalla del supervisor: PIN y dificultad (primera escena)
-│   ├── Basico.unity         # Sesión completa, dificultad básica
-│   └── Intermedio.unity     # Sesión completa, dificultad intermedia
+│   └── Juego.unity          # Sesión completa, las dos dificultades
 ├── Oculus/                  # Integración Meta/Oculus
 ├── Plugins/
 ├── Resources/

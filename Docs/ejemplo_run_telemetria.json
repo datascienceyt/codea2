@@ -82,7 +82,7 @@
             },
             {
                 "module": "enfriamiento",
-                "option": "Agregar gasolina",
+                "option": "Agregar combustible",
                 "correct": false,
                 "durationSeconds": 7.5,
                 "timestamp": "2026-10-01T14:05:58.9120000Z"
@@ -110,7 +110,7 @@
             },
             {
                 "module": "motores",
-                "option": "Agregar gasolina",
+                "option": "Agregar combustible",
                 "correct": true,
                 "durationSeconds": 11.1,
                 "timestamp": "2026-10-01T14:06:49.1200000Z"

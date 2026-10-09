@@ -62,19 +62,19 @@ se registra.
 
 | Paso | Módulo | Acción | Efecto esperado |
 |---|---|---|---|
-| 2.1 | Enfriamiento | Pulsar **Agregar gasolina** | Selección con `correct` false. Frase de error; el botón se suelta solo en menos de un segundo |
+| 2.1 | Enfriamiento | Pulsar **Agregar combustible** | Selección con `correct` false. Frase de error; el botón se suelta solo en menos de un segundo |
 | 2.2 | Enfriamiento | Pulsar **Agregar agua** | `correct` true. Módulo reparado |
 | 2.3 | Generadores | Pulsar **Agregar agua** | `correct` false. Se suelta solo |
 | 2.4 | Generadores | Pulsar **Conectar una batería cargada** | `correct` true. Módulo reparado: la incorrecta ya no cuenta como marcada |
-| 2.5 | Motores | Pulsar **Agregar gasolina** | `correct` true. Reparado y escenario completado |
+| 2.5 | Motores | Pulsar **Agregar combustible** | `correct` true. Reparado y escenario completado |
 
 Totales: 5 selecciones, 2 de ellas con `correct` false. Cada una lleva su `durationSeconds`:
 el tiempo desde la pulsación anterior (la primera, desde que se abrió el escenario).
 
 ## Escenario 3 — Bucles y parámetros
 
-Hay 7 cajas y 3 barriles. La fila viene montada y bloqueada: Recoger · Girar al destino ·
-Soltar · Volver. Las fichas de tipo están en la mesa; el contador de repeticiones tiene + y −.
+Hay 7 cajas y 3 barriles. La fila viene montada, bloqueada y **oculta** (desde el 09/10/2026):
+Recoger · Girar al destino · Soltar · Volver. No se ve, pero se ejecuta y va al JSON igual. Las fichas de tipo están en la mesa; el contador de repeticiones tiene + y −.
 
 | Paso | Acción | Agarres | Conexiones | Efecto esperado |
 |---|---|---|---|---|

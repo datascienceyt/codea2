@@ -64,7 +64,7 @@
         "selections": [
             {
                 "module": "enfriamiento",
-                "option": "Agregar gasolina",
+                "option": "Agregar combustible",
                 "correct": false,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
@@ -92,7 +92,7 @@
             },
             {
                 "module": "motores",
-                "option": "Agregar gasolina",
+                "option": "Agregar combustible",
                 "correct": true,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
