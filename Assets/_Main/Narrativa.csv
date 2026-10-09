@@ -2,7 +2,7 @@
 0,"¡Hola, astronauta! Antes de comenzar la misión, vamos a practicar con las herramientas de la nave. Sobre la mesa hay dos botones: presiona cada uno con tu mano. Después, toma el bloque y suéltalo en el espacio vacío para que quede encajado. Por último, toma la ficha y colócala en el espacio que tiene su misma figura. Cuando termines las cuatro cosas, ¡empezará la misión!",
 1,"¡Bienvenido, astronauta! Tu misión está a punto de comenzar.",
 2,Una tormenta espacial desordenó algunas cosas y provocó pequeñas fallas. Necesitamos tu ayuda para que la nave continúe su viaje.,
-3,"Tienes 15 minutos para completar la misión. Cuando estés listo, presiona «Iniciar» y el tiempo comenzará a correr.",
+3,"Tienes cinco minutos para reparar cada sistema. Si se acaba el tiempo, pasaremos al siguiente. ¡Adelante, astronauta!",
 4,"La puerta de tu habitación está cerrada. Para abrirla, debemos presionar el botón verde que está al otro lado de la habitación.",
 5,"Roki, el robot de mantenimiento te ayudará. Puedes verlo a la derecha. Guíalo hasta el botón verde.",
 6,"Ordena los bloques de la mesa para crear su recorrido. Cuando termines, inicia la secuencia.",
@@ -22,3 +22,4 @@
 18,"¿Escuchas eso, astronauta? ¡Los motores están encendidos y todos los sistemas funcionan correctamente!",
 19,¡Misión cumplida! La nave puede continuar su viaje de regreso a la Tierra. ¡Excelente trabajo!,
 20,"¡Oh, no! El tiempo ha terminado. No logramos completar la misión, pero hiciste un gran trabajo hasta aquí. ¡Gracias por intentarlo!",
+21,"¡Se acabó el tiempo en esta sala! No te preocupes, astronauta: sigamos con la siguiente.",

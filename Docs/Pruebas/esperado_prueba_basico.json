@@ -9,6 +9,7 @@
     "escenario1": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
@@ -58,6 +59,7 @@
     "escenario2": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
@@ -102,6 +104,7 @@
     "escenario3": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
@@ -167,6 +170,7 @@
     "escenario4": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",

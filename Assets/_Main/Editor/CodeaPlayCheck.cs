@@ -128,6 +128,8 @@ public static class CodeaPlayCheck
             SessionState.SetString(KeyStage, "playing");
             playStarted = EditorApplication.timeSinceStartup;
             phase = 0;
+            timeoutStep = null;
+            timeoutDone1 = timeoutDone3 = false;
             pass.Clear();
             errors = 0;
             return;
@@ -164,22 +166,9 @@ public static class CodeaPlayCheck
             }
             else if (phase == 1 && seconds > 3.5)
             {
-                phase = 2;
+                phase = 3;
                 CheckRooms(difficulty);
-
-                if (!StartArmRun(difficulty))
-                {
-                    phase = 3;
-                    StartDirector();
-                }
-            }
-            else if (phase == 2)
-            {
-                if (ArmRunFinished())
-                {
-                    phase = 3;
-                    StartDirector();
-                }
+                StartDirector();
             }
             else if (phase == 3)
             {
@@ -217,6 +206,14 @@ public static class CodeaPlayCheck
             int wanted = (expected == Difficulty.Basica ? narration.Basica : narration.Intermedia).listIndex;
             Expect(index == wanted, $"el Narrator usa la lista {index}");
         }
+
+        // Tiempo por sala: los relojes empiezan en el límite de una sala, no en el de la sesión.
+        Timer timer = Object.FindAnyObjectByType<Timer>(FindObjectsInactive.Include);
+        ScenarioTimeLimit limit = Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include);
+        if (timer != null && limit != null)
+            Expect(Mathf.Approximately(timer.Remaining, limit.SecondsPerScenario),
+                   $"los relojes marcan {Mathf.CeilToInt(timer.Remaining) / 60:00}:{Mathf.CeilToInt(timer.Remaining) % 60:00} al cargar (límite por sala {limit.SecondsPerScenario} s)");
+        else Fail("falta el Timer o el ScenarioTimeLimit");
 
         // Ninguna pieza de la otra dificultad encendida, y todas las de esta como estaban.
         DifficultyOnly[] pieces = Object.FindObjectsByType<DifficultyOnly>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -405,6 +402,113 @@ public static class CodeaPlayCheck
         nextSkip = EditorApplication.timeSinceStartup + 0.3;
     }
 
+    // --- Tiempo límite por sala (solo en básica) ---
+    //
+    // Al llegar a la espera de la sala 1 se agota su tiempo sin ningún intento en marcha: la
+    // historia tiene que seguir. En la sala 3 se agota con el brazo ejecutando: tiene que dejarle
+    // terminar y seguir después. En las dos, la telemetría debe decir timedOut y no completed.
+
+    private static string timeoutStep, timeoutChallenge;
+    private static int timeoutScenario, timeoutStepIndex;
+    private static bool timeoutWithRun, sawRunning, timeoutDone1, timeoutDone3;
+    private static double timeoutDeadline;
+
+    private static bool RunTimeoutTests(int scenario, int step)
+    {
+        string message = director.scenarios[scenario].steps[step].message;
+
+        if (timeoutStep != null)
+        {
+            if (scenario == timeoutScenario && step == timeoutStepIndex)
+            {
+                if (timeoutWithRun && armTrigger != null && armTrigger.runner.IsRunning) sawRunning = true;
+
+                if (EditorApplication.timeSinceStartup > timeoutDeadline)
+                {
+                    Fail($"{timeoutChallenge}: con el tiempo agotado, el paso {timeoutStep} no terminó en 150 s");
+                    timeoutStep = null;
+                }
+                return true;
+            }
+
+            FinishTimeoutTest(message);
+            timeoutStep = null;
+            nextSkip = EditorApplication.timeSinceStartup + 0.3;
+            return true;
+        }
+
+        if ((Difficulty)SessionState.GetInt(KeyCurrent, 0) != Difficulty.Basica) return false;
+
+        if (!timeoutDone1 && message == "Esperar a completar el escenario 1")
+        {
+            timeoutDone1 = true;
+            BeginTimeoutTest(scenario, step, message, TelemetryManager.Scenario1Id, false);
+            return true;
+        }
+
+        if (!timeoutDone3 && message == "Esperar completar escenario 3")
+        {
+            timeoutDone3 = true;
+            BeginTimeoutTest(scenario, step, message, TelemetryManager.Scenario3Id, true);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void BeginTimeoutTest(int scenario, int step, string message, string challenge, bool withRun)
+    {
+        ScenarioTimeLimit limit = Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include);
+        if (limit == null)
+        {
+            Fail("no hay ScenarioTimeLimit: no se puede probar el tiempo por sala");
+            return;
+        }
+
+        timeoutStep = message;
+        timeoutChallenge = challenge;
+        timeoutScenario = scenario;
+        timeoutStepIndex = step;
+        timeoutWithRun = withRun;
+        sawRunning = false;
+        timeoutDeadline = EditorApplication.timeSinceStartup + 150;
+
+        Expect(limit.CurrentChallengeId == challenge, $"{challenge}: el reloj de la sala corre (reto actual {limit.CurrentChallengeId})");
+
+        if (withRun && !StartArmRun(Difficulty.Basica))
+        {
+            timeoutStep = null;
+            return;
+        }
+
+        pass.AppendLine($"  · {challenge}: se agota el tiempo en {message}{(withRun ? ", con el brazo ejecutando" : ", sin ningún intento en marcha")}");
+        limit.ForceTimeUp();
+    }
+
+    private static void FinishTimeoutTest(string nextMessage)
+    {
+        pass.AppendLine($"  · {timeoutChallenge}: la historia siguió con {nextMessage}");
+
+        if (timeoutWithRun)
+        {
+            Expect(sawRunning, $"{timeoutChallenge}: con el tiempo agotado se dejó terminar el intento en curso");
+            ArmRunFinished();
+        }
+
+        RunRecord run = ReadRun();
+        ScenarioRecord record = run == null ? null : timeoutChallenge == TelemetryManager.Scenario1Id ? run.escenario1 : (ScenarioRecord)run.escenario3;
+        Expect(record != null && record.timedOut && !record.completed && !string.IsNullOrEmpty(record.endedUtc),
+               record == null ? $"{timeoutChallenge}: no se pudo leer la telemetría"
+                              : $"{timeoutChallenge}: telemetría con timedOut {record.timedOut.ToString().ToLower()}, " +
+                                $"completed {record.completed.ToString().ToLower()}, {record.totalSeconds:0.0} s");
+    }
+
+    private static RunRecord ReadRun()
+    {
+        string file = TelemetryManager.Instance != null ? TelemetryManager.Instance.GetCurrentFilePath() : null;
+        return file != null && File.Exists(file) ? JsonUtility.FromJson<RunRecord>(File.ReadAllText(file)) : null;
+    }
+
     /// <summary>Salta pasos hasta el anterior al de salida. True al terminar.</summary>
     private static bool DriveDirector()
     {
@@ -430,6 +534,9 @@ public static class CodeaPlayCheck
             pass.AppendLine($"  · Director parado en {scenario}.{step} '{director.scenarios[scenario].steps[step].message}'");
             return true;
         }
+
+        // Mientras se prueba el tiempo por sala no se salta nada: el paso tiene que terminar solo.
+        if (RunTimeoutTests(scenario, step)) return false;
 
         if (EditorApplication.timeSinceStartup < nextSkip) return false;
 

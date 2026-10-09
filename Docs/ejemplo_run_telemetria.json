@@ -9,6 +9,7 @@
     "escenario1": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 129.3,
         "startedUtc": "2026-10-01T14:03:05.2140000Z",
         "endedUtc": "2026-10-01T14:05:14.5090000Z",
@@ -69,6 +70,7 @@
     "escenario2": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 101.4,
         "startedUtc": "2026-10-01T14:05:22.1180000Z",
         "endedUtc": "2026-10-01T14:07:03.4820000Z",
@@ -134,6 +136,7 @@
     "escenario3": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 147.7,
         "startedUtc": "2026-10-01T14:07:11.2260000Z",
         "endedUtc": "2026-10-01T14:09:38.9370000Z",
@@ -186,6 +189,7 @@
     "escenario4": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 66.9,
         "startedUtc": "2026-10-01T14:09:47.0440000Z",
         "endedUtc": "2026-10-01T14:10:53.9860000Z",

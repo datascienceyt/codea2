@@ -294,6 +294,7 @@ public class TelemetryManager : MonoBehaviour
 
         int warnings = 0;
         string estado = scenario.completed ? "completado"
+                      : scenario.timedOut ? "tiempo agotado"
                       : scenario.started ? "iniciado sin completar"
                       : "NUNCA INICIADO";
 
@@ -309,20 +310,24 @@ public class TelemetryManager : MonoBehaviour
 
         string detalle = string.Empty;
 
+        // Una sala cerrada por tiempo puede quedarse legítimamente sin intentos ni agarres: el
+        // niño no llegó a probar. Los avisos de "a cero" solo huelen a cable olvidado si no.
+        bool expectData = scenario.started && !scenario.timedOut;
+
         if (scenario is Scenario1Record s1)
         {
             detalle = $"{s1.attempts.Count} intento(s), {s1.failedAttempts} fallido(s), " +
                       $"{s1.blocksGrabbed} agarre(s)";
 
-            if (scenario.started && s1.attempts.Count == 0) warnings++;
-            if (scenario.started && s1.blocksGrabbed == 0) warnings++;
+            if (expectData && s1.attempts.Count == 0) warnings++;
+            if (expectData && s1.blocksGrabbed == 0) warnings++;
         }
         else if (scenario is Scenario3Record s3)
         {
             detalle = $"{s3.attempts.Count} intento(s), {s3.failedAttempts} fallido(s), " +
                       $"{s3.blocksGrabbed} agarre(s)";
 
-            if (scenario.started && s3.attempts.Count == 0) warnings++;
+            if (expectData && s3.attempts.Count == 0) warnings++;
 
             // Sin itemType no se sabe con qué tipo se corrió cada pasada, y dos intentos
             // iguales dejan de ser distinguibles. Suele significar que falta el socket de tipo
@@ -339,7 +344,7 @@ public class TelemetryManager : MonoBehaviour
 
             detalle = $"{s2.selections.Count} selección(es), {wrong} incorrecta(s)";
 
-            if (scenario.started && s2.selections.Count == 0) warnings++;
+            if (expectData && s2.selections.Count == 0) warnings++;
         }
         else if (scenario is Scenario4Record s4)
         {
@@ -351,8 +356,8 @@ public class TelemetryManager : MonoBehaviour
             detalle = $"{s4.placements.Count} colocación(es), {wrong} incorrecta(s), " +
                       $"{s4.chipsGrabbed} agarre(s)";
 
-            if (scenario.started && s4.placements.Count == 0) warnings++;
-            if (scenario.started && s4.chipsGrabbed == 0) warnings++;
+            if (expectData && s4.placements.Count == 0) warnings++;
+            if (expectData && s4.chipsGrabbed == 0) warnings++;
         }
 
         report.AppendLine($"  {id}: {estado} · {scenario.totalSeconds:0.0}s · {detalle}");
@@ -361,6 +366,12 @@ public class TelemetryManager : MonoBehaviour
     }
 
     // --- Ciclo de reto ---
+
+    /// <summary>Un reto empieza de verdad (la primera llamada a StartChallenge). Lo usa ScenarioTimeLimit.</summary>
+    public event Action<string> ChallengeStarted;
+
+    /// <summary>Un reto termina, resuelto o por tiempo agotado.</summary>
+    public event Action<string> ChallengeEnded;
 
     public void StartChallenge(string challengeId)
     {
@@ -395,13 +406,18 @@ public class TelemetryManager : MonoBehaviour
         scenario.startedUtc = NowUtc();
 
         Save();
+
+        ChallengeStarted?.Invoke(challengeId);
     }
 
     /// <summary>Marca el escenario como resuelto y congela su duración. Idempotente.</summary>
     public void CompleteChallenge(string challengeId)
     {
         ScenarioRecord scenario = GetScenario(challengeId);
-        if (scenario == null || scenario.completed) return;
+
+        // Un reto cerrado por tiempo no se marca después como resuelto: el Director llama a
+        // CompleteChallenge() en pasos posteriores (al trasladar al jugador) y lo daría por bueno.
+        if (scenario == null || scenario.completed || scenario.timedOut) return;
 
         scenario.completed = true;
         scenario.endedUtc = NowUtc();
@@ -416,9 +432,29 @@ public class TelemetryManager : MonoBehaviour
             loops.attempts[loops.attempts.Count - 1].solved = true;
 
         Save();
+
+        ChallengeEnded?.Invoke(challengeId);
     }
 
     public void CompleteChallenge() => CompleteChallenge(_currentChallengeId);
+
+    /// <summary>
+    /// Se agotó el tiempo del reto sin resolverlo: queda con timedOut = true, completed =
+    /// false, y su duración congelada. Idempotente; no hace nada si ya estaba resuelto.
+    /// </summary>
+    public void TimeOutChallenge(string challengeId)
+    {
+        ScenarioRecord scenario = GetScenario(challengeId);
+        if (scenario == null || scenario.completed || scenario.timedOut) return;
+
+        scenario.timedOut = true;
+        scenario.endedUtc = NowUtc();
+        scenario.totalSeconds = ElapsedIn(challengeId);
+
+        Save();
+
+        ChallengeEnded?.Invoke(challengeId);
+    }
 
     // --- Intentos (una fila por pulsación del botón de ejecutar) ---
 

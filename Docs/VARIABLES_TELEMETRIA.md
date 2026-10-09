@@ -44,7 +44,7 @@ hasta que se pruebe es un compromiso firme de qué se va a recoger, no datos dis
 - Se guarda en el visor y se conserva siempre, aunque no haya red
 - Se sube solo al servidor al terminar la sesión o al agotarse el tiempo, si hay red. Cerrar la aplicación a mitad de partida no lo sube: queda en el visor
 - Todas las marcas de tiempo son **ISO-8601 en UTC**
-- Todos los indicadores (`started`, `completed`, `solved`, `correct`) son
+- Todos los indicadores (`started`, `completed`, `timedOut`, `solved`, `correct`) son
   booleanos: `true` / `false`
 - Los tiempos se llaman siempre igual: `totalSeconds` para un total (la sesión o un escenario)
   y `durationSeconds` para lo que tardó una acción concreta
@@ -83,7 +83,8 @@ Presentes en los cuatro.
 |---|---|---|
 | `started` | `true`/`false` | Si el participante llegó a este escenario |
 | `completed` | `true`/`false` | Si lo resolvió |
-| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve. En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
+| `timedOut` | `true`/`false` | **Se agotó su tiempo sin resolverlo** y la historia pasó a la sala siguiente. Desde el 09/10/2026 cada sala tiene 5 minutos. Nunca es `true` a la vez que `completed`. Un escenario con `started` en `true`, `completed` y `timedOut` en `false` y sin `endedUtc` es una sesión que se cortó (visor apagado, app cerrada) |
+| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve o se agota su tiempo (como mucho 300 s desde el 09/10/2026, más lo que dure el último intento si estaba ejecutándose). En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
 | `startedUtc` / `endedUtc` | fecha | Permiten reconstruir el ritmo de la sesión completa |
 
 ---
@@ -356,6 +357,7 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario1": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 149.8,
         "failedAttempts": 1,
         "blocksGrabbed": 9,
@@ -382,6 +384,7 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario2": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 84.2,
         "selections": [
             { "module": "motores", "option": "Agregar agua",        "correct": false, "durationSeconds": 17.3, "timestamp": "..." },
@@ -393,6 +396,7 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario3": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 121.7,
         "failedAttempts": 1,
         "blocksGrabbed": 3,
@@ -408,6 +412,7 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario4": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 73.9,
         "chipsGrabbed": 6,
         "placements": [

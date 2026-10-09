@@ -47,7 +47,14 @@ public class ScenarioRecord
     public bool started;
     public bool completed;
 
-    /// <summary>Segundos desde StartChallenge hasta CompleteChallenge.</summary>
+    /// <summary>
+    /// Se agotaron los minutos de la sala sin resolverla y la historia pasó a la siguiente.
+    /// Distingue "se acabó el tiempo" (true, con endedUtc) de "la sesión se cortó" (false, sin
+    /// endedUtc). Nunca a la vez que completed.
+    /// </summary>
+    public bool timedOut;
+
+    /// <summary>Segundos desde StartChallenge hasta CompleteChallenge o hasta agotarse el tiempo.</summary>
     public float totalSeconds;
 
     public string startedUtc;

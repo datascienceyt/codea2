@@ -18,7 +18,7 @@ Preparado contra el código del 06/10/2026 (formato de telemetría nuevo). El si
    reloj; lo que hagas antes no se registra. En los escenarios 2–4 se abre al llegar a la sala.
 3. **Pulsa Ejecutar solo cuando se indica**, y espera a que el robot o el brazo terminen del
    todo antes de tocar nada.
-4. Termina antes de que se agoten los 15 minutos.
+4. Resuelve cada sala antes de que se agoten sus 5 minutos (si se agotan, la sala queda con `timedOut: true` y la historia pasa a la siguiente).
 
 ## Preparación
 

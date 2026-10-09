@@ -274,6 +274,7 @@ public static class CodeaSceneCheck
         ExactlyOne<JSONUploader>("");
         ExactlyOne<TimeUpSequence>("");
         ExactlyOne<SceneLoader>("");
+        ExactlyOne<ScenarioTimeLimit>("Sin él no hay límite de tiempo por sala");
 
         DifficultyApplier applier = AllComponents<DifficultyApplier>(scene).FirstOrDefault();
         if (applier != null)
@@ -726,12 +727,44 @@ public static class CodeaSceneCheck
         TimeUpSequence timeUp = AllComponents<TimeUpSequence>(scene).FirstOrDefault();
         SceneLoader loader = AllComponents<SceneLoader>(scene).FirstOrDefault();
 
-        if (timer != null && timeUp != null)
+        // Tiempo por sala: el reloj no debe cerrar la sesión por su cuenta.
+        if (timer != null && timeUp != null &&
+            CallsOf(new SerializedObject(timer).FindProperty("OnTimeUp"), "OnTimeUp")
+                .Any(c => c.Target == timeUp && c.Method == nameof(TimeUpSequence.Begin)))
+            report.Error("Timer.OnTimeUp sigue llamando a TimeUpSequence.Begin: la primera sala que agote su tiempo " +
+                         "cerraría la sesión entera. Pasa Tools → Codea → 2");
+
+        ScenarioTimeLimit limit = AllComponents<ScenarioTimeLimit>(scene).FirstOrDefault();
+        if (limit != null)
         {
-            bool wired = CallsOf(new SerializedObject(timer).FindProperty("OnTimeUp"), "OnTimeUp")
-                         .Any(c => c.Target == timeUp && c.Method == nameof(TimeUpSequence.Begin));
-            if (wired) report.Ok("Timer.OnTimeUp → TimeUpSequence.Begin");
-            else report.Error("Timer.OnTimeUp no llama a TimeUpSequence.Begin: al acabarse el tiempo no pasaría nada");
+            SerializedObject so = new SerializedObject(limit);
+            foreach (string field in new[] { "timer", "narrator", "sessionTimeUp" })
+                if (so.FindProperty(field).objectReferenceValue == null) report.Error($"ScenarioTimeLimit sin {field}");
+
+            int seconds = so.FindProperty("secondsPerScenario").intValue;
+            bool hasLine = so.FindProperty("timeUpLine.clip").objectReferenceValue != null ||
+                           !string.IsNullOrEmpty(so.FindProperty("timeUpLine.textId").stringValue);
+            string lineId = so.FindProperty("timeUpLine.textId").stringValue;
+            Narrator storyNarrator = AllComponents<Narrator>(scene).FirstOrDefault();
+            if (!string.IsNullOrEmpty(lineId) && storyNarrator != null)
+            {
+                HashSet<string> csvIds = CsvIds(new SerializedObject(storyNarrator).FindProperty("csv").objectReferenceValue as TextAsset);
+                if (csvIds.Count > 0 && !csvIds.Contains(lineId))
+                    report.Error($"ScenarioTimeLimit pide la frase '{lineId}', que no está en el CSV de narración");
+            }
+            if (!string.IsNullOrEmpty(lineId) && so.FindProperty("timeUpLine.clip").objectReferenceValue == null)
+                report.Warn($"La frase de tiempo agotado por sala ('{lineId}') no tiene audio: solo se escribirá en pantalla");
+
+            report.Line($"  Tiempo por sala: {seconds / 60f:0.#} min · frase al agotarse (salas 1-3): " +
+                        (hasLine ? "asignada" : "ninguna (se omite la felicitación y se sigue)") +
+                        " · última sala: cierre de sesión con la frase de TimeUpSequence");
+
+            var ids = AllComponents<MonoBehaviour>(scene).OfType<ITimeLimitedChallenge>()
+                                                          .Select(c => c.ChallengeId).Where(id => !string.IsNullOrEmpty(id)).ToList();
+            foreach (string id in new[] { TelemetryManager.Scenario1Id, TelemetryManager.Scenario2Id, TelemetryManager.Scenario3Id, TelemetryManager.Scenario4Id })
+                if (!ids.Contains(id)) report.Error($"Ningún controlador con límite de tiempo para {id}");
+            if (ids.Count == ids.Distinct().Count()) report.Ok($"Límite de tiempo en {ids.Count} salas: {string.Join(", ", ids)}");
+            else report.Error("Hay dos controladores con el mismo challengeId: el límite de tiempo solo vigilaría uno");
         }
 
         if (timeUp != null)

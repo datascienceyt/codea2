@@ -6538,19 +6538,7 @@ MonoBehaviour:
   alerts: []
   OnTimeUp:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 515368712}
-        m_TargetAssemblyTypeName: TimeUpSequence, Assembly-CSharp
-        m_MethodName: Begin
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &265464334
 GameObject:
   m_ObjectHideFlags: 0
@@ -10967,6 +10955,7 @@ GameObject:
   - component: {fileID: 515368714}
   - component: {fileID: 515368713}
   - component: {fileID: 515368712}
+  - component: {fileID: 515368716}
   m_Layer: 0
   m_Name: Sesion
   m_TagString: Untagged
@@ -11047,6 +11036,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &515368716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 515368711}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce6e57d35a144c0e48c1202719832370, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScenarioTimeLimit
+  secondsPerScenario: 300
+  timer: {fileID: 249269323}
+  timeUpLine:
+    clip: {fileID: 0}
+    textId: 21
+  narrator: {fileID: 1195506163}
+  sessionTimeUp: {fileID: 515368712}
+  lastChallengeId: escenario4
+  OnScenarioTimeUp:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!43 &529762742
 Mesh:
   m_ObjectHideFlags: 0

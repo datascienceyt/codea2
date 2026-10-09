@@ -9,7 +9,7 @@ using UnityEngine.Events;
 /// El escenario se completa cuando cada tipo está entero en su destino: barriles a un
 /// lado, cajas al otro. Hacen falta al menos dos ejecuciones, una por tipo.
 /// </summary>
-public class Scenario3Controller : MonoBehaviour, IStepAction
+public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
 {
     [System.Serializable]
     public class SortingGoal
@@ -64,6 +64,17 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     public UnityEvent OnScenarioFinished;
 
     private bool scenarioFinished;
+    private bool timedOut;
+
+    public string ChallengeId => challengeId;
+    public bool IsCompleted => scenarioFinished;
+
+    // Mientras el brazo ejecuta la fila, el intento sigue vivo: puede ser el que clasifica lo
+    // último que faltaba.
+    public bool IsBusy => runner != null && runner.IsRunning;
+
+    /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar a la clasificación.</summary>
+    public void TimeOut() => timedOut = true;
 
     /// <summary>
     /// Objetos ya bien clasificados al terminar la última ejecución. Es lo que permite
@@ -259,7 +270,7 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     /// </summary>
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => scenarioFinished);
+        yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
 
     [ContextMenu("Reset Scenario")]

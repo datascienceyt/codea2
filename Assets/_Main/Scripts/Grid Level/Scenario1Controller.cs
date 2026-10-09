@@ -5,7 +5,7 @@ using UnityEngine.Events;
 /// <summary>
 /// Conecta el Escenario 1 con el Director y con la telemetría.
 /// </summary>
-public class Scenario1Controller : MonoBehaviour, IStepAction
+public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
 {
     [Header("Acciones al finalizar el nivel")]
     public UnityEvent OnLevelFinished;
@@ -36,6 +36,16 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
     [SerializeField] bool startChallengeOnStart = true;
 
     bool levelFinished;
+    bool timedOut;
+
+    public string ChallengeId => challengeId;
+    public bool IsCompleted => levelFinished || IsLevelCompleted;
+
+    // Mientras el robot recorre la secuencia, el intento sigue vivo: puede ser el que gana.
+    public bool IsBusy => runner != null && runner.IsRunning;
+
+    /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar a la meta.</summary>
+    public void TimeOut() => timedOut = true;
 
     void Awake()
     {
@@ -126,6 +136,6 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
     public IEnumerator Execute()
     {
         levelFinished = false;
-        yield return new WaitUntil(() => levelFinished);
+        yield return new WaitUntil(() => levelFinished || timedOut);
     }
 }

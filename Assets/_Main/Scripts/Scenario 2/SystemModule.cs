@@ -157,7 +157,7 @@ public class SystemModule : MonoBehaviour, IStepAction
             button.SetLabel(data.LabelAt(button.OptionIndex));
             button.SetSelected(selected.Contains(button.OptionIndex) ||
                                wrongShown.Contains(button.OptionIndex));
-            button.SetInteractable(!IsSolved);
+            button.SetInteractable(!IsSolved && !timedOut);
         }
     }
 
@@ -318,7 +318,21 @@ public class SystemModule : MonoBehaviour, IStepAction
     /// </summary>
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => IsSolved);
+        yield return new WaitUntil(() => IsSolved || timedOut);
+    }
+
+    private bool timedOut;
+
+    /// <summary>
+    /// Se agotó el tiempo de la sala: el paso del Director deja de esperar a este módulo y sus
+    /// botones dejan de responder. Lo llama Scenario2Controller.
+    /// </summary>
+    public void TimeOut()
+    {
+        timedOut = true;
+
+        foreach (ModuleOptionButton button in optionButtons)
+            if (button != null) button.SetInteractable(false);
     }
 
     [ContextMenu("Reset Module")]

@@ -281,13 +281,17 @@ public static class CodeaSceneTools
 
         if (!EditorUtility.DisplayDialog("Preparar escena de juego",
                 $"Escena '{scene.name}'.\n\n" +
-                "Se añaden DifficultyApplier, SceneLoader y TimeUpSequence, y se cablean el " +
-                "tiempo agotado y la vuelta a Setup.",
+                "Se añaden DifficultyApplier, SceneLoader, TimeUpSequence y ScenarioTimeLimit " +
+                "(5 minutos por sala), y se cablean el tiempo agotado y la vuelta a Setup.",
                 "Preparar", "Cancelar"))
             return;
 
         PrepareGameScene(scene);
     }
+
+    /// <summary>Sin abrir Unity: -executeMethod CodeaSceneTools.PrepareGameSceneBatch</summary>
+    public static void PrepareGameSceneBatch() =>
+        PrepareGameScene(EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single));
 
     private static void PrepareGameScene(Scene scene)
     {
@@ -316,8 +320,27 @@ public static class CodeaSceneTools
         SetField(timeUp, "uploader", uploader);
         SetField(timeUp, "sceneLoader", loader);
 
-        if (timer != null && AddOnce(timer, timer.OnTimeUp, timeUp, nameof(TimeUpSequence.Begin), timeUp.Begin))
-            log.AppendLine("  Timer.OnTimeUp → TimeUpSequence.Begin");
+        // Tiempo límite por sala (09/10/2026). El reloj ya no cierra la sesión directamente: lo
+        // decide ScenarioTimeLimit, que pasa a la sala siguiente y solo en la última llama a
+        // TimeUpSequence. Si quedara el cable antiguo, la primera sala agotada cerraría la sesión.
+        ScenarioTimeLimit limit = GetOrAdd<ScenarioTimeLimit>(session, log);
+        SetField(limit, "timer", timer);
+        SetField(limit, "narrator", narrator);
+        SetField(limit, "sessionTimeUp", timeUp);
+
+        // Frase 21 del CSV ("¡Se acabó el tiempo en esta sala!"). Sin clip solo se escribe en
+        // pantalla; el audio se asigna a mano cuando esté grabado. No pisa una frase ya puesta.
+        SerializedObject limitSo = new SerializedObject(limit);
+        SerializedProperty lineText = limitSo.FindProperty("timeUpLine.textId");
+        if (string.IsNullOrEmpty(lineText.stringValue))
+        {
+            lineText.stringValue = "21";
+            limitSo.ApplyModifiedProperties();
+            log.AppendLine("  ScenarioTimeLimit: frase de tiempo agotado por sala = textId 21 (sin audio todavía)");
+        }
+
+        if (timer != null && RemoveListener(timer, timer.OnTimeUp, timeUp, nameof(TimeUpSequence.Begin)))
+            log.AppendLine("  quitado Timer.OnTimeUp → TimeUpSequence.Begin (ahora lo decide ScenarioTimeLimit)");
 
         if (director != null && timer != null)
             AddReturnStep(director, timer, loader, log);

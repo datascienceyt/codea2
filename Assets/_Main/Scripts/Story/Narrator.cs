@@ -181,7 +181,35 @@ public class Narrator : MonoBehaviour, IStepAction
         NarrationEntry entry = currentList.entries[index];
         index++;
 
+        // La frase que tocaba se consume igual, para que las siguientes no se desplacen: el
+        // Director espera al Narrator una vez por entrada de la lista.
+        if (replacementPending)
+        {
+            NarrationEntry replacement = nextReplacement;
+            replacementPending = false;
+            nextReplacement = null;
+
+            if (replacement == null || (replacement.clip == null && string.IsNullOrEmpty(replacement.textId)))
+                yield break;
+
+            entry = replacement;
+        }
+
         yield return PlayEntry(entry);
+    }
+
+    private bool replacementPending;
+    private NarrationEntry nextReplacement;
+
+    /// <summary>
+    /// La próxima frase de la historia se sustituye por esta, o se omite si viene vacía. Lo
+    /// usa ScenarioTimeLimit: al agotarse el tiempo de una sala, la frase que sigue es la de
+    /// felicitación ("¡Muy bien, astronauta!"), que ya no corresponde.
+    /// </summary>
+    public void ReplaceNextLine(NarrationEntry replacement)
+    {
+        replacementPending = true;
+        nextReplacement = replacement;
     }
 
     /// <summary>
