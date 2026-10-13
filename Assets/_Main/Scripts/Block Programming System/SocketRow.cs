@@ -91,7 +91,7 @@ public class SocketRow : MonoBehaviour
     public int SocketsQuantity => socketsQuantity;
     public IReadOnlyList<InitialBlock> InitialBlocks => initialBlocks;
 
-    private List<Socket> sockets = new List<Socket>();
+    private readonly List<Socket> sockets = new List<Socket>();
 
     // --- Dificultad. Lo llama DifficultyApplier antes de Awake ---
 
@@ -332,14 +332,10 @@ public class SocketRow : MonoBehaviour
     }
 
     /// <summary>
-    /// Vacía todos los sockets. Ya no destruye ni desparenta nada: de devolver los
-    /// bloques a su sitio se encarga BlockResetter.
+    /// Vacía todos los sockets sin destruir ni mover nada: de devolver los bloques a su sitio
+    /// se encarga BlockResetter.
     /// </summary>
-    /// <param name="destroyBlocks">
-    /// Obsoleto, se ignora. Se conserva solo para no romper el enlace del UnityEvent
-    /// del botón de reinicio, que sigue pasando un bool.
-    /// </param>
-    public void ClearRow(bool destroyBlocks = true)
+    public void ClearRow()
     {
         foreach (var socket in sockets)
             if (socket != null) socket.Release();

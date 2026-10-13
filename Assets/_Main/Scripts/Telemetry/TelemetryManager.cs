@@ -1,14 +1,15 @@
-// TelemetryManager.cs
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
 
+// El índice se guarda en PlayerPrefs y en las piezas con DifficultyOnly de la escena: los
+// valores nuevos van al final. Intermedia se llamaba Avanzada; su índice no cambió.
 public enum Difficulty
 {
     Basica,
-    Avanzada
+    Intermedia
 }
 
 public enum SessionResult
@@ -38,10 +39,7 @@ public class TelemetryManager : MonoBehaviour
 {
     public static TelemetryManager Instance { get; private set; }
 
-    /// <summary>
-    /// Ids de escenario con métricas definidas. El 4 existe en el JSON como objeto vacío:
-    /// cuando se decidan sus métricas tendrá su propio registro aquí.
-    /// </summary>
+    /// <summary>Ids de los retos. Son también las claves de cada escenario en el JSON.</summary>
     public const string Scenario1Id = "escenario1";
     public const string Scenario2Id = "escenario2";
     public const string Scenario3Id = "escenario3";
@@ -149,11 +147,22 @@ public class TelemetryManager : MonoBehaviour
         // ID secuencial persistido: sigue subiendo aunque la app se cierre o el headset se
         // reinicie. Va aquí y no en Awake para que cada run tenga el suyo, también las que
         // abre SetPin: con el mismo sessionId, repetir un PIN pisaría el archivo anterior.
-        _sessionId = PlayerPrefs.GetInt(SessionCounterKey, 0) + 1;
+        string deviceId = GetDeviceId();
+
+        _sessionId = PlayerPrefs.GetInt(SessionCounterKey, 0);
+
+        // Nunca sobre un archivo que ya exista. El contador vive en PlayerPrefs y puede volver
+        // atrás (datos de la app restaurados, PlayerPrefs borradas) con los JSON aún en disco:
+        // sin esto la run nueva pisaría la sesión de otro niño.
+        do
+        {
+            _sessionId++;
+            _filePath = Path.Combine(Application.persistentDataPath, $"{pin}_{_sessionId}_{deviceId}.json");
+        }
+        while (File.Exists(_filePath));
+
         PlayerPrefs.SetInt(SessionCounterKey, _sessionId);
         PlayerPrefs.Save();
-
-        string deviceId = GetDeviceId();
 
         _run = new RunRecord
         {
@@ -171,12 +180,9 @@ public class TelemetryManager : MonoBehaviour
         _attemptCycleStart = Time.time;
         _warnedManipulationWithoutChallenge = false;
 
-        // El sessionId evita que un PIN repetido en este visor pise el archivo anterior, y el
-        // código del visor, que dos visores con el mismo PIN y el mismo contador se pisen en
-        // el servidor.
-        _filePath = Path.Combine(Application.persistentDataPath,
-                                 $"{pin}_{_sessionId}_{deviceId}.json");
-
+        // El nombre ya está fijado arriba: el sessionId evita que un PIN repetido en este visor
+        // pise el archivo anterior, y el código del visor, que dos visores con el mismo PIN y
+        // el mismo contador se pisen en el servidor.
         Save();
 
         Debug.Log($"[Telemetry] Run iniciada: {_filePath}");
@@ -265,10 +271,10 @@ public class TelemetryManager : MonoBehaviour
                           $"visor {_run.deviceId} · sesión {_run.sessionId} · " +
                           $"dificultad {_run.difficulty} · {_run.totalSeconds:0.0}s");
 
-        warnings += ReportScenario(report, "escenario1", _run.escenario1);
-        warnings += ReportScenario(report, "escenario2", _run.escenario2);
-        warnings += ReportScenario(report, "escenario3", _run.escenario3);
-        warnings += ReportScenario(report, "escenario4", _run.escenario4);
+        warnings += ReportScenario(report, Scenario1Id, _run.escenario1);
+        warnings += ReportScenario(report, Scenario2Id, _run.escenario2);
+        warnings += ReportScenario(report, Scenario3Id, _run.escenario3);
+        warnings += ReportScenario(report, Scenario4Id, _run.escenario4);
 
         report.AppendLine($"  Archivo: {_filePath}");
 
@@ -508,11 +514,6 @@ public class TelemetryManager : MonoBehaviour
         Save();
     }
 
-    public void RegisterAttempt(string challengeId, List<string> sequence, bool solved)
-    {
-        RegisterBlockAttempt(challengeId, sequence);
-    }
-
     /// <summary>
     /// Copia defensiva: las listas que llegan las reconstruye ProgramTrigger en cada intento,
     /// pero no quiero que el JSON dependa de que nadie las mute después.
@@ -529,8 +530,7 @@ public class TelemetryManager : MonoBehaviour
     public void RegisterSelection(string challengeId, string moduleId, string option,
                                   bool correct)
     {
-        Scenario2Record scenario = GetScenario2(challengeId);
-        if (scenario == null) return;
+        if (!(GetScenario(challengeId) is Scenario2Record scenario)) return;
 
         scenario.selections.Add(new SelectionRecord
         {
@@ -555,8 +555,7 @@ public class TelemetryManager : MonoBehaviour
     public void RegisterPlacement(string challengeId, string socketId, string chipId,
                                   bool correct)
     {
-        Scenario4Record scenario = GetScenario4(challengeId);
-        if (scenario == null) return;
+        if (!(GetScenario(challengeId) is Scenario4Record scenario)) return;
 
         scenario.placements.Add(new PlacementRecord
         {
@@ -761,8 +760,6 @@ public class TelemetryManager : MonoBehaviour
                _run.escenario3.started || _run.escenario4.started;
     }
 
-    public string GetCurrentPin() => _run?.pin;
-
     // --- Configuración de dificultad (se fija una vez, no por reto) ---
 
     public void SetDifficulty(Difficulty difficulty)
@@ -827,15 +824,28 @@ public class TelemetryManager : MonoBehaviour
         if (string.IsNullOrEmpty(_run.endedUtc))
             _run.totalSeconds = Time.time - _runStartTime;
 
-        File.WriteAllText(_filePath, JsonUtility.ToJson(_run, true), Encoding.UTF8);
-
-        _dirty = false;
+        // El reintento se espacia igual que una escritura normal, salga bien o mal.
         _nextSaveTime = Time.unscaledTime + saveInterval;
+
+        try
+        {
+            File.WriteAllText(_filePath, JsonUtility.ToJson(_run, true), Encoding.UTF8);
+            _dirty = false;
+        }
+        catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+        {
+            // La telemetría no puede romper el juego: Save() se llama desde dentro de los
+            // UnityEvent del Director y del botón de ejecutar, y una excepción ahí cortaba la
+            // historia o dejaba el programa sin correr. Los datos siguen en memoria y se
+            // reintenta en el siguiente guardado.
+            _dirty = true;
+            Debug.LogError($"[Telemetry] No se pudo escribir '{_filePath}': {e.Message}. " +
+                           "Se reintentará; la partida sigue.");
+        }
     }
 
     /// <summary>
-    /// Metadatos de ciclo de vida de cualquier escenario ya definido. El escenario 4 todavía
-    /// no tiene estructura, así que se descarta con aviso en vez de forzarlo a una que no le toca.
+    /// Registro de un escenario por su id. Null, con aviso, si el id no es de ninguno.
     /// </summary>
     private ScenarioRecord GetScenario(string challengeId)
     {
@@ -849,15 +859,9 @@ public class TelemetryManager : MonoBehaviour
             case Scenario4Id: return _run.escenario4;
         }
 
-        Debug.LogWarning($"[Telemetry] '{challengeId}' todavía no tiene métricas definidas; registro descartado.");
+        Debug.LogWarning($"[Telemetry] '{challengeId}' no es el id de ningún escenario; registro descartado.");
         return null;
     }
-
-    /// <summary>Registro del escenario 2, para las métricas propias de selección.</summary>
-    private Scenario2Record GetScenario2(string challengeId) => GetScenario(challengeId) as Scenario2Record;
-
-    /// <summary>Registro del escenario 4, para las métricas propias de emparejamiento.</summary>
-    private Scenario4Record GetScenario4(string challengeId) => GetScenario(challengeId) as Scenario4Record;
 
     private float ElapsedIn(string challengeId)
     {
@@ -866,7 +870,7 @@ public class TelemetryManager : MonoBehaviour
             : 0f;
     }
 
-    /// <summary>Básica = 1, Avanzada = 2. Se guarda 1-based para que el JSON se lea solo.</summary>
+    /// <summary>Básica = 1, Intermedia = 2. Se guarda 1-based para que el JSON se lea solo.</summary>
     private static int ToDifficultyValue(Difficulty difficulty) => (int)difficulty + 1;
 
     private static string NowUtc() => DateTime.UtcNow.ToString("o");
@@ -933,19 +937,19 @@ public class TelemetryManager : MonoBehaviour
 
         // Intento 1: se queda corto y choca contra un muro.
         SimulateBlockHandling(2);
-        RegisterAttempt(Scenario1Id, new List<string> { "Avanzar", "Girar Derecha" }, false);
+        RegisterBlockAttempt(Scenario1Id, new List<string> { "Avanzar", "Girar Derecha" });
         RegisterLogicError(LogicErrorType.ColisionBot);
         RegisterFailedAttempt();
 
         // Intento 2: llega al final pero usa sobre una casilla vacía.
         SimulateBlockHandling(3);
-        RegisterAttempt(Scenario1Id, new List<string> { "Avanzar 2", "Girar Izquierda", "Usar" }, false);
+        RegisterBlockAttempt(Scenario1Id, new List<string> { "Avanzar 2", "Girar Izquierda", "Usar" });
         RegisterLogicError(LogicErrorType.UsoInvalido);
         RegisterFailedAttempt();
 
         // Intento 3: resuelve. CompleteChallenge le pondrá solved = true.
         SimulateBlockHandling(4);
-        RegisterAttempt(Scenario1Id, new List<string> { "Avanzar", "Girar Derecha", "Avanzar 2", "Usar" }, false);
+        RegisterBlockAttempt(Scenario1Id, new List<string> { "Avanzar", "Girar Derecha", "Avanzar 2", "Usar" });
 
         CompleteChallenge(Scenario1Id);
         EndRun();

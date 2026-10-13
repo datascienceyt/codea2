@@ -69,8 +69,6 @@ public class ArmSlot : MonoBehaviour
         }
     }
 
-    public bool IsEmpty => Count == 0;
-
     private void Awake()
     {
         foreach (TypedStack stack in stacks)
@@ -122,18 +120,14 @@ public class ArmSlot : MonoBehaviour
         TypedStack stack = Find(TypeOf(item));
         if (stack == null) return false;
 
-        item.SetParent(stack.stackRoot);
-        item.localPosition = Vector3.up * (stackSpacing * stack.items.Count);
-        item.localRotation = Quaternion.identity;
-
-        stack.items.Add(item);
+        PutStacked(stack, item);
 
         return true;
     }
 
     /// <summary>
-    /// Tipo de un objeto. Sin ArmItem se asume el de la primera pila: así una escena a medio
-    /// montar sigue funcionando en vez de tragarse los objetos en silencio.
+    /// Tipo de un objeto. Sin ArmItem se avisa y se asume el primer tipo (Barril): así una
+    /// escena a medio montar sigue funcionando en vez de tragarse los objetos en silencio.
     /// </summary>
     public static ArmItemType TypeOf(Transform item)
     {

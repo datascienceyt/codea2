@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 
-public enum TileType { Path = 0, Wall = 1, Spawn = 2, Danger = 3, Point = 4, Exit = 5, Void = 6, Interactable = 7 }
+// Los números son los que llevan los JSON de nivel: no se renumeran. El 4 y el 7 eran del
+// sistema de puntos, que se retiró; un nivel que los traiga deja esas casillas vacías.
+public enum TileType { Path = 0, Wall = 1, Spawn = 2, Danger = 3, Exit = 5, Void = 6 }
 
 [System.Serializable]
 public class LevelData
@@ -18,10 +20,8 @@ public class LevelLoader : MonoBehaviour
     public GameObject pathPrefab;
     public GameObject wallPrefab;
     public GameObject dangerPrefab;
-    public GameObject pointPrefab;
     public GameObject botPrefab;
     public GameObject exitPrefab;
-    public GameObject interactablePrefab;
 
     [Header("Config")]
     public float tileSize = 1f;
@@ -37,13 +37,18 @@ public class LevelLoader : MonoBehaviour
     void Start()
     {
         transform.localScale *= tileSize;
-     
+
         if (loadOnStart)
             LoadLevel(levelJson);
     }
 
     public void LoadLevel(TextAsset json)
     {
+        if (json == null)
+        {
+            Debug.LogError($"[LevelLoader] '{name}' no tiene nivel asignado.", this);
+            return;
+        }
 
         LevelData data = JsonUtility.FromJson<LevelData>(json.text);
         int[][] grid = new int[data.height][];
@@ -58,79 +63,56 @@ public class LevelLoader : MonoBehaviour
 
             for (int x = 0; x < data.width; x++)
             {
-                TileType type = (TileType)data.tiles[y * data.width + x];
+                int tile = data.tiles[y * data.width + x];
                 Vector3 pos = new Vector3(x, 0, -y);
-                GameObject prefab = null;
+                GameObject tilePrefab = null;
 
-                grid[y][x] = data.tiles[y * data.width + x];
+                grid[y][x] = tile;
 
-                switch (type)
+                switch ((TileType)tile)
                 {
                     case TileType.Path:
-                        prefab = pathPrefab;
+                        tilePrefab = pathPrefab;
                         break;
 
                     case TileType.Wall:
-                        prefab = wallPrefab;
+                        tilePrefab = wallPrefab;
                         break;
 
                     case TileType.Danger:
-                        prefab = dangerPrefab;
+                        tilePrefab = dangerPrefab;
                         break;
 
-                    case TileType.Point:
-                        prefab = Instantiate(pointPrefab, transform);       //Instanciar prefab de punto antes de convertir el grid en camino para que el usuario pueda caminar por ahí
-                        prefab.transform.localPosition = pos;
-                        prefab.GetComponent<Point>().OnCollected += levelManager.IncreasePoint;
-
-                        grid[y][x] = 0;                                     //Convertir en path en el grid numérico
-                        prefab = pathPrefab;
-                        break;
-
+                    // El robot va ENCIMA de una casilla de camino: en el grid numérico su
+                    // casilla queda como camino, para que se pueda volver a pisar.
                     case TileType.Spawn:
-                        grid[y][x] = 0;
-                        spawnPos.x = x;
-                        spawnPos.y = y;
+                        spawnPos = new Vector2(x, y);
 
                         bot = Instantiate(botPrefab, transform).GetComponent<Bot>();
                         bot.transform.localPosition = pos;
 
-                        prefab = pathPrefab;
+                        grid[y][x] = (int)TileType.Path;
+                        tilePrefab = pathPrefab;
                         break;
 
                     case TileType.Exit:
-                        prefab = exitPrefab;
-                        break;
-
-                    case TileType.Interactable:
-                        prefab = interactablePrefab;
+                        tilePrefab = exitPrefab;
                         break;
                 }
 
-                if(prefab != null)
-                {
-                    prefab = Instantiate(prefab, transform);
-                    prefab.transform.localPosition = pos;
-                    prefab.transform.localScale = Vector3.one * tileScale;
-                    objectGrid[y][x] = prefab;
+                if (tilePrefab == null) continue;
 
-                    Exit exit = prefab.GetComponent<Exit>();
-                    Interactable interactable = prefab.GetComponent<Interactable>();
+                GameObject tileObject = Instantiate(tilePrefab, transform);
+                tileObject.transform.localPosition = pos;
+                tileObject.transform.localScale = Vector3.one * tileScale;
+                objectGrid[y][x] = tileObject;
 
-                    if(exit)
-                    {
-                        exit.levelManager = levelManager;
-                    }
-                    else if(interactable)
-                    {
-                        interactable.levelManager = levelManager;
-                    }
-                }                    
+                if (tileObject.TryGetComponent(out Exit exit))
+                    exit.levelManager = levelManager;
             }
         }
 
         ReferenceLevelData(data.name, grid, objectGrid, spawnPos);
-        PrintGrid(grid);
     }
 
     private void ReferenceLevelData(string name, int[][] grid, GameObject[][] objectGrid, Vector2 spawnPos)
@@ -177,22 +159,5 @@ public class LevelLoader : MonoBehaviour
         bot = null;
         levelManager.grid = null;
         levelManager.objectGrid = null;
-    }
-
-    void PrintGrid(int[][] grid)
-    {
-        string output = string.Empty;
-
-        for (int i = 0; i < grid.Length; i++)
-        {
-            output += "\n";
-            for (int j = 0; j < grid[i].Length; j++)
-            {
-                output += grid[i][j];
-                output += "\t";
-            }
-        }
-
-        Debug.Log(output);
     }
 }

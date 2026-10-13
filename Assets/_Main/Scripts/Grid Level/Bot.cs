@@ -10,7 +10,6 @@ public enum Rotation { Left = -1, Right = 1 }
 public class Bot : MonoBehaviour
 {
     public Vector2 botPos;
-    private Vector2 tmpPos;
     public Direction direction;
     [HideInInspector] public LevelManager levelManager;
     bool isMoving, isRotating;
@@ -21,6 +20,9 @@ public class Bot : MonoBehaviour
     [Header("Sonidos")]
     public AudioClip moveSound;
     public AudioClip useSound;
+
+    // Tope para recorrer una casilla. Muy por encima de lo que tarda de verdad.
+    private const float MaxSecondsPerTile = 5f;
 
     private Rigidbody rb;
     private AudioSource audioSource;
@@ -59,14 +61,14 @@ public class Bot : MonoBehaviour
     {
         if (isMoving || isRotating) yield break;
 
-        tmpPos = GetPositionInDirection(botPos, direction);
+        Vector2 nextPos = GetPositionInDirection(botPos, direction);
 
-        if (!levelManager.ValidMovementInGrid(tmpPos))
+        if (!levelManager.ValidMovementInGrid(nextPos))
             yield break;
 
-        botPos = tmpPos;
+        botPos = nextPos;
         PlaySound(moveSound);
-        yield return Move(tmpPos);
+        yield return Move(nextPos);
     }
 
     public IEnumerator RotateLeft() => RotateBy(Rotation.Left);
@@ -86,15 +88,14 @@ public class Bot : MonoBehaviour
 
         Vector2 targetPos = GetPositionInDirection(botPos, direction);
 
-        if (!levelManager.TryGetInteractable(targetPos, out IInteractable interactable))
+        if (!levelManager.TryGetInteractable(targetPos, out IInteractable interactable) ||
+            !interactable.CanInteract())
         {
-            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
-            yield break;
-        }
+            // Con guardia: sin telemetría en la escena, la excepción cortaba la corrutina y el
+            // programa se quedaba "corriendo" para siempre, con el botón de ejecutar muerto.
+            if (TelemetryManager.Instance != null)
+                TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
 
-        if (!interactable.CanInteract())
-        {
-            TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
             yield break;
         }
 
@@ -137,10 +138,21 @@ public class Bot : MonoBehaviour
         // mientras se escribía con rb.MovePosition, que no se aplica hasta el siguiente paso
         // de física. Bastaba un desfase de coma flotante para que el bucle no cerrara nunca
         // y dejara isMoving bloqueado, congelando al bot para el resto de la partida.
-        while (Vector3.Distance(rb.position, target) > 0.001f)
+        //
+        // El tope es preventivo. El robot es cinemático y siempre llega; si alguien le quitara
+        // esa casilla en el prefab y algo lo frenara, sin tope el programa no terminaría nunca.
+        float giveUpAt = Time.time + MaxSecondsPerTile;
+
+        while (Vector3.Distance(rb.position, target) > 0.001f && Time.time < giveUpAt)
         {
             rb.MovePosition(Vector3.MoveTowards(rb.position, target, moveSpeed * Time.deltaTime));
             yield return null;
+        }
+
+        if (Vector3.Distance(rb.position, target) > 0.001f)
+        {
+            Debug.LogWarning($"[Bot] No llegó a ({x},{y}) en {MaxSecondsPerTile} s; se coloca ahí.", this);
+            rb.position = target;
         }
 
         rb.MovePosition(target);

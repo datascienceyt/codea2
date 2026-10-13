@@ -38,6 +38,10 @@ public class RoboticArm : MonoBehaviour
     [SerializeField] private AudioClip dropSound;
     [SerializeField] private AudioClip rotateSound;
 
+    [Tooltip("Volumen del sonido de giro, de 0 a 1. Suena en cada giro y varias veces por " +
+             "ejecución, así que va más bajo que recoger y soltar.")]
+    [SerializeField, Range(0f, 1f)] private float rotateVolume = 0.2f;
+
     [Header("Argumento")]
     [Tooltip("Socket que decide de qué pila se recoge. Si queda vacío se busca en la escena.")]
     [SerializeField] private ArmTypeSocket typeSocket;
@@ -279,7 +283,7 @@ public class RoboticArm : MonoBehaviour
         // Módulo doble para que el índice no se salga por la izquierda con valores negativos.
         slotIndex = ((slotIndex + direction) % slots.Length + slots.Length) % slots.Length;
 
-        Play(rotateSound);
+        Play(rotateSound, rotateVolume);
         yield return RotateTowardsSlot(slots[slotIndex].Yaw, direction);
 
         isBusy = false;
@@ -372,10 +376,10 @@ public class RoboticArm : MonoBehaviour
         pivot.localRotation = Quaternion.Euler(0f, slots[slotIndex].Yaw, 0f);
     }
 
-    private void Play(AudioClip clip)
+    private void Play(AudioClip clip, float volume = 1f)
     {
         if (audioSource != null && clip != null)
-            audioSource.PlayOneShot(clip);
+            audioSource.PlayOneShot(clip, volume);
     }
 
     // --- Controles de prueba (fuera del build) ---

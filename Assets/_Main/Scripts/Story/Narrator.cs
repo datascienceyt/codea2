@@ -115,6 +115,10 @@ public class Narrator : MonoBehaviour, IStepAction
     private int lastErrorIndex = -1;
     private bool skipRequested;
 
+    // Sustitución pedida para la próxima frase de la historia (ReplaceNextLine).
+    private bool replacementPending;
+    private NarrationEntry nextReplacement;
+
     public bool IsTyping { get; private set; }
     public int LineCount => lines.Count;
 
@@ -163,7 +167,6 @@ public class Narrator : MonoBehaviour, IStepAction
     /// <summary>
     /// Reproduce la línea siguiente del tramo actual y bloquea hasta que terminen voz y texto.
     /// </summary>
-    [ContextMenu("Execute")]
     public IEnumerator Execute()
     {
         if (!HasEntries())
@@ -197,9 +200,6 @@ public class Narrator : MonoBehaviour, IStepAction
 
         yield return PlayEntry(entry);
     }
-
-    private bool replacementPending;
-    private NarrationEntry nextReplacement;
 
     /// <summary>
     /// La próxima frase de la historia se sustituye por esta, o se omite si viene vacía. Lo
@@ -502,7 +502,7 @@ public class Narrator : MonoBehaviour, IStepAction
 
         UnityEditor.Undo.RecordObject(this, "Asignar textId");
 
-        System.Text.StringBuilder log = new System.Text.StringBuilder();
+        StringBuilder log = new StringBuilder();
         int assigned = 0;
 
         for (int l = 0; l < lists.Count; l++)

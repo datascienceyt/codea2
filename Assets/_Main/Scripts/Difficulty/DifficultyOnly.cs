@@ -16,7 +16,7 @@ using UnityEngine;
 public class DifficultyOnly : MonoBehaviour
 {
     [Tooltip("La única dificultad en la que existe esta pieza.")]
-    [SerializeField] private Difficulty difficulty = Difficulty.Avanzada;
+    [SerializeField] private Difficulty difficulty = Difficulty.Intermedia;
 
     public Difficulty Difficulty
     {

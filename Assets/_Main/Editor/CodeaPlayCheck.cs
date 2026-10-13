@@ -71,7 +71,7 @@ public static class CodeaPlayCheck
 
     private static void Begin(bool batch)
     {
-        SessionState.SetString(KeyQueue, $"{(int)Difficulty.Basica},{(int)Difficulty.Avanzada}");
+        SessionState.SetString(KeyQueue, $"{(int)Difficulty.Basica},{(int)Difficulty.Intermedia}");
         SessionState.SetString(KeyReport, $"Prueba en Play de {GameScene} · {DateTime.Now:dd/MM/yyyy HH:mm}\n");
         SessionState.SetBool(KeyBatch, batch);
         SessionState.SetInt(KeyErrors, 0);
@@ -207,12 +207,13 @@ public static class CodeaPlayCheck
             Expect(index == wanted, $"el Narrator usa la lista {index}");
         }
 
-        // Tiempo por sala: los relojes empiezan en el límite de una sala, no en el de la sesión.
+        // Los relojes muestran el tiempo de la sesión; el límite de cada sala no se ve.
         Timer timer = Object.FindAnyObjectByType<Timer>(FindObjectsInactive.Include);
         ScenarioTimeLimit limit = Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include);
         if (timer != null && limit != null)
-            Expect(Mathf.Approximately(timer.Remaining, limit.SecondsPerScenario),
-                   $"los relojes marcan {Mathf.CeilToInt(timer.Remaining) / 60:00}:{Mathf.CeilToInt(timer.Remaining) % 60:00} al cargar (límite por sala {limit.SecondsPerScenario} s)");
+            Expect(Mathf.Approximately(timer.Remaining, limit.SessionSeconds),
+                   $"los relojes marcan {Mathf.CeilToInt(timer.Remaining) / 60:00}:{Mathf.CeilToInt(timer.Remaining) % 60:00} al cargar " +
+                   $"(sesión {limit.SessionSeconds} s, límite por sala {limit.SecondsPerScenario} s)");
         else Fail("falta el Timer o el ScenarioTimeLimit");
 
         // Ninguna pieza de la otra dificultad encendida, y todas las de esta como estaban.

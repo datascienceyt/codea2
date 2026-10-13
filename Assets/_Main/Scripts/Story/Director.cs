@@ -11,7 +11,6 @@ public class Director : MonoBehaviour
 
     public List<Scenario> scenarios;
 
-
     private int currentScenarioIndex = 0;
     private int currentStepIndex = 0;
 
@@ -99,11 +98,7 @@ public class Director : MonoBehaviour
     {
         while (currentScenarioIndex < scenarios.Count)
         {
-            Scenario scenario = scenarios[currentScenarioIndex];
-
-            //Debug.Log($"[Director] Scenario {currentScenarioIndex}");
-
-            yield return RunScenario(scenario);
+            yield return RunScenario(scenarios[currentScenarioIndex]);
 
             currentScenarioIndex++;
             currentStepIndex = 0;
@@ -254,8 +249,6 @@ public class Director : MonoBehaviour
         Debug.LogWarning($"[Director] SALTADO el paso {currentStepIndex} '{step.message}'. " +
                          "Las acciones que ya estaban corriendo siguen hasta terminar.", this);
     }
-
-
 }
 
 // Los valores nuevos van SIEMPRE al final: el índice se serializa en los pasos ya

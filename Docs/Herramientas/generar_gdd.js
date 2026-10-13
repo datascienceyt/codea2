@@ -80,7 +80,7 @@ const ficha = [
     ["Público", "Niñas, niños y adolescentes de 8 a 17 años, de contexto rural en Ecuador, mayoritariamente sin experiencia previa en VR"],
     ["Objetivo pedagógico", "Desarrollar pensamiento computacional: secuencialidad, condicionales, bucles con parámetros y reconocimiento de patrones"],
     ["Modalidad", "Un solo jugador · primera persona · sin avatar visible · con supervisor presente durante toda la sesión"],
-    ["Duración de una sesión", "5 minutos por sala, con cuenta atrás visible; si se agotan, se pasa a la siguiente sala"],
+    ["Duración de una sesión", "15 minutos, con cuenta atrás visible, que solo corren durante los retos. Cada sala tiene además un máximo de 5 minutos: si se agotan, se pasa a la siguiente"],
     ["Dificultades", "Básica e intermedia. La fija el supervisor antes de empezar y no cambia durante la sesión"],
   ]),
   gap(),
@@ -90,7 +90,7 @@ const ficha = [
   bullet("**Ejecutar y observar:** pulsar un botón y ver a un robot o a un brazo mecánico cumplir exactamente lo programado, incluidos los errores."),
   bullet("**Diagnosticar:** leer síntomas de un sistema averiado y deducir qué acciones lo reparan."),
   bullet("**Comparar con detalle:** encontrar, entre figuras muy parecidas, la idéntica a la que pide cada hueco."),
-  bullet("**Escapar contra reloj:** cuatro salas en secuencia, cinco minutos para cada una."),
+  bullet("**Escapar contra reloj:** cuatro salas en secuencia, quince minutos en total y cinco como máximo para cada una."),
 ];
 
 const tecnico = [
@@ -123,7 +123,7 @@ const jugabilidad = [
     ["Elementos", "Bloques de instrucciones, fila de programa, botón de ejecutar, robot Roki, módulos de sistema, brazo robótico, fichas de tipo, contador de repeticiones, fichas de figuras y paneles con huecos."],
     ["Niveles", "Cuatro salas (sección 6), cada una en dos dificultades."],
     ["Controles", "Agarrar y soltar objetos, pulsar botones y teletransportarse (sección 5.7)."],
-    ["Victoria", "Resolver las cuatro salas, cada una antes de que se agoten sus cinco minutos."],
+    ["Victoria", "Resolver las cuatro salas antes de que se agoten los quince minutos, cada una en cinco como máximo."],
     ["Derrota", "Se agota el tiempo. El narrador lo anuncia con un mensaje positivo y la sesión se cierra."],
     ["Fin", "En ambos casos se guardan los datos, se intentan subir al servidor y el visor vuelve a la pantalla del supervisor para el siguiente participante."],
     ["¿Por qué es divertido?", "El jugador ve sus propias instrucciones hacerse realidad, incluidos sus errores, que resultan evidentes y a menudo cómicos. Puede reintentar sin castigo, y la historia y el reloj dan un propósito a cada reto."],
@@ -153,7 +153,7 @@ const diseno = [
   bullet("**Alcance acotado:** ejecución estrictamente secuencial, sin bloques anidados. El único bucle es la fila entera."),
   h2("5.2 Definiciones de juego"),
   table(["Concepto", "Definición"], [
-    ["Ganar", "Completar cada sala dentro de sus cinco minutos."],
+    ["Ganar", "Completar las cuatro salas dentro de los quince minutos de la sesión, cada una en cinco como máximo."],
     ["Perder", "Agotar el tiempo con alguna sala sin resolver."],
     ["Transición", "Al resolver una sala se abre el paso y el guion traslada al jugador a la siguiente."],
     ["Intento", "Cada vez que se pulsa Ejecutar con un programa válido (salas 1 y 3), o cada vez que se encaja una ficha (sala 4)."],
@@ -168,13 +168,13 @@ const diseno = [
   num("**Sala 2 · Sala de control (condicionales):** reparar tres sistemas."),
   num("**Sala 3 · Almacén (bucles y parámetros):** clasificar las cajas con el brazo robótico."),
   num("**Sala 4 · Panel final (patrones):** completar el panel de figuras → los motores arrancan."),
-  num("**Fin:** «¡Misión cumplida!», o «El tiempo ha terminado» si el reloj llega a cero en cualquier momento."),
+  num("**Fin:** «¡Misión cumplida!», o «El tiempo ha terminado» si el reloj de la sesión llega a cero o se agota la última sala."),
   num("**Cierre:** se guardan y suben los datos, y el visor vuelve a la pantalla del supervisor."),
   h2("5.4 Definición del jugador"),
   p("El jugador no tiene salud, armas ni inventario. Su única acción sobre el mundo es manipular objetos y pulsar botones. No hay forma de morir ni de quedarse bloqueado: cualquier error se puede deshacer o se deshace solo."),
   h2("5.5 Propiedades del jugador"),
   table(["Propiedad", "Cómo cambia", "Retroalimentación"], [
-    ["Tiempo restante", "Baja desde 05:00 al empezar cada sala", "Reloj visible en todas las salas"],
+    ["Tiempo restante", "Baja desde 15:00 mientras hay un reto abierto; se detiene en narraciones y traslados", "Reloj visible en todas las salas"],
     ["Sala actual", "Avanza al resolver la sala", "Narración, apertura de puertas, traslado"],
     ["Progreso dentro de la sala", "Sube con cada acierto parcial", "Módulo en verde, objetos en su sitio, hueco iluminado"],
   ], [2600, 3200, WIDTH - 5800]),
@@ -188,7 +188,7 @@ const diseno = [
   p("Toda la interfaz es **diegética**: forma parte del mundo, no flota delante de los ojos."),
   table(["Elemento", "Dónde", "Función"], [
     ["Pantalla de narración", "Se desplaza a la sala activa", "Texto de la voz narradora"],
-    ["Reloj", "Cinco pantallas repartidas por la nave", "Tiempo restante"],
+    ["Reloj", "Una pantalla en cada sala", "Tiempo que queda de la sesión"],
     ["Pantallas de módulo", "Sala 2", "Título del sistema, síntomas y estado"],
     ["Contador de repeticiones", "Sala 3", "Número de veces que se repite la fila, con botones + y −"],
     ["Pantalla del supervisor", "Escena inicial", "Teclado de PIN, dificultad y botón Empezar"],
@@ -241,7 +241,8 @@ const salas = [
   p("**Objetivo:** encender la nave completando un panel de figuras."),
   p("**Mecánica:** cada hueco del panel dibuja una figura abstracta. El jugador busca entre las fichas la **idéntica** y la encaja. Hay fichas muy parecidas y más fichas que huecos, para que el último hueco no se resuelva por descarte. Una ficha correcta se ilumina en verde y queda fija. Una incorrecta se queda un instante en el hueco y sale disparada hacia el jugador con el sonido de desconexión, así el error se ve y la ficha queda a mano para otro intento. Las fichas tienen física: se apoyan en la mesa y, si caen al suelo, vuelven solas a los pocos segundos. Al reiniciar, solo vuelven a su sitio las fichas que no están bien colocadas. Al completar el panel suena el arranque de los motores."),
   table(["", "Básica", "Intermedia"], [
-    ["Figuras", "Juego de figuras más simples", "Juego de figuras más densas y parecidas entre sí"],
+    ["Huecos", "4, con figuras geométricas", "6, con las letras de YACHAY en un alfabeto de glifos cuadrados"],
+    ["Fichas", "18, con figuras geométricas", "Las mismas 18, con letras del alfabeto: están las seis necesarias (dos Y, dos A, una C y una H) y doce distractoras"],
     ["Mecánica", "Igual", "Igual"],
   ], [2400, 3200, WIDTH - 5600]),
 ];
@@ -268,7 +269,7 @@ const guion = [
   ["17", "Sala 4", "Observa las figuras del panel y arrastra cada bloque hasta el espacio que tenga la misma figura."],
   ["18", "Sala 4 · fin", "¿Escuchas eso, astronauta? ¡Los motores están encendidos y todos los sistemas funcionan correctamente!"],
   ["19", "Final", "¡Misión cumplida! La nave puede continuar su viaje de regreso a la Tierra. ¡Excelente trabajo!"],
-  ["20", "Tiempo agotado en la última sala", "¡Oh, no! El tiempo ha terminado. No logramos completar la misión, pero hiciste un gran trabajo hasta aquí. ¡Gracias por intentarlo!"],
+  ["20", "Tiempo de la sesión agotado, o el de la última sala", "¡Oh, no! El tiempo ha terminado. No logramos completar la misión, pero hiciste un gran trabajo hasta aquí. ¡Gracias por intentarlo!"],
   ["21", "Tiempo agotado en una sala", "¡Se acabó el tiempo en esta sala! No te preocupes, astronauta: sigamos con la siguiente."],
 ];
 
@@ -284,7 +285,7 @@ const dificultad = [
     ["1 · Secuencialidad", "8 bloques exactos, sin sobrantes", "Camino de 11 bloques con 13 disponibles; el camino simétrico de abajo no cabe en la fila"],
     ["2 · Condicionales", "4 opciones, 1 correcta", "4 opciones, 2 correctas"],
     ["3 · Bucles y parámetros", "Fila dada; decide ficha y repeticiones", "Ordena la fila; decide ficha y repeticiones"],
-    ["4 · Patrones", "Figuras simples", "Figuras densas y parecidas"],
+    ["4 · Patrones", "4 huecos con figuras geométricas y 18 fichas", "6 huecos con las letras de YACHAY en glifos cuadrados y las mismas 18 fichas, con letras"],
   ], [2400, 3400, WIDTH - 5800]),
 ];
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
-    [SerializeField] public string levelName;
+    public string levelName;
     public int[][] grid;
     public GameObject[][] objectGrid;
 
@@ -13,10 +13,6 @@ public class LevelManager : MonoBehaviour
     /// <summary>Si el bot ya llegó a la meta. Lo consulta ProgramTrigger para saber si un intento resolvió el reto.</summary>
     public bool IsCompleted => completed;
 
-    // Contador latente: el sistema de puntos ya no condiciona la meta (solo Exit completa
-    // el nivel), pero Point/Interactable siguen en el proyecto y necesitan este enganche.
-    public int pointCounter;
-
     public void CompleteLevel()
     {
         if (completed) return;
@@ -24,25 +20,19 @@ public class LevelManager : MonoBehaviour
         OnLevelCompleted?.Invoke();
     }
 
-    public void IncreasePoint()
-    {
-        pointCounter++;
-    }
-
     public void ResetLevel()
     {
         completed = false;
-        pointCounter = 0;
     }
 
-    public bool ValidMovementInGrid(Vector2 direction)
+    public bool ValidMovementInGrid(Vector2 position)
     {
-        int x = (int)direction.x;
-        int y = (int)direction.y;
+        int x = (int)position.x;
+        int y = (int)position.y;
 
         if (!IsInsideGrid(x, y))
         {
-            print("Out of grid...");
+            Debug.Log($"[Escenario1] Choque en ({x},{y}): fuera del tablero.", this);
             RegisterError(LogicErrorType.ColisionBot);
             return false;
         }
@@ -52,7 +42,7 @@ public class LevelManager : MonoBehaviour
         if (tile == TileType.Path)
             return true;
 
-        print("Ilegal move, cant reach [" + grid[y][x] + "]");
+        Debug.Log($"[Escenario1] Choque en ({x},{y}): la casilla es {tile}.", this);
         RegisterError(LogicErrorType.ColisionBot);
         return false;
     }
@@ -81,6 +71,12 @@ public class LevelManager : MonoBehaviour
     [ContextMenu("Print grid")]
     void PrintGrid()
     {
+        if (grid == null)
+        {
+            Debug.LogWarning("[Escenario1] No hay tablero cargado: entra en Play Mode.", this);
+            return;
+        }
+
         string output = string.Empty;
         for (int i = 0; i < grid.Length; i++)
         {
@@ -95,12 +91,7 @@ public class LevelManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Devuelve el interactuable de una casilla, si lo hay.
-    ///
-    /// OJO: filtra únicamente TileType.Exit. Un tile marcado como TileType.Interactable se
-    /// instancia con su prefab pero queda INALCANZABLE para Bot.Use(), porque no pasa este
-    /// filtro. Point e Interactable se conservan de una iteración anterior del sistema de
-    /// puntos; para reactivarlos basta con añadir su TileType a la condición de abajo.
+    /// Devuelve lo que el robot puede usar en una casilla. Hoy solo la salida.
     /// </summary>
     public bool TryGetInteractable(Vector2 position, out IInteractable interactable)
     {

@@ -17,6 +17,10 @@ public abstract class BlockNode : MonoBehaviour
     Socket candidate;
     bool isGrabbed;
 
+    // Frame de la última conexión contada. Los prefabs de bloque cablean además TryAtattch en
+    // onReleased, así que una misma suelta puede pasar dos veces por AttachTo.
+    int lastConnectionFrame = -1;
+
     public abstract IEnumerator Execute();
 
     /// <summary>
@@ -45,12 +49,7 @@ public abstract class BlockNode : MonoBehaviour
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterBlockGrabbed();
 
-        if (currentSocket != null)
-        {
-            currentSocket.Clear();
-            currentSocket = null;
-        }
-        transform.SetParent(null);
+        LeaveSocket();
     }
 
     void Update()
@@ -67,33 +66,42 @@ public abstract class BlockNode : MonoBehaviour
         candidate = null;
     }
 
+    /// <summary>
+    /// Encaja el bloque en el hueco libre más cercano, como si el jugador lo acabara de soltar
+    /// ahí. Los prefabs de bloque lo llaman desde el onReleased de su VRGrabEvents, y sirve
+    /// para probar sin visor desde el menú contextual.
+    ///
+    /// El nombre lleva la errata a propósito: está cableado así en los prefabs y en la escena.
+    /// </summary>
     [ContextMenu("TryAttatch")]
     public void TryAtattch()
     {
-        isGrabbed = true;
+        LeaveSocket();
+
+        candidate = FindNearestFreeSocket();
+        OnReleased();
+    }
+
+    /// <summary>Sale del socket que ocupaba, con su sonido, y queda suelto en la escena.</summary>
+    void LeaveSocket()
+    {
         if (currentSocket != null)
         {
             currentSocket.Clear();
             currentSocket = null;
         }
+
         transform.SetParent(null);
-        candidate = FindNearestFreeSocket();
-        isGrabbed = false;
-        if (IsValidTarget(candidate))
-        {
-            AttachTo(candidate, true);
-        }
-        candidate = null;
     }
 
-    /// <summary>
-    /// Olvida el socket que ocupaba, sin tocarlo. Lo usa BlockResetter tras devolver el
-    /// bloque a su sitio: si no, al volver a agarrarlo vaciaría su socket anterior,
-    /// expulsando al bloque que lo hubiera ocupado mientras tanto.
-    /// </summary>
     public bool IsAttached => currentSocket != null;
     public bool IsGrabbed => isGrabbed;
 
+    /// <summary>
+    /// Olvida el socket que ocupaba, sin tocarlo. Lo llama Socket.Release() al vaciarse: si
+    /// no, al volver a agarrar el bloque vaciaría su socket anterior, expulsando al que lo
+    /// hubiera ocupado mientras tanto.
+    /// </summary>
     public void ForgetSocket() => currentSocket = null;
 
     /// <summary>
@@ -110,10 +118,10 @@ public abstract class BlockNode : MonoBehaviour
         currentSocket = null;
     }
 
-    /// <summary>Permite o impide que el jugador agarre este bloque.</summary>
-    /// <summary>False si el juego la bloqueó (ficha acertada, bloque fijo de la fila).</summary>
+    /// <summary>False si el juego lo bloqueó (ficha acertada, bloque fijo de la fila).</summary>
     public bool IsInteractable { get; private set; } = true;
 
+    /// <summary>Permite o impide que el jugador agarre este bloque.</summary>
     public void SetInteractable(bool value)
     {
         IsInteractable = value;
@@ -142,10 +150,8 @@ public abstract class BlockNode : MonoBehaviour
 
         // Un bloque no puede acoplarse dentro de sí mismo.
         //
-        // Con RepeatBlock esto es un riesgo real y no teórico: sus sockets internos están en
-        // el registro global igual que los demás, así que el jugador podría soltar el bloque
-        // Repetir dentro de su propio hueco. Al ejecutar sería recursión infinita y el visor
-        // se congelaría.
+        // Hoy ningún bloque lleva sockets dentro, pero todos los sockets están en el mismo
+        // registro global: uno que los llevara podría soltarse en su propio hueco.
         if (socket.transform.IsChildOf(transform)) return false;
 
         return true;
@@ -178,10 +184,6 @@ public abstract class BlockNode : MonoBehaviour
     /// </summary>
     public virtual void OnReturnedHome() { }
 
-    // Frame de la última conexión contada. El prefab Block cablea además TryAtattch en
-    // onReleased, así que una misma suelta puede pasar dos veces por AttachTo.
-    int lastConnectionFrame = -1;
-
     /// <param name="byPlayer">
     /// Si lo encajó el jugador al soltarlo. Solo esas conexiones van a la telemetría: las que
     /// monta SocketRow por código al preparar la fila no son una acción del niño.
@@ -206,7 +208,7 @@ public abstract class BlockNode : MonoBehaviour
 
         transform.SetPositionAndRotation(socket.transform.position, socket.transform.rotation);
         transform.SetParent(socket.transform);
-        socket.Occupy(this);
+        socket.Occupy(this, byPlayer);
         currentSocket = socket;
     }
 }

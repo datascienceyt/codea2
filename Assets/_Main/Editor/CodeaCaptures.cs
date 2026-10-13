@@ -24,7 +24,12 @@ public static class CodeaCaptures
 {
     private const string GameScene = "Assets/Scenes/Juego.unity";
     private const string SetupScene = "Assets/Scenes/Setup.unity";
-    private const string OutputFolder = "Docs/Entregable-Mes2/capturas";
+    private const string DefaultOutputFolder = "Docs/Entregable-Mes2/capturas";
+
+    // Con la variable de entorno CODEA_CAPTURAS las imágenes van a esa carpeta: para mirar
+    // cómo queda un cambio sin pisar las figuras de los informes.
+    private static string OutputFolder =>
+        Environment.GetEnvironmentVariable("CODEA_CAPTURAS") is string folder && folder.Length > 0 ? folder : DefaultOutputFolder;
     private const int Width = 1600, Height = 900;
 
     private const string KeyStage = "CodeaCaptures.Stage";
@@ -72,6 +77,10 @@ public static class CodeaCaptures
             yield return new Shot("sala4_panel", new Vector3(-0.49f, 1.55f, 99.85f), new Vector3(-0.46f, 0.85f, 100.95f), 65f);
         }
 
+        // El panel de la sala 4 de intermedia es otro: las letras de YACHAY en glifos.
+        if (difficulty == Difficulty.Intermedia)
+            yield return new Shot("sala4_panel_intermedia", new Vector3(-0.49f, 1.55f, 99.85f), new Vector3(-0.46f, 0.85f, 100.95f), 65f);
+
         yield return new Shot($"sala1_mesa_{d}", new Vector3(-6.95f, 5.25f, -2.9f), new Vector3(-5.95f, 4.4f, -2.9f), 60f);
         yield return new Shot($"sala3_{d}", new Vector3(0.75f, 4.45f, 47.1f), new Vector3(-0.85f, 3.95f, 47.35f), 65f);
     }
@@ -97,7 +106,7 @@ public static class CodeaCaptures
     {
         Directory.CreateDirectory(OutputFolder);
 
-        SessionState.SetString(KeyQueue, $"{(int)Difficulty.Basica},{(int)Difficulty.Avanzada}");
+        SessionState.SetString(KeyQueue, $"{(int)Difficulty.Basica},{(int)Difficulty.Intermedia}");
         SessionState.SetBool(KeyBatch, batch);
         SessionState.SetString(KeyFiles, "");
         SessionState.SetString(KeyLog, "");

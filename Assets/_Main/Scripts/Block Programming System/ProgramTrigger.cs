@@ -29,7 +29,7 @@ public class ProgramTrigger : MonoBehaviour
     {
         if (runner.IsRunning)
         {
-            print("Programm is running");
+            Debug.Log($"[{challengeId}] Ejecutar ignorado: el programa ya está corriendo.", this);
             return;
         }
 
@@ -38,7 +38,7 @@ public class ProgramTrigger : MonoBehaviour
         // partida y sin nada que explique por qué.
         if (!allowRepeatedRuns && runner.HasRun)
         {
-            print("Programm has run");
+            Debug.Log($"[{challengeId}] Ejecutar ignorado: el programa ya corrió y falta reiniciar.", this);
             return;
         }
 

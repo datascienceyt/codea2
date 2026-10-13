@@ -53,10 +53,14 @@ public class Socket : MonoBehaviour
     /// </summary>
     public event Action<BlockNode> OnOccupied;
 
-    public void Occupy(BlockNode block)
+    /// <param name="playSound">
+    /// False cuando el bloque lo coloca el juego y no el jugador: la fila que viene montada al
+    /// cargar la escena encajaba sus bloques a la vez, y sonaban todos los clipIn de golpe.
+    /// </param>
+    public void Occupy(BlockNode block, bool playSound = true)
     {
         CurrentBlock = block;
-        PlayClip(clipIn);
+        if (playSound) PlayClip(clipIn);
 
         OnOccupied?.Invoke(block);
     }
@@ -83,24 +87,6 @@ public class Socket : MonoBehaviour
         BlockNode block = CurrentBlock;
         CurrentBlock = null;
         block.ForgetSocket();
-    }
-
-    public void ClearAndDestroyBlock()
-    {
-        BlockNode block = CurrentBlock;
-        Release();
-
-        if (block != null)
-            Destroy(block.gameObject);
-    }
-
-    public void ClearAndDetachBlock()
-    {
-        BlockNode block = CurrentBlock;
-        Release();
-
-        if (block != null)
-            block.transform.SetParent(null);
     }
 
     void PlayClip(AudioClip clip)

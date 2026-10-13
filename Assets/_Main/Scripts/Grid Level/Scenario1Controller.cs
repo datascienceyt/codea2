@@ -82,8 +82,6 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     void Start()
     {
-        //OVRInput.DisableSimultaneousHandsAndControllers();
-
         if (startChallengeOnStart && TelemetryManager.Instance != null)
             TelemetryManager.Instance.StartChallenge(challengeId);
     }

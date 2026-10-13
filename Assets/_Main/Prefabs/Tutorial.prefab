@@ -1180,22 +1180,6 @@ PrefabInstance:
       propertyPath: standalone
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4380535293664118351, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
-      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4380535293664118351, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
-      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
-      objectReference: {fileID: 2511790463371834129}
-    - target: {fileID: 4380535293664118351, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
-      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: PlayAudio
-      objectReference: {fileID: 0}
-    - target: {fileID: 4380535293664118351, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
-      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: Oculus.Interaction.AudioTrigger, Oculus.Interaction.Samples
-      objectReference: {fileID: 0}
     - target: {fileID: 4497417791256653332, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
       propertyPath: m_text
       value: PULSAR
@@ -1626,14 +1610,6 @@ PrefabInstance:
     - target: {fileID: 3960412660588531172, guid: 1dc96a4473a40f6439e86c4e59c2ba0c, type: 3}
       propertyPath: instanceId
       value: d8d4f80f-6e69-4255-9284-48bc9c4f906e
-      objectReference: {fileID: 0}
-    - target: {fileID: 4913740854065196207, guid: 1dc96a4473a40f6439e86c4e59c2ba0c, type: 3}
-      propertyPath: onGrabbed.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: RegisterBlockGrabbed
-      objectReference: {fileID: 0}
-    - target: {fileID: 4913740854065196207, guid: 1dc96a4473a40f6439e86c4e59c2ba0c, type: 3}
-      propertyPath: onReleased.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
-      value: RegisterBlockReleased
       objectReference: {fileID: 0}
     - target: {fileID: 5654299665293273985, guid: 1dc96a4473a40f6439e86c4e59c2ba0c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

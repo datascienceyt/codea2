@@ -5,9 +5,8 @@ using UnityEngine;
 /// Guarda la colocación inicial de los bloques que cuelgan de este transform y los
 /// devuelve ahí al reiniciar.
 ///
-/// Sustituye al flujo de BlockGenerator: los bloques del reto ya están todos en la
-/// escena desde el arranque, así que reiniciar no instancia ni destruye nada, solo
-/// mueve de vuelta a su sitio los mismos objetos.
+/// Los bloques del reto ya están todos en la escena desde el arranque, así que reiniciar
+/// no instancia ni destruye nada: solo mueve de vuelta a su sitio los mismos objetos.
 /// </summary>
 public class BlockResetter : MonoBehaviour
 {

@@ -83,7 +83,7 @@ Presentes en los cuatro.
 |---|---|---|
 | `started` | `true`/`false` | Si el participante llegó a este escenario |
 | `completed` | `true`/`false` | Si lo resolvió |
-| `timedOut` | `true`/`false` | **Se agotó su tiempo sin resolverlo** y la historia pasó a la sala siguiente. Desde el 09/10/2026 cada sala tiene 5 minutos. Nunca es `true` a la vez que `completed`. Un escenario con `started` en `true`, `completed` y `timedOut` en `false` y sin `endedUtc` es una sesión que se cortó (visor apagado, app cerrada) |
+| `timedOut` | `true`/`false` | **Se agotó el tiempo sin resolverlo.** Desde el 12/10/2026 hay dos límites: 5 minutos por sala (al agotarse, la historia pasa a la sala siguiente) y 15 minutos de sesión, que solo corren durante los retos (al agotarse, la experiencia termina: la sala en curso queda con `timedOut` en `true` y las siguientes con `started` en `false`). Nunca es `true` a la vez que `completed`. Un escenario con `started` en `true`, `completed` y `timedOut` en `false` y sin `endedUtc` es una sesión que se cortó (visor apagado, app cerrada) |
 | `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve o se agota su tiempo (como mucho 300 s desde el 09/10/2026, más lo que dure el último intento si estaba ejecutándose). En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
 | `startedUtc` / `endedUtc` | fecha | Permiten reconstruir el ritmo de la sesión completa |
 
@@ -264,8 +264,8 @@ visual**: hay que comparar el detalle, no reconocer una forma conocida.
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `chipsGrabbed` | entero | Cuántas veces cogió una ficha: la señal de duda y tanteo |
-| `socket` | texto | En qué hueco intentó colocar |
-| `chip` | texto | Qué figura colocó |
+| `socket` | texto | En qué hueco intentó colocar. En básica, el nombre de la figura que espera; en intermedia, posición y letra: `1_Y`, `2_A`, `3_C`, `4_H`, `5_A`, `6_Y` |
+| `chip` | texto | Qué figura colocó. En intermedia, la letra: `A`…`Z` |
 | `correct` | `true`/`false` | Si encajaba |
 | `durationSeconds` | decimal | **Segundos desde la colocación anterior**; en la primera, desde que se abrió el escenario |
 | `timestamp` | fecha | Cuándo |
@@ -274,6 +274,12 @@ Las tres últimas filas y `socket`/`chip` van en la lista `placements`, una entr
 encajada. Las colocaciones incorrectas son las que tienen `correct: false`; ya no hay un
 contador `wrongPlacements` aparte, ni uno de fichas soltadas: una ficha encajada ya es una
 entrada de la lista.
+
+**Intermedia (desde el 12/10/2026).** El panel tiene 6 huecos con las letras de **YACHAY** en un
+alfabeto de glifos cuadrados, y las mismas 18 fichas llevan letras de ese alfabeto: dos Y, dos A,
+una C, una H y doce distractoras, las mismas en todas las sesiones. La palabra repite letras, y
+por eso el hueco se identifica con su posición delante: una `Y` es correcta tanto en `1_Y` como
+en `6_Y`. Para cruzar ficha y hueco hay que comparar la letra, no el texto entero.
 
 Se guarda **qué figura fue a qué hueco**, no solo el acierto. Ese par es el dato pedagógico
 del escenario: saber **cuál confundió con cuál** dice qué detalle no llegó a distinguir, y de

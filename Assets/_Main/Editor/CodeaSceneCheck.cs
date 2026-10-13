@@ -45,7 +45,7 @@ public static class CodeaSceneCheck
         { GridActionType.MoveForward, 2 }, { GridActionType.Use, 1 },
     };
 
-    private static readonly Difficulty[] Difficulties = { Difficulty.Basica, Difficulty.Avanzada };
+    private static readonly Difficulty[] Difficulties = { Difficulty.Basica, Difficulty.Intermedia };
 
     [MenuItem("Tools/Codea/Comprobar escena de juego")]
     private static void CheckMenu()
@@ -393,7 +393,8 @@ public static class CodeaSceneCheck
         report.Line($"  {stepNumber} pasos · {narratorWaits} esperas al Narrator · {starts} llamadas a StartScenario");
 
         foreach (KeyValuePair<Object, int> pair in startsByController.Where(p => p.Value > 1))
-            report.Warn($"El reto de '{pair.Key.name}' se abre {pair.Value} veces (pendiente conocido: debería ser una)");
+            report.Error($"El reto de '{pair.Key.name}' se abre {pair.Value} veces: debe ser una, al llegar a la sala. " +
+                         "Pasa Tools → Codea → 3");
 
         CheckNarratorLists(narrator, narratorWaits, report);
     }
@@ -621,7 +622,7 @@ public static class CodeaSceneCheck
                 report.Error("Esc. 3: fila oculta y editable: se podrían agarrar bloques sin verlos");
             if (difficulty == Difficulty.Basica && settings.showRow)
                 report.Warn("Esc. 3: en básica la fila debería estar oculta (las instrucciones no se enseñan)");
-            if (difficulty == Difficulty.Avanzada && !settings.showRow)
+            if (difficulty == Difficulty.Intermedia && !settings.showRow)
                 report.Error("Esc. 3: en intermedia la fila tiene que verse: el niño la reordena");
 
             report.Line($"  Esc. 3: fila {(settings.showRow ? "visible" : "OCULTA")}, {(settings.editable ? "editable" : "bloqueada")}: " +
@@ -650,7 +651,7 @@ public static class CodeaSceneCheck
             string labels = string.Join(" ", settings.initialBlocks.Select(b => b?.block is ArmBlock a ? a.action.ToString() : "-"));
             if (difficulty == Difficulty.Basica && (settings.editable || labels != "Pick RotateToDestination Drop RotateToOrigin"))
                 report.Warn("Esc. 3: la básica no es la fila bloqueada Recoger · Girar al destino · Soltar · Volver");
-            if (difficulty == Difficulty.Avanzada && (!settings.editable || labels.Contains("RotateTo")))
+            if (difficulty == Difficulty.Intermedia && (!settings.editable || labels.Contains("RotateTo")))
                 report.Warn("Esc. 3: la intermedia debería ser editable y con giros literales");
         }
 
@@ -675,12 +676,38 @@ public static class CodeaSceneCheck
 
             if (resetter == null) report.Error("Esc. 4: Scenario4Controller sin chipResetter");
 
-            foreach (ShapeSocket socket in sockets)
+            // Qué dibujo lleva cada ficha en ESTA dificultad: el que le ponga Scenario4Difficulty
+            // al cargar o, si no dice nada, el que tiene guardado en la escena.
+            Dictionary<ShapeChip, Object> shapeOf = chips.ToDictionary(c => c, c => new SerializedObject(c).FindProperty("shape").objectReferenceValue);
+            Scenario4Difficulty shapes = s4.GetComponent<Scenario4Difficulty>();
+
+            if (shapes != null)
             {
-                Object shape = new SerializedObject(socket).FindProperty("expectedShape").objectReferenceValue;
-                if (shape == null) report.Error($"Esc. 4: el hueco '{socket.name}' no tiene figura");
-                else if (!chips.Any(c => new SerializedObject(c).FindProperty("shape").objectReferenceValue == shape))
-                    report.Error($"Esc. 4: ninguna ficha tiene la figura '{shape.name}' del hueco '{socket.name}': el reto no se podría terminar");
+                List<Sprite> wanted = (difficulty == Difficulty.Basica ? shapes.Basica : shapes.Intermedia).chipShapes;
+
+                if (wanted.Count > 0 && wanted.Count != shapes.Chips.Count)
+                    report.Error($"Esc. 4: Scenario4Difficulty tiene {shapes.Chips.Count} fichas y {wanted.Count} figuras");
+
+                for (int i = 0; i < wanted.Count && i < shapes.Chips.Count; i++)
+                    if (shapes.Chips[i] != null && wanted[i] != null && shapeOf.ContainsKey(shapes.Chips[i]))
+                        shapeOf[shapes.Chips[i]] = wanted[i];
+
+                report.Line("  Esc. 4: figuras de las fichas: " + string.Join(" ", chips.Select(c => Name(shapeOf[c]))));
+            }
+
+            foreach (ShapeSocket socket in sockets.Where(s => new SerializedObject(s).FindProperty("expectedShape").objectReferenceValue == null))
+                report.Error($"Esc. 4: el hueco '{socket.name}' no tiene figura");
+
+            // Se cuenta, no basta con que esté: una ficha acertada se queda en su hueco, así
+            // que dos huecos con la misma figura necesitan dos fichas que la lleven.
+            foreach (IGrouping<Object, ShapeSocket> group in sockets.GroupBy(s => new SerializedObject(s).FindProperty("expectedShape").objectReferenceValue)
+                                                                    .Where(g => g.Key != null))
+            {
+                int available = chips.Count(c => shapeOf[c] == group.Key);
+
+                if (available < group.Count())
+                    report.Error($"Esc. 4: {group.Count()} hueco(s) piden la figura '{group.Key.name}' ({string.Join(", ", group.Select(s => s.name))}) " +
+                                 $"y solo {available} ficha(s) la llevan: el reto no se podría terminar");
             }
 
             if (chips.Count <= sockets.Count) report.Warn("Esc. 4: no hay fichas de sobra; el último hueco se resuelve por eliminación");
@@ -699,6 +726,18 @@ public static class CodeaSceneCheck
                 else if (piece is Component c && Excluded(c)) report.Error($"Tutorial: '{field}' está apagado en esta dificultad");
             }
         }
+
+        // Un botón de opción que nadie pulsa: su InteractableUnityEventWrapper tiene que llamar
+        // a Press. En el tutorial, un ajuste de la instancia dejó ese evento solo con el
+        // sonido: el botón sonaba, no se marcaba y el tutorial no se podía terminar.
+        HashSet<Object> pressed = new HashSet<Object>(
+            AllComponents<MonoBehaviour>(scene).SelectMany(b => EventCalls(b))
+                                               .Where(c => !c.IsDead && c.State != UnityEventCallState.Off &&
+                                                           c.Method == nameof(ModuleOptionButton.Press))
+                                               .Select(c => c.Target));
+
+        foreach (ModuleOptionButton button in AllComponents<ModuleOptionButton>(scene).Where(b => !Excluded(b) && !pressed.Contains(b)))
+            report.Error($"'{PathOf(button)}': ningún botón llama a su Press, así que pulsarlo no hace nada");
     }
 
     private static void CheckDifficultyOnly(Scene scene, Report report)
@@ -755,9 +794,15 @@ public static class CodeaSceneCheck
             if (!string.IsNullOrEmpty(lineId) && so.FindProperty("timeUpLine.clip").objectReferenceValue == null)
                 report.Warn($"La frase de tiempo agotado por sala ('{lineId}') no tiene audio: solo se escribirá en pantalla");
 
-            report.Line($"  Tiempo por sala: {seconds / 60f:0.#} min · frase al agotarse (salas 1-3): " +
+            int sessionSeconds = so.FindProperty("sessionSeconds").intValue;
+
+            if (sessionSeconds < seconds)
+                report.Error($"La sesión ({sessionSeconds} s) dura menos que una sala ({seconds} s)");
+
+            report.Line($"  Relojes: {sessionSeconds / 60f:0.#} min de sesión, solo durante los retos · " +
+                        $"límite por sala (no se ve): {seconds / 60f:0.#} min · frase al agotarse una sala: " +
                         (hasLine ? "asignada" : "ninguna (se omite la felicitación y se sigue)") +
-                        " · última sala: cierre de sesión con la frase de TimeUpSequence");
+                        " · sesión o última sala agotadas: cierre con la frase de TimeUpSequence");
 
             var ids = AllComponents<MonoBehaviour>(scene).OfType<ITimeLimitedChallenge>()
                                                           .Select(c => c.ChallengeId).Where(id => !string.IsNullOrEmpty(id)).ToList();

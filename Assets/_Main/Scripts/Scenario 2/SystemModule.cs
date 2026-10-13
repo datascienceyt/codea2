@@ -86,6 +86,9 @@ public class SystemModule : MonoBehaviour, IStepAction
     // Si ya pasó Start. Antes, los botones aún no están resueltos y Start pintará solo.
     private bool started;
 
+    // Se agotó el tiempo de la sala: ya no se espera a este módulo ni responden sus botones.
+    private bool timedOut;
+
     /// <summary>
     /// Cambia el problema y las opciones del módulo. Lo usa Scenario2Difficulty al cargar la
     /// escena, antes de Awake; más tarde también vale, porque repinta.
@@ -160,8 +163,6 @@ public class SystemModule : MonoBehaviour, IStepAction
             button.SetInteractable(!IsSolved && !timedOut);
         }
     }
-
-    /// <summary>
 
     /// <summary>
     /// Si este módulo tiene registrado ese botón.
@@ -320,8 +321,6 @@ public class SystemModule : MonoBehaviour, IStepAction
     {
         yield return new WaitUntil(() => IsSolved || timedOut);
     }
-
-    private bool timedOut;
 
     /// <summary>
     /// Se agotó el tiempo de la sala: el paso del Director deja de esperar a este módulo y sus
