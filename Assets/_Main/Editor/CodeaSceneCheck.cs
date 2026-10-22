@@ -738,6 +738,34 @@ public static class CodeaSceneCheck
 
         foreach (ModuleOptionButton button in AllComponents<ModuleOptionButton>(scene).Where(b => !Excluded(b) && !pressed.Contains(b)))
             report.Error($"'{PathOf(button)}': ningún botón llama a su Press, así que pulsarlo no hace nada");
+
+        // Desde el 20/10/2026 marcar no comprueba nada: sin su Probar, un módulo no se repara nunca.
+        HashSet<Object> tried = new HashSet<Object>(
+            AllComponents<MonoBehaviour>(scene).SelectMany(b => EventCalls(b))
+                                               .Where(c => !c.IsDead && c.State != UnityEventCallState.Off &&
+                                                           c.Method == nameof(SystemModule.Try))
+                                               .Select(c => c.Target));
+
+        foreach (SystemModule module in AllComponents<SystemModule>(scene).Where(m => !Excluded(m)))
+        {
+            if (!tried.Contains(module))
+                report.Error($"Esc. 2 · {module.name}: ningún botón llama a su Try (Probar): el módulo no se puede reparar");
+            else if (new SerializedObject(module).FindProperty("tryButton").objectReferenceValue == null)
+                report.Warn($"Esc. 2 · {module.name}: Probar no está en 'tryButton'; no se apagará al repararse");
+        }
+
+        // Porcentaje de solución: sin soluciones, attempts[].solutionPercent sale -1.
+        foreach (DifficultyVariant variant in AllComponents<DifficultyVariant>(scene).Where(v => v is Scenario1Difficulty || v is Scenario3Difficulty))
+        {
+            SerializedObject so = new SerializedObject(variant);
+            foreach (string level in new[] { "basica", "intermedia" })
+                if (so.FindProperty($"{level}.solutions").arraySize == 0)
+                    report.Warn($"{variant.GetType().Name} ({level}): sin soluciones; el porcentaje de solución saldrá -1. Pasa la herramienta 3");
+        }
+
+        ProgramTrigger loops = AllComponents<ProgramTrigger>(scene).FirstOrDefault(t => t.ChallengeId == TelemetryManager.Scenario3Id);
+        if (loops != null && !loops.RequireFullRow)
+            report.Error("Esc. 3: el botón ejecuta con huecos vacíos (requireFullRow apagado). Pasa la herramienta 3");
     }
 
     private static void CheckDifficultyOnly(Scene scene, Report report)

@@ -9,7 +9,7 @@ using UnityEngine.Events;
 /// El escenario se completa cuando cada tipo está entero en su destino: barriles a un
 /// lado, cajas al otro. Hacen falta al menos dos ejecuciones, una por tipo.
 /// </summary>
-public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
+public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge, IRemainingCounter
 {
     [System.Serializable]
     public class SortingGoal
@@ -208,6 +208,21 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
             if (goal != null && goal.type == type) return goal.destination;
 
         return null;
+    }
+
+    /// <summary>
+    /// Objetos de ese tipo que aún no están en su destino. Lo pregunta ProgramTrigger al pulsar
+    /// Ejecutar, para el `remaining` del intento.
+    /// </summary>
+    public int Remaining(string argument)
+    {
+        if (!System.Enum.TryParse(argument, out ArmItemType type)) return -1;
+
+        foreach (SortingGoal goal in goals)
+            if (goal != null && goal.type == type && goal.destination != null)
+                return Mathf.Max(0, goal.required - goal.destination.CountOf(type));
+
+        return -1;
     }
 
     /// <summary>Objetos ya colocados en el destino que les toca, sumando todos los tipos.</summary>

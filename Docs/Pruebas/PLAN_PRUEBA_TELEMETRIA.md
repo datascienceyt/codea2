@@ -6,7 +6,8 @@ terminarla, el archivo del visor tiene que coincidir con
 marcados `<VARIABLE>`. Sirve para comprobar qué mide cada parámetro y para detectar cualquier
 contador que no se registre.
 
-Preparado contra el código del 06/10/2026 (formato de telemetría nuevo). El significado de cada variable está en
+Preparado contra el código del 06/10/2026 (formato de telemetría nuevo) y puesto al día el
+22/10/2026: botón **Probar** en el Escenario 2 y `solutionPercent` en cada intento. El significado de cada variable está en
 [`../VARIABLES_TELEMETRIA.md`](../VARIABLES_TELEMETRIA.md).
 
 ## Reglas para que el resultado sea exacto
@@ -56,20 +57,22 @@ Totales: 3 intentos, `failedAttempts` 2, `blocksGrabbed` 15, `blocksConnected` 1
 
 ## Escenario 2 — Condicionales
 
-Los módulos aparecen en este orden: enfriamiento, generadores, motores. Una opción incorrecta
-se queda marcada un instante y **se suelta sola**: no hay que desmarcarla, y ese desmarcado no
-se registra.
+Los módulos aparecen en este orden: enfriamiento, generadores, motores. Marcar una opción no
+comprueba nada: se comprueba al pulsar el botón azul **Probar** del módulo. Si falla, suena la
+frase de error y, en menos de un segundo, se desmarcan los cuatro botones (ese desmarcado no se
+registra).
 
 | Paso | Módulo | Acción | Efecto esperado |
 |---|---|---|---|
-| 2.1 | Enfriamiento | Pulsar **Agregar combustible** | Selección con `correct` false. Frase de error; el botón se suelta solo en menos de un segundo |
-| 2.2 | Enfriamiento | Pulsar **Agregar agua** | `correct` true. Módulo reparado |
-| 2.3 | Generadores | Pulsar **Agregar agua** | `correct` false. Se suelta solo |
-| 2.4 | Generadores | Pulsar **Conectar una batería cargada** | `correct` true. Módulo reparado: la incorrecta ya no cuenta como marcada |
-| 2.5 | Motores | Pulsar **Agregar combustible** | `correct` true. Reparado y escenario completado |
+| 2.1 | Enfriamiento | Marcar **Agregar combustible** y pulsar **Probar** | Selección con `correct` false. Intento `[Agregar combustible]`, no reparado, 0 %. Frase de error; los botones se desmarcan solos |
+| 2.2 | Enfriamiento | Marcar **Agregar agua** y pulsar **Probar** | `correct` true. Intento reparado, 100 % |
+| 2.3 | Generadores | Marcar **Agregar agua** y pulsar **Probar** | `correct` false. Intento no reparado, 0 %. Se desmarca solo |
+| 2.4 | Generadores | Marcar **Conectar una batería cargada** y pulsar **Probar** | `correct` true. Intento reparado, 100 % |
+| 2.5 | Motores | Marcar **Agregar combustible** y pulsar **Probar** | `correct` true. Reparado y escenario completado |
 
-Totales: 5 selecciones, 2 de ellas con `correct` false. Cada una lleva su `durationSeconds`:
-el tiempo desde la pulsación anterior (la primera, desde que se abrió el escenario).
+Totales: 5 selecciones (2 con `correct` false), 5 intentos en `attempts` y `failedAttempts` 2.
+Cada selección lleva su `durationSeconds` desde la pulsación anterior; cada intento, desde el
+Probar anterior (los primeros, desde que se abrió el escenario).
 
 ## Escenario 3 — Bucles y parámetros
 
@@ -134,6 +137,9 @@ lleva su `durationSeconds`, desde la anterior (la primera, desde que se abrió e
 |---|---|
 | `pin`, `difficulty`, `deviceId` | P1, P2 |
 | `attempts[].sequence`, `solved` | 1.2, 1.5, 1.8 · 3.4–3.9 |
+| `attempts[].solutionPercent` | 1.2 (25), 1.5 (38), 1.8 (100) · 2.1–2.5 · 3.4–3.9 (100: en básica la fila es fija) |
+| Esc. 2 `attempts[]`, `failedAttempts`, `correctSelected`, `wrongSelected` | 2.1–2.5 (0 y 1 en los fallidos; 1 y 0 en los reparados) |
+| Esc. 3 `attempts[].remaining` | 3.4 (7), 3.5 (4), 3.6 (0), 3.9 (3) |
 | `failedAttempts` | 1.2, 1.5 (esc. 1) · 3.6 (esc. 3; 3.4 y 3.5 no cuentan porque avanzan) |
 | `errorCollisionBot` | 1.2 (salir del tablero) · 1.5 (chocar con un peligro) |
 | `errorInvalidUse` | 1.5 ("Usar" donde no hay nada) |

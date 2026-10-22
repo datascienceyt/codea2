@@ -73,6 +73,7 @@ public static class CodeaCaptures
             yield return new Shot("sala1_general", new Vector3(-6.9f, 5.6f, -3.0f), new Vector3(2.5f, 3.4f, -2.2f), 75f);
             yield return new Shot("sala2_general", new Vector3(-3.4f, 1.75f, 24.0f), new Vector3(-8.9f, 1.45f, 24.0f), 66f);
             yield return new Shot("sala2_modulo_sin_resolver", new Vector3(-6.3f, 1.7f, 24.0f), new Vector3(-8.9f, 1.42f, 24.0f), 50f);
+            yield return new Shot("sala2_modulo_probar", new Vector3(-6.0f, 1.45f, 24.0f), new Vector3(-8.6f, 0.95f, 24.0f), 62f);
             yield return new Shot("sala2_modulo_resuelto", new Vector3(-6.3f, 1.7f, 20.0f), new Vector3(-8.9f, 1.42f, 20.0f), 50f);
             yield return new Shot("sala4_panel", new Vector3(-0.49f, 1.55f, 99.85f), new Vector3(-0.46f, 0.85f, 100.95f), 65f);
         }
@@ -213,6 +214,8 @@ public static class CodeaCaptures
 
         for (int i = 0; i < cooling.Data.options.Count; i++)
             if (cooling.Data.IsCorrectAt(i)) cooling.ToggleOption(i);
+
+        cooling.Try();
     }
 
     private static void Capture(Shot shot)

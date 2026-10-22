@@ -558,6 +558,10 @@ public static class CodeaSceneTools
     {
         StringBuilder log = new StringBuilder("[Codea] Puesta al día de las escenas:\n");
 
+        // El servidor y la clave se leen del uploader de Juego, que es el que se prueba: el de
+        // Setup se quedó con los de un servidor antiguo y las sesiones pendientes no subían.
+        gameUploader = ReadGameUploader();
+
         if (File.Exists(SetupScene))
         {
             Scene setup = EditorSceneManager.OpenScene(SetupScene, OpenSceneMode.Single);
@@ -584,6 +588,20 @@ public static class CodeaSceneTools
         File.WriteAllText(UpdateReport, log.ToString());
 
         Debug.Log(log.ToString());
+    }
+
+    private static (string url, string key, int timeout)? gameUploader;
+
+    private static (string url, string key, int timeout)? ReadGameUploader()
+    {
+        EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
+
+        JSONUploader uploader = Object.FindAnyObjectByType<JSONUploader>(FindObjectsInactive.Include);
+        if (uploader == null) return null;
+
+        SerializedObject so = new SerializedObject(uploader);
+        return (so.FindProperty("serverUrl").stringValue, so.FindProperty("apiKey").stringValue,
+                so.FindProperty("timeoutSeconds").intValue);
     }
 
     private static void UpdateSetupScene(StringBuilder log)
@@ -614,6 +632,27 @@ public static class CodeaSceneTools
         }
 
         SetBool(uploader, "uploadPendingOnStart", true);
+
+        if (gameUploader is (string serverUrl, string serverKey, int serverTimeout) && !string.IsNullOrEmpty(serverUrl))
+        {
+            SerializedObject so = new SerializedObject(uploader);
+            bool changed = so.FindProperty("serverUrl").stringValue != serverUrl ||
+                           so.FindProperty("apiKey").stringValue != serverKey;
+
+            so.FindProperty("serverUrl").stringValue = serverUrl;
+            so.FindProperty("apiKey").stringValue = serverKey;
+            so.FindProperty("timeoutSeconds").intValue = serverTimeout;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // La clave no va al log: el informe se guarda en Logs/.
+            log.AppendLine(changed
+                ? $"  JSONUploader: servidor y clave copiados de Juego ({serverUrl}); antes eran otros"
+                : $"  JSONUploader: mismo servidor y clave que Juego ({serverUrl})");
+        }
+        else
+        {
+            log.AppendLine("  ⚠ Juego no tiene JSONUploader: el de Setup conserva su servidor y su clave");
+        }
 
         Transform startKey = panel.Find("Tecla EMPEZAR");
         Transform key = panel.Find($"Tecla {UploadKeyLabel}");
@@ -698,6 +737,7 @@ public static class CodeaSceneTools
         PointLevelLoaderAtBasicLevel(log);
         SplitScenario3Panel(log);
         AddEarthApproach(scene, log);
+        CodeaSolutions.Apply(log);
     }
 
     private const string EarthView = "Pos_earth";

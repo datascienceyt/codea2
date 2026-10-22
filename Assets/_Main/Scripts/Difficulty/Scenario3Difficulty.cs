@@ -28,6 +28,10 @@ public class Scenario3Difficulty : DifficultyVariant<Scenario3Difficulty.Setting
         [Tooltip("Desactivado, la fila no se ve pero se ejecuta igual. En básica el niño solo " +
                  "elige tipo y repeticiones: las instrucciones no se le enseñan.")]
         public bool showRow = true;
+
+        [Tooltip("Fila correcta para cada tipo, con su argumento (Barril, Caja), para el " +
+                 "porcentaje de solución de cada intento.")]
+        public List<SolutionPath> solutions = new List<SolutionPath>();
     }
 
     [SerializeField] private SocketRow row;
@@ -43,6 +47,8 @@ public class Scenario3Difficulty : DifficultyVariant<Scenario3Difficulty.Setting
         row.SetInitialBlocks(settings.initialBlocks);
         row.SetEditable(settings.editable);
         row.SetVisible(settings.showRow);
+
+        Scenario1Difficulty.ApplySolutions(row, settings.solutions, this);
 
         if (!settings.showRow && settings.editable)
             Debug.LogWarning($"[Dificultad] Escenario 3: la fila está oculta pero es editable; " +

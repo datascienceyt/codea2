@@ -91,6 +91,10 @@ public class TelemetryManager : MonoBehaviour
     /// </summary>
     private float _attemptCycleStart;
 
+    // Escenario 2: desde el Probar anterior. Aparte de _attemptCycleStart porque cada marca de
+    // una acción reinicia ese, y el intento mide lo que tardó en decidirse entero.
+    private float _moduleAttemptStart;
+
     /// <summary>Para no repetir el aviso de manipulación sin reto activo en cada frame.</summary>
     private bool _warnedManipulationWithoutChallenge;
 
@@ -405,6 +409,7 @@ public class TelemetryManager : MonoBehaviour
 
         // El primer intento se cronometra desde el arranque del escenario.
         _attemptCycleStart = Time.time;
+        _moduleAttemptStart = Time.time;
 
         if (scenario == null) return;
 
@@ -448,14 +453,21 @@ public class TelemetryManager : MonoBehaviour
     /// Se agotó el tiempo del reto sin resolverlo: queda con timedOut = true, completed =
     /// false, y su duración congelada. Idempotente; no hace nada si ya estaba resuelto.
     /// </summary>
-    public void TimeOutChallenge(string challengeId)
+    /// <param name="seconds">
+    /// Lo que se apunta como totalSeconds. ScenarioTimeLimit pasa el tiempo de sala contado,
+    /// que al agotarse es exactamente el límite (300 s), como piden los responsables del estudio:
+    /// el cronómetro de aquí sigue corriendo mientras se espera a que acabe el intento en curso,
+    /// y daba algo más.
+    /// Negativo: el tiempo transcurrido desde StartChallenge.
+    /// </param>
+    public void TimeOutChallenge(string challengeId, float seconds = -1f)
     {
         ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null || scenario.completed || scenario.timedOut) return;
 
         scenario.timedOut = true;
         scenario.endedUtc = NowUtc();
-        scenario.totalSeconds = ElapsedIn(challengeId);
+        scenario.totalSeconds = seconds >= 0f ? seconds : ElapsedIn(challengeId);
 
         Save();
 
@@ -471,8 +483,10 @@ public class TelemetryManager : MonoBehaviour
     ///
     /// Lo llama ProgramTrigger, que es común a ambos escenarios y no debe saber en cuál está.
     /// </summary>
+    /// <param name="solutionPercent">Cuánto se parece a la solución, de 0 a 100; -1 sin solución cargada.</param>
+    /// <param name="remaining">Esc. 3: objetos de ese tipo por clasificar al pulsar; -1 si no aplica.</param>
     public void RegisterBlockAttempt(string challengeId, List<string> sequence, int repetitions = 1,
-                                     string itemType = null)
+                                     string itemType = null, int solutionPercent = -1, int remaining = -1)
     {
         ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null) return;
@@ -485,6 +499,7 @@ public class TelemetryManager : MonoBehaviour
             {
                 sequence = Copy(sequence),
                 solved = false,
+                solutionPercent = solutionPercent,
                 durationSeconds = duration,
                 timestamp = NowUtc()
             });
@@ -496,7 +511,9 @@ public class TelemetryManager : MonoBehaviour
                 sequence = Copy(sequence),
                 repetitions = repetitions,
                 itemType = itemType,
+                remaining = remaining,
                 solved = false,
+                solutionPercent = solutionPercent,
                 durationSeconds = duration,
                 timestamp = NowUtc()
             });
@@ -542,6 +559,34 @@ public class TelemetryManager : MonoBehaviour
         });
 
         _attemptCycleStart = Time.time;
+
+        Save();
+    }
+
+    /// <summary>
+    /// Una pulsación de Probar en un módulo: lo que había marcado, si lo reparó y cuánto se
+    /// acercaba a la solución. Si no lo reparó, cuenta como intento fallido.
+    /// </summary>
+    public void RegisterModuleAttempt(string challengeId, string moduleId, List<string> selection,
+                                      int correctSelected, int wrongSelected, bool solved, int solutionPercent)
+    {
+        if (!(GetScenario(challengeId) is Scenario2Record scenario)) return;
+
+        scenario.attempts.Add(new ModuleAttemptRecord
+        {
+            module = moduleId,
+            selection = Copy(selection),
+            correctSelected = correctSelected,
+            wrongSelected = wrongSelected,
+            solved = solved,
+            solutionPercent = solutionPercent,
+            durationSeconds = Time.time - _moduleAttemptStart,
+            timestamp = NowUtc()
+        });
+
+        if (!solved) scenario.failedAttempts++;
+
+        _moduleAttemptStart = Time.time;
 
         Save();
     }

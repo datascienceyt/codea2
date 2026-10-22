@@ -35,6 +35,11 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
              "reinician el cronómetro del escenario.")]
     [SerializeField] bool startChallengeOnStart = true;
 
+    [Header("Bloques")]
+    [Tooltip("Los bloques de la paleta no se pueden agarrar hasta que arranca el reto, que es " +
+             "cuando arranca el reloj. Así nadie monta la secuencia durante la narración.")]
+    [SerializeField] bool lockBlocksUntilStart = true;
+
     bool levelFinished;
     bool timedOut;
 
@@ -73,6 +78,9 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     void OnDestroy()
     {
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.ChallengeStarted -= HandleChallengeStarted;
+
         if (levelManager != null)
             levelManager.OnLevelCompleted -= HandleLevelFinished;
 
@@ -82,8 +90,33 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     void Start()
     {
+        if (lockBlocksUntilStart && TelemetryManager.Instance != null)
+        {
+            SetPaletteInteractable(false);
+            TelemetryManager.Instance.ChallengeStarted += HandleChallengeStarted;
+        }
+
         if (startChallengeOnStart && TelemetryManager.Instance != null)
             TelemetryManager.Instance.StartChallenge(challengeId);
+    }
+
+    void HandleChallengeStarted(string id)
+    {
+        if (id != challengeId) return;
+
+        TelemetryManager.Instance.ChallengeStarted -= HandleChallengeStarted;
+        SetPaletteInteractable(true);
+    }
+
+    /// <summary>
+    /// Los bloques del escenario, sin los del tutorial, que tiene su propio bloque y se usa
+    /// antes de que arranque el reloj.
+    /// </summary>
+    void SetPaletteInteractable(bool value)
+    {
+        foreach (GridBlock block in FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (block.GetComponentInParent<TutorialController>(true) == null)
+                block.SetInteractable(value);
     }
 
     void HandleLevelFinished()

@@ -13,6 +13,9 @@ public abstract class BlockNode : MonoBehaviour
     [SerializeField] GameObject interactionRoot;
 
     Socket currentSocket;
+
+    // De quién colgaba al arrancar. Suelto, el bloque vuelve aquí y no a la raíz de la escena.
+    Transform homeParent;
     VRGrabEvents grabEvents;
     Socket candidate;
     bool isGrabbed;
@@ -32,6 +35,11 @@ public abstract class BlockNode : MonoBehaviour
 
     protected virtual void Awake()
     {
+        homeParent = transform.parent;
+
+        // Se pudo bloquear antes de despertar (su sala estaba apagada): se aplica ahora.
+        if (!IsInteractable) SetInteractable(false);
+
         grabEvents = GetComponent<VRGrabEvents>();
         grabEvents.onGrabbed.AddListener(OnGrabbed);
         grabEvents.onReleased.AddListener(OnReleased);
@@ -82,7 +90,14 @@ public abstract class BlockNode : MonoBehaviour
         OnReleased();
     }
 
-    /// <summary>Sale del socket que ocupaba, con su sonido, y queda suelto en la escena.</summary>
+    /// <summary>
+    /// Sale del socket que ocupaba, con su sonido, y vuelve a colgar de su padre de origen.
+    ///
+    /// No de la raíz: el Grabbable de Meta fija la escala LOCAL del bloque a la que tenía al
+    /// arrancar. Los bloques del Escenario 3 cuelgan de una columna a escala 1,5; soltados en
+    /// la raíz, el agarre les volvía a poner su escala local y se quedaban a 2/3 de tamaño,
+    /// también al volver a encajarlos. Bajo su padre de origen, esa escala local es la buena.
+    /// </summary>
     void LeaveSocket()
     {
         if (currentSocket != null)
@@ -91,7 +106,23 @@ public abstract class BlockNode : MonoBehaviour
             currentSocket = null;
         }
 
-        transform.SetParent(null);
+        transform.SetParent(homeParent);
+    }
+
+    /// <summary>
+    /// El hijo que lleva los interactables de Meta, para los bloques que no lo tienen asignado
+    /// (los del Escenario 1). Sin él, SetInteractable no tenía efecto en ellos.
+    ///
+    /// IInteractable va cualificado a propósito: el grid del Escenario 1 tiene su propio
+    /// IInteractable global, y sin el espacio de nombres se comparaba con ese y no encontraba nada.
+    /// </summary>
+    GameObject FindInteractionRoot()
+    {
+        foreach (MonoBehaviour behaviour in GetComponentsInChildren<MonoBehaviour>(true))
+            if (behaviour is Oculus.Interaction.IInteractable && behaviour.transform != transform)
+                return behaviour.gameObject;
+
+        return null;
     }
 
     public bool IsAttached => currentSocket != null;
@@ -125,6 +156,10 @@ public abstract class BlockNode : MonoBehaviour
     public void SetInteractable(bool value)
     {
         IsInteractable = value;
+
+        // Se busca aquí y no solo en Awake: a un bloque de una sala apagada se le puede bloquear
+        // antes de su Awake, y entonces aún no sabía qué apagar.
+        if (interactionRoot == null) interactionRoot = FindInteractionRoot();
 
         if (interactionRoot != null)
             interactionRoot.SetActive(value);

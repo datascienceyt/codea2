@@ -223,7 +223,10 @@ public class ScenarioTimeLimit : MonoBehaviour
 
         roomRunning = false;
 
-        if (telemetry != null) telemetry.TimeOutChallenge(challenge.ChallengeId);
+        // Sala agotada: sus 300 s justos. Si lo que se agotó fue la sesión, lo que llegó a
+        // jugarse en la sala, que es menos.
+        if (telemetry != null)
+            telemetry.TimeOutChallenge(challenge.ChallengeId, Mathf.Min(roomElapsed, secondsPerScenario));
 
         OnScenarioTimeUp?.Invoke();
 
@@ -254,7 +257,15 @@ public class ScenarioTimeLimit : MonoBehaviour
         challenge.TimeOut();
     }
 
-    /// <summary>Para probar sin esperar los cinco minutos.</summary>
+    /// <summary>
+    /// Para probar sin esperar los cinco minutos: como si se hubieran gastado, así que la
+    /// telemetría apunta los mismos 300 s que en una sala agotada de verdad.
+    /// </summary>
     [ContextMenu("Agotar el tiempo de la sala actual")]
-    public void ForceTimeUp() => HandleTimeUp();
+    public void ForceTimeUp()
+    {
+        if (roomRunning) roomElapsed = secondsPerScenario;
+
+        HandleTimeUp();
+    }
 }

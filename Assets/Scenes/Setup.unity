@@ -1064,8 +1064,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0d00b13eb526f54b8f3c8f49d484df7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JSONUploader
-  serverUrl: https://csv.penginexr.com/upload
-  apiKey: CodeaVR2YachayTech2026
+  serverUrl: https://codea2.penginexr.com/upload
+  apiKey: Codea2YachayTech2026
   timeoutSeconds: 15
   maxRetries: 2
   uploadPendingOnStart: 1

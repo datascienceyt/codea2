@@ -89,6 +89,20 @@ public class SocketRow : MonoBehaviour
     public int Repetitions => repetitions;
     public bool IsEditable => editable;
     public int SocketsQuantity => socketsQuantity;
+
+    /// <summary>Si todos los huecos de la fila tienen bloque.</summary>
+    public bool IsComplete
+    {
+        get
+        {
+            if (sockets.Count == 0) return false;
+
+            foreach (Socket socket in sockets)
+                if (socket == null || socket.IsEmpty) return false;
+
+            return true;
+        }
+    }
     public IReadOnlyList<InitialBlock> InitialBlocks => initialBlocks;
 
     private readonly List<Socket> sockets = new List<Socket>();

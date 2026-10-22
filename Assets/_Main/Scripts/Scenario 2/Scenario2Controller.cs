@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -50,7 +51,12 @@ public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         WarnAboutMissingModules();
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionToggled += HandleOptionToggled;
+        {
+            if (module == null) continue;
+
+            module.OnOptionToggled += HandleOptionToggled;
+            module.OnTried += HandleTried;
+        }
     }
 
     /// <summary>
@@ -85,7 +91,12 @@ public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         if (modules == null) return;
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionToggled -= HandleOptionToggled;
+        {
+            if (module == null) continue;
+
+            module.OnOptionToggled -= HandleOptionToggled;
+            module.OnTried -= HandleTried;
+        }
     }
 
     private void Start()
@@ -110,9 +121,20 @@ public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
                 module.ModuleId,
                 module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString(),
                 correct);
+    }
 
-        // Se comprueba en cada pulsación: es barato y no obliga a saber aquí cuál resuelve.
-        CheckCompletion();
+    /// <summary>Un Probar: va a attempts[] y, si reparó el módulo, puede cerrar el escenario.</summary>
+    private void HandleTried(SystemModule module, List<string> selection, int correct, int wrong,
+                             bool solved, int percent)
+    {
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.RegisterModuleAttempt(challengeId, module.ModuleId, selection,
+                                                            correct, wrong, solved, percent);
+
+        Debug.Log($"[Escenario 2] Probar en '{module.ModuleId}': {(solved ? "reparado" : "fallo")} · " +
+                  $"{percent} % · [{string.Join(", ", selection)}]", this);
+
+        if (solved) CheckCompletion();
     }
 
     private void CheckCompletion()

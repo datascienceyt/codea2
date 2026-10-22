@@ -26,6 +26,7 @@
                     "Avanzar"
                 ],
                 "solved": false,
+                "solutionPercent": 25,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
@@ -36,6 +37,7 @@
                     "Usar"
                 ],
                 "solved": false,
+                "solutionPercent": 38,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
@@ -51,6 +53,7 @@
                     "Usar"
                 ],
                 "solved": true,
+                "solutionPercent": 100,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
@@ -63,6 +66,7 @@
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
+        "failedAttempts": 2,
         "selections": [
             {
                 "module": "enfriamiento",
@@ -99,6 +103,68 @@
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }
+        ],
+        "attempts": [
+            {
+                "module": "enfriamiento",
+                "selection": [
+                    "Agregar combustible"
+                ],
+                "correctSelected": 0,
+                "wrongSelected": 1,
+                "solved": false,
+                "solutionPercent": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "enfriamiento",
+                "selection": [
+                    "Agregar agua"
+                ],
+                "correctSelected": 1,
+                "wrongSelected": 0,
+                "solved": true,
+                "solutionPercent": 100,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "generadores",
+                "selection": [
+                    "Agregar agua"
+                ],
+                "correctSelected": 0,
+                "wrongSelected": 1,
+                "solved": false,
+                "solutionPercent": 0,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "generadores",
+                "selection": [
+                    "Conectar una batería cargada"
+                ],
+                "correctSelected": 1,
+                "wrongSelected": 0,
+                "solved": true,
+                "solutionPercent": 100,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            },
+            {
+                "module": "motores",
+                "selection": [
+                    "Agregar combustible"
+                ],
+                "correctSelected": 1,
+                "wrongSelected": 0,
+                "solved": true,
+                "solutionPercent": 100,
+                "durationSeconds": "<VARIABLE: segundos>",
+                "timestamp": "<VARIABLE: fecha>"
+            }
         ]
     },
     "escenario3": {
@@ -122,7 +188,9 @@
                 ],
                 "repetitions": 3,
                 "itemType": "Caja",
+                "remaining": 7,
                 "solved": false,
+                "solutionPercent": 100,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
@@ -135,7 +203,9 @@
                 ],
                 "repetitions": 5,
                 "itemType": "Caja",
+                "remaining": 4,
                 "solved": false,
+                "solutionPercent": 100,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
@@ -148,7 +218,9 @@
                 ],
                 "repetitions": 1,
                 "itemType": "Caja",
+                "remaining": 0,
                 "solved": false,
+                "solutionPercent": 100,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             },
@@ -161,7 +233,9 @@
                 ],
                 "repetitions": 3,
                 "itemType": "Barril",
+                "remaining": 3,
                 "solved": true,
+                "solutionPercent": 100,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
             }

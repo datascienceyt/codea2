@@ -114,7 +114,7 @@ public class JSONUploader : MonoBehaviour
 
         int uploaded = 0, tried = 0;
         bool noConnection = false;
-        long rejectedCode = 0;
+        long rejectedCode = 0, downCode = 0;
 
         foreach (string path in pending)
         {
@@ -133,9 +133,13 @@ public class JSONUploader : MonoBehaviour
             // Sin conexión con el servidor, las demás fallarían igual y cada una costaría sus
             // tres esperas: se deja aquí. Si el servidor contestó y rechazó ESTE archivo, el
             // problema es del archivo y se sigue con los demás.
-            if (result.ResponseCode == 0)
+            //
+            // Un servidor caído tras Cloudflare (502–504, 520–530) cuenta como sin conexión: no es
+            // culpa del archivo, y lo que toca es reintentar más tarde.
+            if (result.ResponseCode == 0 || IsServerDown(result.ResponseCode))
             {
                 noConnection = true;
+                downCode = result.ResponseCode;
                 break;
             }
 
@@ -151,7 +155,8 @@ public class JSONUploader : MonoBehaviour
         int left = PendingFiles().Count;
         bool willRetry = left > 0 && noConnection && pendingRetriesLeft > 0 && retryPendingSeconds > 0f;
 
-        string reason = noConnection ? "Sin respuesta del servidor"
+        string reason = noConnection && downCode != 0 ? $"Servidor fuera de servicio ({downCode})"
+                      : noConnection ? "Sin respuesta del servidor"
                       : rejectedCode != 0 ? $"El servidor respondió {rejectedCode}"
                       : "Quedan por subir";
 
@@ -169,6 +174,41 @@ public class JSONUploader : MonoBehaviour
             pendingRetriesLeft--;
             pendingRetry = StartCoroutine(RetryPendingLater());
         }
+    }
+
+    /// <summary>
+    /// Respuestas de Cloudflare o del proxy cuando no llegan al servidor. 530 con el error 1033
+    /// es el túnel (cloudflared) caído: el 22/10/2026 pasó así, y se arregla en el servidor.
+    /// </summary>
+    private static bool IsServerDown(long code) =>
+        code == 502 || code == 503 || code == 504 || (code >= 520 && code <= 530);
+
+    /// <summary>
+    /// El cuerpo de la respuesta, para el log. Las páginas de error de Cloudflare son HTML de
+    /// cientos de líneas: de ellas basta el título y el código de error.
+    /// </summary>
+    private static string Summarize(string body)
+    {
+        if (string.IsNullOrEmpty(body)) return "(vacía)";
+
+        string trimmed = body.TrimStart();
+        if (!trimmed.StartsWith("<", System.StringComparison.Ordinal)) return body;
+
+        string title = Between(body, "<title>", "</title>");
+        string cloudflare = Between(body, "errorCode:", "}");
+
+        return $"página HTML: {(title ?? "sin título").Trim()}" +
+               (cloudflare != null ? $" · error de Cloudflare {cloudflare.Trim()}" : "");
+    }
+
+    private static string Between(string text, string start, string end)
+    {
+        int from = text.IndexOf(start, System.StringComparison.OrdinalIgnoreCase);
+        if (from < 0) return null;
+
+        from += start.Length;
+        int to = text.IndexOf(end, from, System.StringComparison.OrdinalIgnoreCase);
+        return to < 0 ? null : text.Substring(from, to - from);
     }
 
     private IEnumerator RetryPendingLater()
@@ -266,11 +306,13 @@ public class JSONUploader : MonoBehaviour
                                      "fallo conocido: 'raspberrypi' no se resuelve desde el " +
                                      "contenedor de cloudflared, o Flask no está levantado",
                 523 => "Cloudflare no encuentra el origen: la Raspberry está apagada o sin túnel",
+                530 => "el túnel de Cloudflare está caído (error 1033): cloudflared no está " +
+                       "conectado en el servidor. Se arregla allí, no en la app",
                 _ => "respuesta inesperada"
             };
 
             Debug.Log($"[Ping] {code} en {ms} ms · {veredicto}\n" +
-                      $"Respuesta: {request.downloadHandler.text}");
+                      $"Respuesta: {Summarize(request.downloadHandler.text)}");
         }
     }
 
@@ -413,7 +455,7 @@ public class JSONUploader : MonoBehaviour
             // dice "HTTP/1.1 502 Bad Gateway", mientras que el cuerpo trae el motivo real, sea
             // de Flask o la página de diagnóstico de Cloudflare.
             Debug.LogError($"[Upload] Falló '{fileName}' ({request.responseCode}): {request.error}\n" +
-                           $"Respuesta: {request.downloadHandler.text}");
+                           $"Respuesta: {Summarize(request.downloadHandler.text)}");
 
             result.ResponseCode = request.result == UnityWebRequest.Result.ProtocolError ? request.responseCode : 0;
 
