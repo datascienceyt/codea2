@@ -11,8 +11,8 @@ código: avisa y corrige este documento.
 ## 0. Para retomar en un chat nuevo
 
 **Dónde estamos (22/10/2026).** La versión se presentó el 30/09/2026 y desde entonces se ajusta
-con el feedback. Todo lo de abajo está **en `dev`, subido a los dos remotos**, y el trabajo sigue
-en la rama **`informe-mes2`**, creada desde ese `dev`.
+con el feedback. Todo lo de abajo está **en `dev`, subido a los dos remotos**. **Solo se usa
+la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se borró el 22/10/2026).
 
 - **06/10/2026**: formato nuevo de la telemetría, botón del Escenario 2 que se suelta solo y cuarto
   del tutorial con su botón INICIAR
@@ -21,7 +21,7 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
   combustible"; corregido el "Skip Step" del Director; dos herramientas de verificación
   (`Tools → Codea → Comprobar escena de juego` y `Probar las dos dificultades en Play`), las dos
   con **0 fallos**; recopilado el material del informe del mes 2
-- **09/10/2026, rama `informe-mes2`**: **`Docs/Informe-Mes2.docx` hecho**, con el formato del
+- **09/10/2026**: **`Docs/Informe-Mes2.docx` hecho**, con el formato del
   informe del mes 1 y los entregables 2.1, 2.2 y 2.3 (18 tablas, 11 figuras con capturas reales de
   la escena). Se genera con `node Docs/Herramientas/generar_informe_mes2.js`. Producto 2: "Informe
   técnico de desarrollo funcional e integración del módulo inmersivo"; fecha **subrayada en
@@ -170,7 +170,7 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
 **Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
 
 - **Commits sin coautor**: nunca añadir `Co-Authored-By` ni firma de IA
-- **Cada push va a los dos remotos**, `clousck` y `datascienceyt`, con `dev` idéntico en ambos
+- **Solo la rama `dev`**: nunca crear otras ramas. **Cada push va a los dos remotos**, `clousck` y `datascienceyt`, con `dev` idéntico en ambos
 - **Si Unity está abierto, no editar escenas ni prefabs a mano** (YAML): Unity los pisa o pide
   recargar. Los cambios de escena van por `Tools → Codea` (sección 3) o los hace el usuario en
   el editor. Comprobar antes con `tasklist | grep -i unity`
@@ -1430,7 +1430,7 @@ alfabeto de glifos cuadrados; la básica no cambia (4 huecos, figuras de `symbol
 - **En el editor** las fichas enseñan siempre el dibujo de básica: el de intermedia se pone al
   cargar. `Ver como intermedia` sí enseña los seis huecos
 
-**Informe del mes 2 (hecho el 09/10/2026 y puesto al día el 13/10/2026, rama `informe-mes2`).** `Docs/Informe-Mes2.docx`, con el
+**Informe del mes 2 (hecho el 09/10/2026 y puesto al día el 13/10/2026).** `Docs/Informe-Mes2.docx`, con el
 mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.3, hoja de firmas,
 índice, cabecera "Implementación, integración y pruebas del módulo" y tres capítulos (18 tablas y 12 figuras tras la puesta al día: se añadió la de la sala 4 intermedia). Cómo está hecho, para cambiarlo:
 
