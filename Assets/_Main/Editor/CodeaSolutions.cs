@@ -21,7 +21,7 @@ using UnityEngine;
 public static class CodeaSolutions
 {
     // Comprobados con el resolvedor sobre reto.json y escenario1_intermedio.json (13/10/2026).
-    private static readonly string[] Scenario1Basic =
+    internal static readonly string[] Scenario1Basic =
     {
         "Avanzar, Girar Derecha, Avanzar, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Usar",
         "Avanzar, Girar Derecha, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Avanzar, Usar",

@@ -15,6 +15,10 @@ public class ProgramTrigger : MonoBehaviour
              "Lo necesita el Escenario 3, donde hacen falta al menos dos pasadas, una por tipo.")]
     [SerializeField] private bool allowRepeatedRuns = false;
 
+    [Tooltip("Con allowRepeatedRuns desactivado: segundos tras el reinicio automático en los que " +
+             "Ejecutar no hace nada.")]
+    [SerializeField] private float pressAfterResetSeconds = 0.75f;
+
     [Tooltip("Activado: no se ejecuta si queda algún hueco de la fila vacío. Suena una frase de " +
              "error y se registra como comando inválido.\n\nLo necesita el Escenario 3: la fila " +
              "entera es el bucle, y sin esto un programa sin su último giro corría igual y " +
@@ -62,6 +66,14 @@ public class ProgramTrigger : MonoBehaviour
         if (!allowRepeatedRuns && runner.HasRun)
         {
             Debug.Log($"[{challengeId}] Ejecutar ignorado: el programa ya corrió y falta reiniciar.", this);
+            return;
+        }
+
+        // Una pulsación pegada al reinicio automático es la misma de antes, que llegó tarde: en
+        // una sesión del 22/10/2026 entró a los 0,18 s y repitió el intento fallido sin cambios.
+        if (!allowRepeatedRuns && Time.time - runner.LastResetTime < pressAfterResetSeconds)
+        {
+            Debug.Log($"[{challengeId}] Ejecutar ignorado: el nivel se acaba de reiniciar.", this);
             return;
         }
 

@@ -309,8 +309,9 @@ public static class CodeaPlayCheck
     }
 
     /// <summary>
-    /// El botón Probar: marcar mal y probar no repara ni cierra nada y queda como intento
-    /// fallido; marcar justo las correctas y probar, repara. El módulo se deja como estaba.
+    /// El botón Probar: sin nada marcado no hace nada; marcar mal y probar no repara ni cierra
+    /// nada y queda como intento fallido; marcar justo las correctas y probar, repara. El
+    /// módulo se deja como estaba.
     /// </summary>
     private static void CheckTryButton()
     {
@@ -325,7 +326,10 @@ public static class CodeaPlayCheck
         int wrong = Enumerable.Range(0, module.Data.options.Count).FirstOrDefault(i => !module.Data.IsCorrectAt(i));
         int before = ReadRun()?.escenario2.attempts.Count ?? 0;
 
+        // Sin nada marcado no cuenta: la telemetría de abajo espera solo los dos intentos siguientes.
         module.ResetModule();
+        module.Try();
+
         module.ToggleOption(wrong);
         Expect(!module.IsSolved, $"Esc. 2 · {module.name}: marcar una opción ya no comprueba nada");
 

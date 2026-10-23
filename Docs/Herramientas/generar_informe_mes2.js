@@ -11,16 +11,17 @@
 const fs = require("fs");
 const path = require("path");
 const { topLevel, textOf, esc, readZip, writeZip } = require("./docx_lib.js");
+const { paginasDelIndice } = require("./paginas_onlyoffice.js");
 
 // --- Datos de la portada. Cambiar aquí y volver a generar ---
 
-const FECHA_LARGA = "13 de octubre de 2026";
-const FECHA_CORTA = "13/10/2026";
+const FECHA_LARGA = "24 de octubre de 2026";
+const FECHA_CORTA = "24/10/2026";
 const PRODUCTO = "Informe técnico de desarrollo funcional e integración del módulo inmersivo";
 const CABECERA = "Desarrollo funcional e integración del módulo inmersivo";
 
 // La fecha puede cambiar antes de entregar: va subrayada en rojo para no olvidarla.
-const FECHA_PROVISIONAL = true;
+const FECHA_PROVISIONAL = false;
 
 const ENTREGABLES = [
   ["2.1 Implementación de funcionalidades principales",
@@ -198,13 +199,13 @@ function jpegSize(buf) {
 // =====================================================================================
 
 // Conexiones de eventos revisadas en las dos escenas, del último informe de
-// Tools → Codea → Comprobar escena de juego. Sin informe, el valor del 13/10/2026.
+// Tools → Codea → Comprobar escena de juego. Sin informe, el valor del 23/10/2026.
 const CONEXIONES = (() => {
   try {
     const log = fs.readFileSync(path.join(ROOT, "Logs", "Codea_Comprobacion.txt"), "utf8");
     const n = [...log.matchAll(/✓ (?:Setup: )?(\d+) llamadas de UnityEvent/g)].map(m => Number(m[1]));
-    return n.length === 2 ? n[0] + n[1] : 367;
-  } catch { return 367; }
+    return n.length === 2 ? n[0] + n[1] : 378;
+  } catch { return 378; }
 })();
 
 // --- 1. Implementación de funcionalidades principales ---
@@ -212,8 +213,8 @@ const CONEXIONES = (() => {
 heading(1, "Implementación de funcionalidades principales");
 
 heading(2, "Propósito");
-para("El presente informe técnico documenta el desarrollo del módulo inmersivo Codea VR realizado durante el segundo periodo del proyecto, comprendido entre la entrega del Producto 1 (13 de agosto de 2026) y el 13 de octubre de 2026. Mientras el Producto 1 estableció los requerimientos técnicos y funcionales y el diseño inicial del módulo, este documento presenta la implementación de las funcionalidades principales, la integración de los recursos 3D y de las interacciones inmersivas para Meta Quest, y los resultados de las pruebas funcionales preliminares realizadas con usuarios clave.");
-para("Al cierre del periodo, el módulo cuenta con una experiencia jugable completa de principio a fin, en las dos dificultades previstas, que fue presentada el 30 de septiembre de 2026. Desde entonces se encuentra en una fase de ajustes a partir de la retroalimentación recibida, cuyo detalle se recoge en el capítulo 3.");
+para("El presente informe técnico documenta el desarrollo del módulo inmersivo Codea VR realizado durante el segundo periodo del proyecto, comprendido entre la entrega del Producto 1 (13 de agosto de 2026) y el 24 de octubre de 2026. Mientras el Producto 1 estableció los requerimientos técnicos y funcionales y el diseño inicial del módulo, este documento presenta la implementación de las funcionalidades principales, la integración de los recursos 3D y de las interacciones inmersivas para Meta Quest, y los resultados de las pruebas funcionales preliminares realizadas con usuarios clave y con estudiantes.");
+para("Al cierre del periodo, el módulo cuenta con una experiencia jugable completa de principio a fin, en las dos dificultades previstas, que fue presentada el 30 de septiembre de 2026. Desde entonces se encuentra en una fase de ajustes a partir de la retroalimentación recibida, y el 22 de octubre de 2026 se probó por primera vez con estudiantes de la población objetivo. El detalle se recoge en el capítulo 3.");
 
 heading(2, "Descripción general del módulo implementado");
 para("Codea VR es un escape room educativo de realidad virtual orientado al desarrollo del pensamiento computacional en estudiantes de 8 a 17 años. El jugador asume el papel de un astronauta cuya nave ha atravesado una tormenta espacial y, con la ayuda de Roki, el robot de mantenimiento, debe reparar cuatro sistemas para volver a la Tierra, con quince minutos en total y un máximo de cinco por sistema. Cada sala de la nave trabaja un pilar del pensamiento computacional: secuencialidad, condicionales, bucles y patrones, en dos niveles de dificultad (básica e intermedia).");
@@ -226,15 +227,15 @@ table([["Campo", 1], ["Valor", 2.6]], [
   ["Escenas", "Setup (pantalla del supervisor) y Juego (tutorial y cuatro salas, para las dos dificultades)"],
   ["Salas", "Cuatro: secuencialidad, condicionales, bucles y parámetros, y patrones"],
   ["Dificultades", "Básica e intermedia, elegidas por el supervisor"],
-  ["Duración máxima", "15 minutos de sesión, visibles en los relojes, que solo corren durante los retos; cada sala tiene además un máximo de 5 minutos, tras los cuales se pasa a la siguiente"],
+  ["Duración máxima", "15 minutos de sesión y 5 por sala (sección {{§Sesión y tiempo límite}})"],
   ["Entrada", "Mandos Meta Quest Touch; compatibilidad con manos habilitada"],
   ["Locomoción", "Teletransporte y traslados guiados entre salas"],
   ["Registro de datos", "Un archivo JSON por participante, enviado por HTTP POST; funcionamiento completo sin conexión"],
-  ["Código fuente", "69 scripts en C# (unas 13 800 líneas); repositorio github.com/datascienceyt/codea2, rama dev"],
+  ["Código fuente", "73 scripts en C# (unas 15 500 líneas); repositorio github.com/datascienceyt/codea2, rama dev"],
 ], { title: "Ficha técnica del módulo implementado" });
 
 heading(2, "Cronología del desarrollo");
-para("El desarrollo se organizó en iteraciones cortas con revisiones periódicas del equipo. La Tabla {{Hitos del desarrollo en el periodo}} resume los hitos del periodo, tomados del historial del repositorio del proyecto.");
+para("El desarrollo se organizó en iteraciones cortas con revisiones periódicas del equipo. La Tabla {{Hitos del desarrollo en el periodo}} resume los hitos del periodo, tomados del historial del repositorio del proyecto. Los ajustes que respondieron a la retroalimentación se detallan en la Tabla {{Ajustes aplicados en el periodo}}.");
 table([["Fecha", 1], ["Hito", 4.2]], [
   ["13/08/2026", "Entrega del Producto 1: requerimientos, diseño y prototipos iniciales de los escenarios"],
   ["02/09/2026", "Implementación de los escenarios 2, 3 y 4, registro de datos en JSON y sistema de sesión"],
@@ -243,15 +244,16 @@ table([["Fecha", 1], ["Hito", 4.2]], [
   ["14/09/2026", "Montaje de la sala 2, botones y grabación de la voz de la narración"],
   ["15/09/2026", "Salas 3 y 4 con su registro de datos"],
   ["22/09/2026", "Versión beta 1: nuevo entorno de la nave y experiencia jugable completa; primer APK"],
-  ["29/09/2026", "Sesión por PIN y dificultad, cierre por tiempo agotado y cambios acordados en la reunión de revisión"],
-  ["30/09/2026", "Escena del supervisor, narrativa definitiva, nivel intermedio de la sala 1 y APK de la presentación"],
-  ["06/10/2026", "Formato definitivo del registro de datos, tutorial inicial y ajustes de la sala 2"],
-  ["09/10/2026", "Las dos dificultades en una sola escena, sala 3 básica sin instrucciones visibles, tiempo límite de 5 minutos por sala y herramientas de verificación automática"],
-  ["12/10/2026", "Voz definitiva de la narración, sala 4 intermedia con el alfabeto de glifos cuadrados, reloj de sesión de 15 minutos con máximo por sala, envío automático de las sesiones pendientes y retirada de escenas, recursos y código sin uso"],
+  ["29/09/2026", "Sesión por PIN y dificultad y cierre por tiempo agotado"],
+  ["30/09/2026", "Escena del supervisor, narrativa definitiva y APK de la presentación"],
+  ["06/10/2026", "Formato definitivo del registro de datos y tutorial inicial"],
+  ["09/10/2026", "Las dos dificultades en una sola escena y herramientas de verificación automática"],
+  ["12/10/2026", "Voz definitiva de la narración, envío automático de las sesiones pendientes y retirada de escenas, recursos y código sin uso"],
+  ["22/10/2026", "Versión 0.9.0, con el porcentaje de solución en el registro de datos; primeras pruebas con estudiantes"],
 ], { title: "Hitos del desarrollo en el periodo" });
 
 heading(2, "Arquitectura del software");
-para("El módulo se organiza en subsistemas independientes que se comunican mediante eventos. Esta separación permitió desarrollar y probar cada sala por separado y reutilizar el mismo sistema de bloques en varias de ellas. La Tabla {{Subsistemas del módulo}} describe la responsabilidad de cada subsistema.");
+para("El módulo se organiza en subsistemas independientes que se comunican mediante eventos. Esta separación permitió desarrollar y probar cada sala por separado y reutilizar el mismo sistema de bloques en varias de ellas. La Tabla {{Subsistemas del módulo}} describe la responsabilidad de cada subsistema; las herramientas de editor se describen en la sección {{§Herramientas de desarrollo y verificación}}.");
 table([["Subsistema", 1.1], ["Responsabilidad", 2.6], ["Componentes principales", 1.7]], [
   ["Sesión", "Pantalla del supervisor (PIN y dificultad), carga de la escena de juego, tiempo de la sesión y máximo de cada sala, cierre y vuelta a la pantalla inicial", "SessionSetup, PinEntry, SceneLoader, ScenarioTimeLimit, TimeUpSequence"],
   ["Director", "Orquesta la experiencia en tramos y pasos: narración, traslados, apertura de puertas y espera de cada reto", "Director, IStepAction"],
@@ -260,7 +262,6 @@ table([["Subsistema", 1.1], ["Responsabilidad", 2.6], ["Componentes principales"
   ["Salas", "Lógica de cada reto y su conexión con el registro de datos", "Scenario1Controller a Scenario4Controller, LevelManager, Bot, SystemModule, RoboticArm, ShapeSocket"],
   ["Dificultad", "Configura cada sala según la dificultad elegida, en una sola escena", "DifficultyApplier, DifficultyVariant, DifficultyOnly"],
   ["Telemetría", "Registro del desempeño en JSON, envío al servidor, también de las sesiones que quedaron pendientes, e informe de integridad", "TelemetryManager, TelemetryData, JSONUploader, TelemetryOutbox"],
-  ["Herramientas de editor", "Montaje de escenas, editor de niveles, comprobación de la escena y pruebas automáticas", "CodeaSceneTools, CodeaScenario4, LevelEditorWindow, CodeaSceneCheck, CodeaPlayCheck"],
 ], { title: "Subsistemas del módulo" });
 
 heading(2, "Navegación y flujo de la sesión");
@@ -271,7 +272,7 @@ numbered([
   "**Tutorial.** El narrador da la bienvenida y el estudiante practica las cuatro interacciones de la experiencia: pulsar dos botones, encajar un bloque en su hueco y colocar una ficha en el hueco de su misma figura.",
   "**Salas 1 a 4.** El estudiante es trasladado a cada sala con un fundido a negro. Dentro de cada sala se desplaza por teletransporte, la narración presenta el reto y, al resolverlo, se abre la puerta hacia la siguiente.",
   "**Cierre.** Al completar la sala 4 suena la frase final, se cierra el registro de la sesión, se envía al servidor y la aplicación vuelve sola a la pantalla del supervisor con el siguiente PIN propuesto.",
-  "**Tiempo agotado.** Los relojes muestran los quince minutos de la sesión, que solo corren mientras hay un reto abierto. Cada sala tiene además un máximo de cinco minutos: si se agotan sin resolverla, se deja terminar el intento que se esté ejecutando y, si no la resuelve, la historia pasa a la sala siguiente. Si se agotan los quince minutos de la sesión, o los cinco de la última sala, el narrador se despide, se cierra y envía el registro y se vuelve a la pantalla del supervisor.",
+  "**Tiempo agotado.** Si se agota el tiempo de una sala, la historia pasa a la siguiente; si se agota el de la sesión, el narrador se despide y la aplicación vuelve a la pantalla del supervisor (sección {{§Sesión y tiempo límite}}).",
 ]);
 para("La secuencia de la escena de juego la controla el componente Director, organizado en cinco tramos y 23 pasos. Cada paso ejecuta acciones inmediatas, como activar objetos, iniciar el temporizador o abrir el registro de una sala, y espera a que terminen otras: frases de la narración, fundidos, traslados, puertas o la resolución del reto. La Tabla {{Tramos de la secuencia de la experiencia}} resume los tramos.");
 table([["Tramo", 1], ["Pasos", 0.6], ["Contenido", 4]], [
@@ -290,8 +291,8 @@ heading(2, "Elementos educativos");
 heading(3, "Salas y pilares del pensamiento computacional");
 para("Cada sala traduce un concepto de programación a una actividad manipulable dentro de la nave. La dificultad intermedia conserva la mecánica de la básica y aumenta la exigencia del problema, de modo que el estudiante transfiere lo aprendido en lugar de aprender una mecánica nueva. La Tabla {{Elementos educativos por sala y dificultad}} detalla cada sala.");
 table([["Sala", 0.9], ["Pilar", 0.9], ["Actividad", 2.1], ["Básica", 1.6], ["Intermedia", 1.7]], [
-  ["1. Dormitorio", "Secuencialidad", "Ordenar bloques (Avanzar 1 bloque, Avanzar 2 bloques, Girar izquierda, Girar derecha, Pulsar botón) para que Roki recorra una rejilla y pulse el botón que abre la puerta", "Solución de 8 bloques; 8 huecos y 8 bloques disponibles", "Solución de 11 bloques y un camino alternativo de 14 que no cabe en los 11 huecos; 13 bloques disponibles"],
-  ["2. Sala de control", "Condicionales", "Leer los síntomas de tres sistemas averiados (motores, energía y enfriamiento) y marcar la acción que corrige cada uno", "4 opciones, 1 correcta", "4 opciones, 2 correctas (un síntoma por acción)"],
+  ["1. Dormitorio", "Secuencialidad", "Ordenar bloques (Avanzar 1 bloque, Avanzar 2 bloques, Girar izquierda, Girar derecha, Pulsar botón) para que Roki recorra una rejilla y pulse el botón que abre la puerta", "Dos soluciones de 8 bloques; 8 huecos y 8 bloques disponibles", "Solución de 11 bloques y un camino alternativo de 14 que no cabe en los 11 huecos; 13 bloques disponibles"],
+  ["2. Sala de control", "Condicionales", "Leer los síntomas de tres sistemas averiados (motores, energía y enfriamiento), marcar las acciones que corrigen cada uno y comprobarlas con el botón Probar", "4 opciones, 1 correcta", "4 opciones, 2 correctas (un síntoma por acción)"],
   ["3. Almacén", "Bucles y parámetros", "Programar un brazo robótico para clasificar 7 cajas y 3 barriles: una ficha indica el tipo de objeto y un contador las repeticiones", "Las instrucciones vienen ordenadas y no se muestran; el estudiante elige el tipo y las repeticiones", "El estudiante además reordena las instrucciones, que llegan desordenadas"],
   ["4. Panel final", "Patrones", "Colocar cada ficha en el hueco cuya figura es idéntica, entre figuras muy parecidas", "4 huecos con figuras geométricas y 18 fichas", "6 huecos con las letras de la palabra YACHAY en un alfabeto de glifos cuadrados; las mismas 18 fichas llevan letras de ese alfabeto, entre ellas las seis necesarias"],
 ], { title: "Elementos educativos por sala y dificultad", sz: 17 });
@@ -305,21 +306,20 @@ para("La experiencia está guiada por un narrador con voz grabada y texto en pan
 
 heading(3, "Retroalimentación al estudiante");
 bullet("Frase de felicitación del narrador al terminar cada sala.");
-bullet("Cambios visibles en el entorno: la puerta se abre, los módulos pasan de rojo a verde con su icono de estado, las cajas despejan el paso y los motores arrancan con sonido.");
+bullet("Cambios visibles en el entorno: la puerta se abre, los módulos pasan de rojo a verde con su icono de estado y un sonido de tarea completada, las cajas despejan el paso y los motores arrancan con sonido.");
 bullet("En la sala 4, cada hueco resuelto se ilumina y la ficha queda fija; una ficha equivocada sale expulsada con un sonido de desconexión.");
 bullet("En la sala 1, el nivel se rearma solo tras un intento fallido, sin que el estudiante tenga que pulsar nada, y unas flechas sobre la fila de huecos indican el sentido en que se leen los bloques.");
 bullet("Un reloj visible en cada sala indica el tiempo que queda de la sesión.");
 
 heading(2, "Lógica de funcionamiento");
 heading(3, "Sistema de programación por bloques");
-para("Las salas 1 y 3 y el tutorial comparten un sistema de programación por bloques físicos. Cada bloque es un objeto que el estudiante agarra; al soltarlo cerca de un hueco libre se acopla a él automáticamente. Los huecos se generan en filas encadenadas y, al pulsar el botón de ejecución, el sistema recorre la cadena en orden y ejecuta la acción de cada bloque sobre el robot o el brazo robótico. En la sala 3 la fila completa se repite tantas veces como indique el contador.");
-para("El intento se registra antes de ejecutarse. Esta decisión surgió de las pruebas: el reto se completa durante la ejecución y, cuando el registro se hacía al final, el intento que resolvía la sala se perdía.");
+para("Las salas 1 y 3 y el tutorial comparten un sistema de programación por bloques físicos. Cada bloque es un objeto que el estudiante agarra; al soltarlo cerca de un hueco libre se acopla a él automáticamente. Los huecos se generan en filas encadenadas y, al pulsar el botón de ejecución, el sistema recorre la cadena en orden y ejecuta la acción de cada bloque sobre el robot o el brazo robótico. En la sala 3 la fila completa se repite tantas veces como indique el contador. Mientras el programa se ejecuta, la fila queda bloqueada, para que lo registrado sea lo que se ejecutó.");
 
 heading(3, "Lógica de cada sala");
 table([["Sala", 0.8], ["Lógica implementada", 5]], [
-  ["Sala 1", "Rejilla lógica cargada desde un archivo JSON creado con un editor de niveles propio. El robot se mueve en relativo (avanzar, girar); chocar, salirse de la rejilla o usar donde no hay nada cuentan como error. Tras un intento fallido el nivel se rearma solo."],
-  ["Sala 2", "Cada módulo carga su problema y sus opciones desde un archivo de datos. Una opción correcta se alterna entre marcada y desmarcada; una incorrecta se marca durante 0,8 s y se suelta sola. El módulo se repara cuando están marcadas todas las correctas."],
-  ["Sala 3", "El brazo gira entre tres posiciones y resuelve el destino según la ficha de tipo. La sala se completa al contar lo entregado en cada destino. Lo que quede en la pinza al terminar una ejecución vuelve a su pila."],
+  ["Sala 1", "Rejilla lógica cargada desde un archivo JSON creado con un editor de niveles propio. El robot se mueve en relativo (avanzar, girar); chocar, salirse de la rejilla o usar donde no hay nada cuentan como error. Los bloques no se pueden agarrar hasta que arranca el reloj, tras la narración. Tras un intento fallido el nivel se rearma solo."],
+  ["Sala 2", "Cada módulo carga su problema y sus opciones desde un archivo de datos. Las opciones se marcan y desmarcan libremente y no se comprueban hasta pulsar Probar: el módulo se repara si lo marcado coincide exactamente con las acciones correctas. Si no, suena una frase de error y, a los 0,8 s, se desmarcan todas. Probar sin nada marcado no hace nada."],
+  ["Sala 3", "El brazo gira entre tres posiciones y resuelve el destino según la ficha de tipo. Con algún hueco de la fila vacío, el programa no se ejecuta. La sala se completa al contar lo entregado en cada destino. Lo que quede en la pinza al terminar una ejecución vuelve a su pila."],
   ["Sala 4", "Cada hueco valida la ficha al soltarla: la correcta queda fija y la incorrecta se expulsa con física. El reinicio no mueve las fichas ya acertadas. En la dificultad intermedia la palabra repite letras, por lo que hay dos fichas de cada letra repetida y cada hueco se registra con su posición."],
 ], { title: "Lógica implementada en cada sala" });
 
@@ -329,22 +329,23 @@ para("Esta organización sustituyó el 9 de octubre de 2026 a la anterior, de un
 
 heading(3, "Sesión y tiempo límite");
 para("La sesión dispone de quince minutos, que se muestran en un reloj en cada sala y solo corren mientras hay un reto abierto: se detienen durante la narración, la apertura de puertas y los traslados. Además, cada sala tiene un máximo de cinco minutos, que no se muestra y cuya función es que ningún estudiante quede detenido en una sala. El máximo por sala se incorporó el 9 de octubre de 2026 en sustitución del límite único de 15 minutos, con el que un estudiante que se detenía en una sala no llegaba a las siguientes; desde el 12 de octubre de 2026 conviven los dos.");
-para("Al agotarse el tiempo de una sala, el sistema deja terminar el intento que se esté ejecutando, ya que puede ser el que la resuelve. Si no la resuelve, la sala se registra como no completada por tiempo agotado y la historia continúa: la puerta se abre y el estudiante pasa a la sala siguiente. En lugar de la frase de felicitación, el narrador indica que se acabó el tiempo de la sala y que se continúa con la siguiente. Si se agotan los quince minutos de la sesión, lo que ocurre cuando no se resuelve ninguna de las tres primeras salas, o los cinco de la última sala, una secuencia detiene la historia, reproduce la frase de despedida, cierra y envía el registro, y devuelve la aplicación a la pantalla del supervisor una vez terminado el envío.");
+para("Al agotarse el tiempo de una sala, el sistema deja terminar el intento que se esté ejecutando, ya que puede ser el que la resuelve. Si no la resuelve, la sala se registra como no completada por tiempo agotado, con una duración de cinco minutos, y la historia continúa: la puerta se abre y el estudiante pasa a la sala siguiente. En lugar de la frase de felicitación, el narrador indica que se acabó el tiempo de la sala y que se continúa con la siguiente. Si se agotan los quince minutos de la sesión, lo que ocurre cuando no se resuelve ninguna de las tres primeras salas, o los cinco de la última sala, una secuencia detiene la historia, reproduce la frase de despedida, cierra y envía el registro, y devuelve la aplicación a la pantalla del supervisor una vez terminado el envío.");
 
 heading(3, "Registro de datos");
 para("Cada sesión genera un archivo JSON propio, cuyo nombre combina el PIN, un número de sesión correlativo y un código de cinco caracteres que identifica al visor. El archivo se guarda en el visor durante toda la sesión y se envía al servidor por HTTP POST al terminar, con reintentos. Si no hay conexión, o si la aplicación se cierra a mitad de la sesión, el archivo permanece en el visor y se envía de forma automática la siguiente vez que se abre la pantalla del supervisor; también puede extraerse por cable. El sistema lleva la cuenta de los archivos ya enviados sin moverlos ni borrarlos, y una sesión nueva nunca sobrescribe un archivo existente. La Tabla {{Datos registrados por sesión}} resume los datos registrados.");
 table([["Ámbito", 0.9], ["Datos registrados", 5]], [
   ["Sesión", "PIN, código del visor, número de sesión, dificultad, fecha y hora de inicio y fin, duración total"],
   ["Cada sala", "Si se inició, si se completó y si se agotó su tiempo; duración, hora de inicio y de fin"],
-  ["Sala 1", "Intentos con la secuencia de bloques, tiempo de preparación de cada uno y si resolvió el reto; intentos fallidos, bloques agarrados y conectados, reinicios, colisiones del robot y usos inválidos"],
-  ["Sala 2", "Cada opción marcada: módulo, opción, si era correcta, tiempo desde la anterior y hora"],
-  ["Sala 3", "Intentos con la secuencia, las repeticiones y el tipo de objeto; intentos fallidos, bloques agarrados y conectados, órdenes imposibles"],
+  ["Sala 1", "Intentos con la secuencia de bloques, su porcentaje de solución, tiempo de preparación de cada uno y si resolvió el reto; intentos fallidos, bloques agarrados y conectados, reinicios, colisiones del robot y usos inválidos"],
+  ["Sala 2", "Cada opción marcada: módulo, opción, si era correcta, tiempo desde la anterior y hora. Cada pulsación de Probar: lo marcado, cuántas opciones correctas e incorrectas, si reparó el módulo y su porcentaje de solución; intentos fallidos"],
+  ["Sala 3", "Intentos con la secuencia, las repeticiones, el tipo de objeto, los objetos de ese tipo que quedaban por clasificar y el porcentaje de solución; intentos fallidos, bloques agarrados y conectados, órdenes imposibles"],
   ["Sala 4", "Cada colocación: hueco (en intermedia, con su posición), ficha, si era correcta, tiempo desde la anterior y hora; fichas agarradas"],
 ], { title: "Datos registrados por sesión" });
+para("El porcentaje de solución, acordado en la reunión de métricas, mide cuánto se acerca cada intento a la solución correcta. En las salas 1 y 3 cuenta las instrucciones del intento que aparecen en el mismo orden que en la solución, entre la longitud de la más larga de las dos secuencias, de modo que faltar o sobrar instrucciones resta; cuando hay dos soluciones válidas, como en la sala 1 básica, se toma la más cercana. En la sala 2 son las acciones acertadas entre todas las que intervienen, marcadas o correctas. Se registra sin redondear.");
 para("Todos los indicadores de estado (iniciado, completado, tiempo agotado, resuelto, correcto) se registran como valores verdadero o falso. Al cerrar cada sesión, el sistema genera un informe de integridad que advierte de valores que suelen indicar un fallo de configuración, como una sala completada sin intentos registrados.");
 
 heading(2, "Evidencia del desarrollo");
-para("Las figuras siguientes muestran el estado del módulo al 13 de octubre de 2026. Son capturas de la escena de juego en ejecución en el editor de Unity, tomadas desde el punto de vista del jugador en cada sala.");
+para("Las figuras siguientes muestran el estado del módulo al 23 de octubre de 2026. Son capturas de la escena de juego en ejecución en el editor de Unity, tomadas desde el punto de vista del jugador en cada sala.");
 figure("sala1_general.jpg", "Sala 1: rejilla, robot Roki y botón verde que abre la puerta",
   "El estudiante observa la rejilla desde la mesa de programación. El robot debe llegar a la casilla situada frente al botón verde de la pared y pulsarlo para abrir la puerta. El reloj superior indica el tiempo que queda de la sesión.");
 figure("sala1_mesa_basica.jpg", "Sala 1, dificultad básica: mesa de programación con 8 bloques",
@@ -352,8 +353,8 @@ figure("sala1_mesa_basica.jpg", "Sala 1, dificultad básica: mesa de programaci�
 figure("sala1_mesa_intermedia.jpg", "Sala 1, dificultad intermedia: 13 bloques para una fila de 11 huecos",
   "La paleta intermedia incluye bloques de más que conducen hacia un camino alternativo, más largo, que no cabe en la fila.");
 figure("sala2_general.jpg", "Sala 2: módulos de los sistemas de enfriamiento, energía y motores", null);
-figure("sala2_modulo_sin_resolver.jpg", "Módulo sin resolver: título, estado, síntomas y opciones",
-  "Cada módulo muestra el título del sistema, su estado con luces roja y verde, los síntomas y cuatro opciones.");
+figure("sala2_modulo_sin_resolver.jpg", "Módulo sin resolver: título, estado, síntomas, opciones y botón Probar",
+  "Cada módulo muestra el título del sistema, su estado con luces roja y verde, los síntomas, cuatro opciones y, debajo, el botón Probar que comprueba lo marcado.");
 figure("sala2_modulo_resuelto.jpg", "Módulo resuelto: luz verde e indicación «Sistema restablecido»", null);
 figure("sala3_basica.jpg", "Sala 3, dificultad básica: el estudiante elige el tipo de objeto y las repeticiones",
   "En la dificultad básica la fila de instrucciones funciona sin mostrarse. El estudiante coloca la ficha del tipo de objeto (caja o barril) en la casilla TIPO, indica las repeticiones con los botones + y − y pulsa Iniciar.");
@@ -368,21 +369,22 @@ table([["Diseño del Producto 1", 1.7], ["Implementado", 1.9], ["Motivo", 2]], [
   ["3 escenarios", "4 salas: se añade la sala de patrones", "Trabajar el reconocimiento de patrones en una sala propia"],
   ["Ingreso de un nombre de usuario por el estudiante (RF-01)", "PIN numérico introducido por el supervisor", "Más rápido y sin errores de escritura; el estudiante recibe el visor con la sesión preparada"],
   ["Registro en archivo .csv (RF-05)", "Archivo JSON por participante", "Representa los datos por sala e intento, que en un CSV quedarían aplanados"],
-  ["Temporizador de 20 minutos para la sesión (RF-06)", "15 minutos de sesión a la vista, que solo corren durante los retos, y un máximo de 5 minutos por sala, tras los cuales se pasa a la siguiente", "Que ningún estudiante quede detenido en una sala y que la narración no reste tiempo de juego"],
+  ["Temporizador de 20 minutos para la sesión (RF-06)", "15 minutos de sesión y un máximo de 5 por sala", "Que ningún estudiante quede detenido en una sala y que la narración no reste tiempo de juego"],
   ["Sala 1 básica con instrucciones de alto nivel", "Rejilla con movimientos relativos en ambas dificultades", "La dificultad crece con el problema y no con una mecánica distinta"],
   ["Sala 3 con un bloque contenedor «Repetir»", "La fila completa es el bucle y una ficha actúa como argumento", "Introduce además el concepto de parámetro"],
   ["Sala 4 intermedia basada en el número de lados", "Seis huecos con las letras de YACHAY en un alfabeto de glifos cuadrados", "Ejercita la discriminación visual con símbolos que el estudiante no conoce"],
-  ["Sin seguimiento de manos", "Mandos como entrada principal y manos habilitadas", "Ampliar la accesibilidad; pendiente de validación en el visor"],
+  ["Sin seguimiento de manos", "Mandos como entrada principal y manos habilitadas", "Ampliar la accesibilidad"],
 ], { title: "Cambios respecto al diseño del Producto 1" });
 
 heading(2, "Herramientas de desarrollo y verificación");
 para("Junto al código del módulo se desarrollaron herramientas integradas en el editor de Unity, en el menú Tools → Codea, y scripts de apoyo que automatizan el montaje y la verificación del proyecto. Su objetivo es detectar, antes de llevar una versión al visor, los fallos de configuración que no se ven al jugar, como una conexión de eventos rota tras renombrar un método o una sala configurada con los datos de la otra dificultad. La Tabla {{Herramientas de desarrollo y verificación}} las resume.");
 table([["Herramienta", 1.5], ["Función", 4.4]], [
-  ["Comprobar escena de juego", "Revisa la escena sin ejecutarla: scripts perdidos, todas las conexiones de eventos (que el objeto y el método existan), la secuencia del Director paso a paso, la narración frente al guion, la configuración de cada sala en cada dificultad (incluido que las fichas de la sala 4 permiten completar el panel), los tiempos límite y la escena del supervisor"],
-  ["Probar las dos dificultades en Play", "Ejecuta la escena sin visor en básica e intermedia y comprueba lo que queda configurado en cada sala; ejecuta el programa de la sala 3 con la fila oculta; agota el tiempo de las salas 1 y 3 para verificar que la historia continúa y que se registra; y recorre la secuencia completa del Director. No envía datos al servidor y deja el editor como estaba"],
+  ["Comprobar escena de juego", "Revisa la escena sin ejecutarla: scripts perdidos, todas las conexiones de eventos (que el objeto y el método existan), la secuencia del Director paso a paso, la narración frente al guion, la configuración de cada sala en cada dificultad (incluido que las fichas de la sala 4 permiten completar el panel), los tiempos límite, la escena del supervisor y el cálculo del porcentaje de solución"],
+  ["Probar las dos dificultades en Play", "Ejecuta la escena sin visor en básica e intermedia y comprueba lo que queda configurado en cada sala; prueba el botón Probar de la sala 2 y el bloqueo de la paleta de la sala 1; ejecuta el programa de la sala 3 con la fila oculta; agota el tiempo de las salas 1 y 3 para verificar que la historia continúa y que se registra; y recorre la secuencia completa del Director. No envía datos al servidor y deja el editor como estaba"],
   ["Capturas para informes", "Fotografía cada sala en ejecución, en las dos dificultades, desde el punto de vista del jugador"],
   ["Preparar escena de juego y montar el tutorial", "Montan y reparan de forma repetible el ciclo de sesión, los tiempos límite y el cuarto del tutorial"],
   ["Poner al día las escenas", "Lleva las dos escenas a lo que el código espera sin rehacerlas: botón de envío de datos, una sola apertura por reto, un fondo de panel por dificultad en la sala 3 y retirada de ajustes sin uso"],
+  ["Botón Probar y ambientación de la sala 2", "Añaden el botón Probar a cada módulo y colocan las máquinas junto a ellos"],
   ["Montar la intermedia de la sala 4", "Nombra el pliego de glifos de la A a la Z, crea un hueco por letra de la palabra y sortea las letras de las fichas garantizando las necesarias"],
   ["Asignar la voz del narrador", "Coloca cada audio en su frase a partir del nombre del archivo, sin arrastrarlos a mano"],
   ["Ver como básica o intermedia", "Muestran en el editor solo las piezas de una dificultad, para colocarlas sin que se solapen"],
@@ -390,7 +392,7 @@ table([["Herramienta", 1.5], ["Función", 4.4]], [
   ["Resolver nivel (script)", "Calcula todos los caminos de un nivel de la sala 1 y cuántos bloques necesita cada uno"],
   ["Validar JSON de telemetría (script)", "Comprueba que un archivo de datos tiene exactamente el formato que emite el código"],
 ], { title: "Herramientas de desarrollo y verificación" });
-para(`En la versión del 13 de octubre de 2026, la comprobación de la escena revisó ${CONEXIONES} conexiones de eventos de las dos escenas sin encontrar fallos.` + " La prueba en Play completó el recorrido en las dos dificultades sin errores ni excepciones: verificó la configuración de cada sala, ejecutó el programa de la sala 3 con la fila oculta (todos los objetos del tipo elegido llegaron a su destino) y comprobó que, al agotarse el tiempo de una sala, la sala 1 cede el paso a la siguiente de inmediato y la sala 3 espera a que termine el intento en curso, quedando ambas registradas como no completadas por tiempo agotado. El cierre de la sesión al agotarse los quince minutos queda por verificar en el visor.");
+para(`En la versión del 23 de octubre de 2026, la comprobación de la escena revisó ${CONEXIONES} conexiones de eventos de las dos escenas sin encontrar fallos, y el porcentaje de solución dio el valor esperado en los casos tomados de las sesiones con estudiantes.` + " La prueba en Play completó el recorrido en las dos dificultades sin errores ni excepciones: verificó la configuración de cada sala y el botón Probar, ejecutó el programa de la sala 3 con la fila oculta (todos los objetos del tipo elegido llegaron a su destino) y comprobó que, al agotarse el tiempo de una sala, la sala 1 cede el paso a la siguiente de inmediato y la sala 3 espera a que termine el intento en curso, quedando ambas registradas como no completadas por tiempo agotado y con cinco minutos. El cierre de la sesión al agotarse los quince minutos queda por verificar en el visor.");
 
 // --- 2. Integración de recursos 3D e interacciones inmersivas ---
 
@@ -399,7 +401,7 @@ heading(1, "Integración de recursos 3D e interacciones inmersivas", { newPage: 
 heading(2, "Recursos 3D incorporados");
 para("El entorno de la nave combina un paquete de recursos modulares de ciencia ficción con modelos y materiales propios, geometría modelada directamente en el editor y efectos visuales. La Tabla {{Recursos 3D y visuales integrados en la escena de juego}} detalla los recursos que utiliza la escena de juego, obtenidos a partir de las referencias reales de la escena y no del contenido total del proyecto.");
 table([["Recurso", 1.3], ["Contenido", 2.6], ["Uso en la experiencia", 2.2]], [
-  ["Sci-Fi Styled Modular Pack", "20 modelos FBX, 10 prefabs, 9 materiales, 8 texturas y 4 animaciones", "Suelos, paredes, ventanales, puertas animadas, escaleras y elementos decorativos de la nave"],
+  ["Sci-Fi Styled Modular Pack", "22 modelos FBX, 13 prefabs, 9 materiales, 8 texturas y 4 animaciones", "Suelos, paredes, ventanales, puertas animadas, escaleras, elementos decorativos de la nave y máquinas junto a los módulos de la sala 2"],
   ["Modelos propios", "11 modelos: robot Roki, bloque de programación, botón, barril, cajas, baldosa, luz, Tierra y Sol", "Personaje guía, piezas de los retos y escenario exterior"],
   ["Shader Graph propios", "4 sombreadores: atmósfera y halo de la Tierra, núcleo cercano y lejano", "Vista exterior de la Tierra"],
   ["Materiales propios", "36 materiales, entre ellos el vidrio de la sala 3", "Acabados de salas, mesas y piezas"],
@@ -412,14 +414,13 @@ para("El apartado sonoro incluye las 24 locuciones de la narración en la voz de
 heading(2, "Programación de interacciones");
 para("Las interacciones se construyeron sobre el Meta Interaction SDK, que proporciona los interactores de mando y de mano, y se conectaron a la lógica del módulo mediante eventos. Sobre esa base se programaron los comportamientos propios de cada reto. La Tabla {{Interacciones programadas}} resume las interacciones implementadas.");
 table([["Interacción", 1.1], ["Implementación", 3.4], ["Cantidad", 1.4]], [
-  ["Pulsar botones", "Botones de pulsación del SDK con eventos conectados a la lógica de cada sala y sonido propio", "23 en la escena de juego y 16 en la pantalla del supervisor"],
+  ["Pulsar botones", "Botones de pulsación del SDK con eventos conectados a la lógica de cada sala y sonido propio", "26 en la escena de juego y 16 en la pantalla del supervisor"],
   ["Agarrar y soltar", "Componentes de agarre del SDK para mando y para mano en cada pieza, con un adaptador propio que traduce el agarre y la suelta a eventos de la lógica", "49 piezas agarrables"],
   ["Encajar piezas", "Acople propio: en el momento de soltar, la pieza busca el hueco libre más cercano (5 cm), se alinea con él y suena; las piezas acertadas o fijas quedan bloqueadas", "Huecos de las salas 1, 3 y 4 y del tutorial"],
   ["Desplazarse", "Teletransporte a puntos fijos y traslados guiados entre salas con fundido a negro", "7 puntos de teletransporte"],
   ["Física de las fichas", "Las fichas de la sala 4 tienen gravedad, se inmovilizan al encajar y vuelven solas a su sitio si caen al suelo", "18 fichas"],
   ["Entorno reactivo", "Puertas automáticas, brazo robótico animado por código, robot que recorre la rejilla, luces e iconos de estado y pantalla de narración que se traslada a cada sala", "Todas las salas"],
 ], { title: "Interacciones programadas" });
-para("El acople por proximidad consulta un registro de huecos activos en lugar de buscar en toda la escena en cada fotograma, lo que evita un coste de rendimiento elevado en el visor mientras el estudiante sostiene una pieza.");
 
 heading(2, "Configuración de controles");
 para("La interacción está diseñada para estudiantes que, en su mayoría, usan realidad virtual por primera vez, por lo que se limitó a tres acciones. Toda la interfaz es diegética: forma parte del entorno y no flota delante de la vista. La Tabla {{Controles de la experiencia}} recoge los controles.");
@@ -428,14 +429,14 @@ table([["Acción", 1.2], ["Con mandos", 2], ["Con manos", 2]], [
   ["Pulsar un botón", "Tocar el botón con el mando", "Tocar el botón con el dedo"],
   ["Desplazarse", "Teletransporte", "—"],
 ], { title: "Controles de la experiencia" });
-para("El perfil de entrada de OpenXR configurado corresponde a los mandos Oculus Touch. El seguimiento de manos está habilitado en el proyecto y todas las piezas admiten agarre con la mano; su validación en el visor queda pendiente para la siguiente etapa.");
+para("El perfil de entrada de OpenXR configurado corresponde a los mandos Oculus Touch. El seguimiento de manos está habilitado en el proyecto y todas las piezas admiten agarre con la mano (sección {{§Limitaciones técnicas encontradas}}).");
 
 heading(2, "Ajustes para la ejecución en Meta Quest");
 para("La Tabla {{Configuración del proyecto para Meta Quest}} recoge la configuración del proyecto para su ejecución en el visor.");
 table([["Ajuste", 1.3], ["Valor", 3]], [
   ["Dispositivo y sistema", "Meta Quest 3S, Horizon OS"],
   ["Integración XR", "OpenXR con Meta XR Feature y perfil de mandos Oculus Touch"],
-  ["Identificador del paquete", "com.yachaytech.Codea2, versión 0.0.1"],
+  ["Identificador del paquete", "com.yachaytech.Codea2, versión 0.9.0"],
   ["Versión de Android", "SDK mínimo 32 y objetivo 34"],
   ["Compilación", "IL2CPP para ARM64"],
   ["Gráficos", "Vulkan, con OpenGL ES 3 como respaldo; espacio de color lineal"],
@@ -446,52 +447,78 @@ table([["Ajuste", 1.3], ["Valor", 3]], [
 ], { title: "Configuración del proyecto para Meta Quest" });
 para("Además de la configuración, se aplicaron ajustes en el código orientados al rendimiento:", { keepNext: true });
 bullet("**Escritura diferida de datos:** los eventos frecuentes, como agarres y errores, se guardan en lote cada 10 segundos; la escritura inmediata provocaba tirones perceptibles.");
-bullet("**Registro de huecos activos:** el acople de piezas no recorre la escena en cada fotograma.");
+bullet("**Registro de huecos activos:** el acople por proximidad consulta los huecos activos en lugar de recorrer la escena en cada fotograma mientras el estudiante sostiene una pieza.");
 bullet("**Texto completo de la narración:** se muestra de una vez, sin animación de escritura.");
-para("Quedan pendientes la medición del rendimiento en el visor frente al objetivo de 60 FPS (RNF-01) y la revisión del perfil de calidad de Android. Durante la recopilación de este informe se detectó que dicho perfil apunta a una configuración de render que ya no existe en el proyecto, por lo que se aplica la de escritorio, más exigente para el visor.");
+para("La medición del rendimiento en el visor y el perfil de calidad de Android quedan pendientes (sección {{§Limitaciones técnicas encontradas}}).");
 
 heading(2, "Despliegue en el visor");
-para("La aplicación se distribuye como un APK que se instala en los visores por carga local. El archivo se versiona en el repositorio del proyecto, y los datos de cada sesión quedan en el almacenamiento de la aplicación, accesibles por cable USB. Para que el código que identifica a cada visor se mantenga entre versiones, todas las compilaciones deben firmarse con la misma clave.");
+para("La aplicación se distribuye como un APK que se instala en los visores por carga local. El archivo se versiona en el repositorio del proyecto, y los datos de cada sesión quedan en el almacenamiento de la aplicación, accesibles por cable USB. Todas las compilaciones se firman con la misma clave (sección {{§Limitaciones técnicas encontradas}}).");
 
 // --- 3. Pruebas funcionales preliminares con usuarios clave ---
 
-// Las sesiones de prueba con usuarios clave, leídas de su registro de telemetría tal como salió
-// del visor (formato de la versión del 30/09/2026: indicadores 0/1, con deselecciones).
-const SESIONES = [
-  { file: "0105_5.json", participante: "Gabriela Cajamarca" },
-  { file: "1101_6.json", participante: "Ingeniero especializado en realidad virtual de la Escuela Superior Politécnica del Litoral (ESPOL)" },
-].map(s => ({
+// Las sesiones de prueba, leídas de su registro de telemetría tal como salió del visor. Las de
+// usuarios clave tienen el formato de la versión del 30/09/2026 (indicadores 0/1, con
+// deselecciones); las de estudiantes, el de la versión 0.9.0 del 22/10/2026.
+const leer = s => ({
   ...s,
   // El visor escribe con BOM (Encoding.UTF8 de .NET); JSON.parse no lo admite.
   run: JSON.parse(fs.readFileSync(path.join(ROOT, "Docs", "JSON Samples", "originales", s.file), "utf8").replace(/^﻿/, "")),
-}));
+});
+
+const SESIONES = [
+  { file: "0105_5.json", participante: "Gabriela Cajamarca" },
+  { file: "1101_6.json", participante: "Ingeniero especializado en realidad virtual de la Escuela Superior Politécnica del Litoral (ESPOL)" },
+].map(leer);
+
+const COLEGIO = "Colegio Luis Felipe Borja, de Urcuquí";
+const ESTUDIANTES = [
+  { file: "0601_1_7D44A.json" },
+  { file: "0102_2_68793.json" },
+  { file: "0103_3_68793.json" },
+].map(leer);
 
 const minSeg = seconds => { const t = Math.round(seconds); return `${Math.floor(t / 60)} min ${t % 60} s`; };
 const fecha = iso => iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4);
 const duracion = run => (new Date(run.endedUtc) - new Date(run.startedUtc)) / 1000;
+const si = v => v === 1 || v === true;
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+const SALAS = ["escenario1", "escenario2", "escenario3", "escenario4"];
+
+/** Resultado para el registro de pruebas: salas completadas y las que agotaron su tiempo. */
+function resultado(run) {
+  const completas = SALAS.filter(k => si(run[k].completed)).length;
+  const agotadas = SALAS.map((k, i) => si(run[k].timedOut) ? i + 1 : 0).filter(n => n > 0);
+  return completas === 4 ? "Completó las cuatro salas"
+    : `Completó ${completas} de 4 salas; tiempo agotado en ${agotadas.length === 1 ? "la sala" : "las salas"} ${agotadas.join(" y ")}`;
+}
 
 function resumen(run) {
   const e1 = run.escenario1, e2 = run.escenario2, e3 = run.escenario3, e4 = run.escenario4;
-  const resuelto = e1.attempts.findIndex(a => a.solved === 1 || a.solved === true) + 1;
-  const marcadas = e2.selections.filter(s => s.selected === 1 || s.selected === true);
+  const actual = Array.isArray(e2.attempts);   // formato de la versión 0.9.0
+  const resuelto = e1.attempts.findIndex(a => si(a.solved)) + 1;
+  const marcadas = actual ? e2.selections : e2.selections.filter(s => si(s.selected));
   const desmarcadas = e2.selections.length - marcadas.length;
-  const malas2 = marcadas.filter(s => !(s.correct === 1 || s.correct === true)).length;
-  const malas4 = e4.placements.filter(p => !(p.correct === 1 || p.correct === true)).length;
-  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  const malas2 = marcadas.filter(s => !si(s.correct)).length;
+  const malas4 = e4.placements.filter(p => !si(p.correct)).length;
+  const agotada = e => si(e.timedOut) ? ", tiempo agotado" : "";
+  const invalidas = actual ? e1.errorInvalidUse : e1.errorInvalidCommand;
 
   return {
     sala1: `${minSeg(e1.totalSeconds)} · ${plural(e1.attempts.length, "intento", "intentos")}` +
-           (resuelto > 0 ? `, resuelto en el ${resuelto}.º` : ", sin resolver") +
+           (resuelto > 0 ? `, resuelto en el ${resuelto}.º` : `, sin resolver${agotada(e1)}`) +
+           (actual ? ` (porcentaje de solución máximo: ${Math.max(...e1.attempts.map(a => a.solutionPercent))} %)` : "") +
            ` · ${e1.blocksGrabbed} bloques agarrados · ${plural(e1.errorCollisionBot, "colisión", "colisiones")} y ` +
-           `${plural(e1.errorInvalidCommand, "orden inválida", "órdenes inválidas")} del robot`,
-    sala2: `${minSeg(e2.totalSeconds)} · ${plural(marcadas.length, "opción marcada", "opciones marcadas")}, ` +
+           `${invalidas === 0 ? "ninguna orden inválida" : plural(invalidas, "orden inválida", "órdenes inválidas")} del robot`,
+    sala2: `${minSeg(e2.totalSeconds)} · ` +
+           (actual ? `${plural(e2.attempts.length, "pulsación", "pulsaciones")} de Probar, ${plural(e2.failedAttempts, "fallida", "fallidas")} · ` : "") +
+           `${plural(marcadas.length, "opción marcada", "opciones marcadas")}, ` +
            `${malas2 === 0 ? "todas correctas" : plural(malas2, "incorrecta", "incorrectas")}` +
            (desmarcadas > 0 ? ` · ${plural(desmarcadas, "opción desmarcada", "opciones desmarcadas")} a mano` : ""),
-    sala3: `${minSeg(e3.totalSeconds)} · ${plural(e3.attempts.length, "ejecución", "ejecuciones")}: ` +
+    sala3: `${minSeg(e3.totalSeconds)}${agotada(e3)} · ${plural(e3.attempts.length, "ejecución", "ejecuciones")}: ` +
            e3.attempts.map(a => `${a.itemType === "Caja" ? "cajas" : "barriles"} ×${a.repetitions}`).join(", ") +
            ` · ${e3.errorInvalidCommand === 0 ? "sin órdenes imposibles" : plural(e3.errorInvalidCommand, "orden imposible", "órdenes imposibles")}`,
     sala4: `${minSeg(e4.totalSeconds)} · ${plural(e4.placements.length, "colocación", "colocaciones")}, ` +
-           `${plural(malas4, "incorrecta", "incorrectas")} · ${e4.chipsGrabbed} fichas agarradas`,
+           `${malas4 === 0 ? "ninguna incorrecta" : plural(malas4, "incorrecta", "incorrectas")} · ${e4.chipsGrabbed} fichas agarradas`,
     salas: minSeg(e1.totalSeconds + e2.totalSeconds + e3.totalSeconds + e4.totalSeconds),
   };
 }
@@ -499,24 +526,26 @@ function resumen(run) {
 heading(1, "Pruebas funcionales preliminares con usuarios clave", { newPage: true });
 
 heading(2, "Metodología");
-para("Las pruebas del periodo combinaron tres niveles de verificación:", { keepNext: true });
+para("Las pruebas del periodo combinaron cuatro niveles de verificación:", { keepNext: true });
 bullet("**Pruebas internas del equipo de desarrollo,** en el editor de Unity y en el visor, durante la implementación de cada sala.");
 bullet("**Sesiones de prueba con usuarios clave,** en las que una persona ajena al desarrollo recorre la experiencia completa en el visor. Cada sesión deja su registro de telemetría y, al terminar, el participante aporta su retroalimentación.");
+bullet(`**Sesiones con estudiantes de la población objetivo,** del ${COLEGIO}, que recorren la experiencia completa en el visor con la versión 0.9.0. La fuente es su registro de telemetría.`);
 bullet("**Verificación automática** con las herramientas descritas en la sección {{§Herramientas de desarrollo y verificación}}, que comprueban la configuración de la escena y la recorren sin visor en las dos dificultades.");
-para("Los errores se corrigieron a medida que aparecían, y las observaciones de uso se registraron como pedidos de cambio que se trataron uno a uno. Las pruebas con estudiantes de la población objetivo están previstas para la siguiente etapa.");
+para("Los errores se corrigieron a medida que aparecían, y las observaciones de uso se registraron como pedidos de cambio que se trataron uno a uno.");
 
 heading(2, "Registro de pruebas realizadas");
-para("La Tabla {{Registro de pruebas realizadas}} recoge las sesiones de prueba con usuarios clave realizadas en el periodo. La fuente de cada fila es el registro de telemetría que generó el visor durante la sesión, que se conserva en el repositorio del proyecto.");
-table([["Fecha", 0.85], ["Participante", 1.9], ["Alcance", 1.3], ["Registro", 0.75], ["Resultado", 1.7]], [
+para("La Tabla {{Registro de pruebas realizadas}} recoge las sesiones de prueba realizadas en el periodo. La fuente de cada fila es el registro de telemetría que generó el visor durante la sesión, que se conserva en el repositorio del proyecto. En las sesiones con estudiantes la duración es el tiempo de juego que mide la aplicación, que no cuenta los periodos con el visor en reposo; incluye la narración y los traslados, en los que el reloj de la sesión está detenido, por lo que puede superar los 15 minutos.");
+table([["Fecha", 1.05], ["Participante", 1.75], ["Alcance", 1.25], ["Registro", 0.75], ["Resultado", 1.7]], [
   ...SESIONES.map(s => [fecha(s.run.startedUtc), s.participante,
     `Las cuatro salas, dificultad ${s.run.difficulty === 1 ? "básica" : "intermedia"}`, `PIN ${s.run.pin}`,
     `Completó las cuatro salas en ${minSeg(duracion(s.run))} de sesión; aportó retroalimentación`]),
-  ["Por definir", "Estudiantes de la población objetivo", "Por definir", "—", "Pendiente"],
+  ...ESTUDIANTES.map(s => [fecha(s.run.startedUtc), `Estudiante del ${COLEGIO}`,
+    `Las cuatro salas, dificultad ${s.run.difficulty === 1 ? "básica" : "intermedia"}`, `PIN ${s.run.pin}`,
+    `${resultado(s.run)}, en ${minSeg(s.run.totalSeconds)} de juego`]),
 ], { title: "Registro de pruebas realizadas" });
-para("El registro queda abierto: se completará con las pruebas previstas con estudiantes de la población objetivo, que todavía no se han realizado.");
 
 heading(2, "Resultados de las sesiones registradas");
-para(`Las dos sesiones se realizaron con la versión del 30 de septiembre de 2026, cuyo registro de datos tenía un formato anterior al definitivo descrito en la sección {{§Registro de datos}}. La Tabla {{Resultados de las sesiones de prueba}} resume lo registrado en cada sala.`);
+para(`Las dos sesiones con usuarios clave se realizaron con la versión del 30 de septiembre de 2026, cuyo registro de datos tenía un formato anterior al definitivo descrito en la sección {{§Registro de datos}}. La Tabla {{Resultados de las sesiones con usuarios clave}} resume lo registrado en cada sala.`);
 const resumenes = SESIONES.map(s => resumen(s.run));
 table([["Sala", 0.75], ...SESIONES.map(s => [`Sesión ${s.run.pin} (${fecha(s.run.startedUtc)})`, 2.55])], [
   ["Sala 1", ...resumenes.map(r => r.sala1)],
@@ -524,13 +553,29 @@ table([["Sala", 0.75], ...SESIONES.map(s => [`Sesión ${s.run.pin} (${fecha(s.ru
   ["Sala 3", ...resumenes.map(r => r.sala3)],
   ["Sala 4", ...resumenes.map(r => r.sala4)],
   ["Total en salas", ...resumenes.map(r => r.salas)],
-], { title: "Resultados de las sesiones de prueba" });
+], { title: "Resultados de las sesiones con usuarios clave" });
 para("Del registro se desprenden observaciones coherentes con la retroalimentación recibida:", { keepNext: true });
 bullet("**Sala 1:** fue la que más tiempo e intentos requirió en ambas sesiones. En la sesión 0105, los tres primeros intentos ejecutaron la misma secuencia incompleta de cuatro bloques, el tercero menos de un segundo después del segundo, lo que apunta a dudas sobre dónde colocar los bloques y a una doble pulsación del botón de ejecución.");
-bullet("**Sala 2:** en la versión probada, una opción incorrecta quedaba marcada hasta que el participante la desmarcaba a mano; en la sesión 0105 ocurrió seis veces. En la versión actual, la opción incorrecta se suelta sola.");
+bullet("**Sala 2:** en la versión probada, una opción incorrecta quedaba marcada hasta que el participante la desmarcaba a mano; en la sesión 0105 ocurrió seis veces. En la versión actual las opciones se comprueban con el botón Probar y, tras un fallo, se desmarcan solas.");
 bullet("**Sala 3:** en la sesión 0105 las repeticiones no coincidieron con el número de objetos (4 para 3 barriles; 3 y 6 para 7 cajas), lo que produjo órdenes imposibles; en la sesión 1101 coincidieron exactamente y no hubo errores. Contar los objetos es el paso crítico de la sala.");
 bullet("**Sala 4:** ambas sesiones tuvieron colocaciones incorrectas, concentradas en figuras parecidas: la ficha «circulo_triangulo» se colocó por error en los huecos «triangulo_circulo», «cuadrado_trianguloinv» y «cuadrado_rombo».");
 bullet("**Tiempo por sala:** con el límite de cinco minutos por sala incorporado el 9 de octubre de 2026, la sesión 0105 habría agotado el tiempo de la sala 1 (5 min 41 s) y habría continuado en la sala 2.");
+
+para(`Las sesiones con estudiantes se realizaron el 22 de octubre de 2026 con la versión 0.9.0, que registra el formato definitivo y el porcentaje de solución de cada intento (en esa versión, redondeado a entero). La Tabla {{Resultados de las sesiones con estudiantes}} resume lo registrado en cada sala.`);
+const resumenesEstudiantes = ESTUDIANTES.map(s => resumen(s.run));
+table([["Sala", 0.75], ...ESTUDIANTES.map(s => [`Sesión ${s.run.pin}`, 1.7])], [
+  ["Sala 1", ...resumenesEstudiantes.map(r => r.sala1)],
+  ["Sala 2", ...resumenesEstudiantes.map(r => r.sala2)],
+  ["Sala 3", ...resumenesEstudiantes.map(r => r.sala3)],
+  ["Sala 4", ...resumenesEstudiantes.map(r => r.sala4)],
+  ["Total en salas", ...resumenesEstudiantes.map(r => r.salas)],
+], { title: "Resultados de las sesiones con estudiantes", sz: 16 });
+para("Del registro de los estudiantes se desprenden las observaciones siguientes:", { keepNext: true });
+bullet("**Sala 1:** volvió a ser la más difícil. Dos de los tres estudiantes agotaron los cinco minutos sin resolverla: en la sesión 0102 los intentos tuvieron uno o dos bloques, y en la 0103 el mejor intento tuvo 7 de los 8 bloques en orden, con 64 bloques agarrados y 16 colisiones del robot. Refuerza la necesidad de indicar mejor dónde se colocan los bloques y cuál es el objetivo.");
+bullet("**Sala 2:** los tres estudiantes repararon los tres módulos. Todos los fallos se concentraron en el primer módulo que intentaron, el de enfriamiento, y los otros dos se repararon al primer intento, lo que sugiere que el estudiante entiende la mecánica tras el primer módulo.");
+bullet("**Sala 3:** en las cinco ejecuciones, las repeticiones elegidas coincidieron con los objetos que quedaban del tipo indicado (7 cajas y 3 barriles). Dos estudiantes la resolvieron en dos ejecuciones; en la sesión 0103 la primera ejecución se preparó durante cuatro minutos y el tiempo de la sala se agotó antes de la segunda.");
+bullet("**Sala 4:** dos estudiantes completaron el panel sin errores. En la sesión 0103 se registraron seis colocaciones incorrectas, una de ellas duplicada, de nuevo con la confusión entre «circulo_triangulo» y «triangulo_circulo» observada en las sesiones con usuarios clave.");
+bullet("**Registro de datos:** las sesiones revelaron tres registros duplicados o vacíos, ya corregidos (Tabla {{Errores identificados y corregidos}}): pulsaciones de Probar sin nada marcado contadas como intentos fallidos (sesiones 0102 y 0103), una colocación de la sala 4 registrada dos veces con 0,2 s de diferencia y un intento de la sala 1 repetido 0,18 s después del reinicio automático (sesión 0103).");
 
 heading(2, "Errores identificados y corregidos");
 para("La Tabla {{Errores identificados y corregidos}} recoge los errores encontrados durante las pruebas del periodo y su corrección. Varios de ellos no eran visibles para el jugador, pero falseaban los datos registrados.");
@@ -559,6 +604,16 @@ table([["Error identificado", 1], ["Corrección aplicada", 1]], [
   ["Al cargar la escena sonaban a la vez los acoples de la fila ya montada", "Los bloques que coloca el sistema encajan en silencio"],
   ["Un fallo al escribir el registro podía detener la experiencia", "El error se anota y la escritura se reintenta sin interrumpir la sesión"],
   ["Una sala podía no cerrarse por tiempo si un intento se quedaba sin terminar", "La espera al intento en curso tiene un tope"],
+  ["El tutorial no se podía terminar: un botón sonaba pero no se marcaba", "Conexión del botón restaurada; la comprobación automática detecta botones sin acción"],
+  ["La pantalla del supervisor enviaba las sesiones pendientes a un servidor antiguo", "Toma servidor y clave de la configuración de la escena de juego"],
+  ["Con el servidor fuera de servicio (error 530), la sesión se daba por fallida", "La sesión queda pendiente y el envío se reintenta cada 20 s"],
+  ["Los bloques de la sala 3 encogían al agarrarlos", "Al soltarlos vuelven a su contenedor de origen"],
+  ["El teletransporte desorientaba al jugador si miraba a un lado al saltar", "Se alinea el frente del cuerpo, no el de la cabeza"],
+  ["Con un hueco vacío, el programa de la sala 3 se ejecutaba y parecía correcto", "No se ejecuta: frase de error y registro como orden imposible"],
+  ["Se podían reordenar los bloques durante la ejecución, y el intento registrado no era el ejecutado", "La fila queda bloqueada mientras se ejecuta"],
+  ["Probar sin nada marcado contaba como intento fallido (sesiones 0102 y 0103)", "Probar sin nada marcado no hace nada"],
+  ["Una colocación de la sala 4 se registraba dos veces (sesión 0103)", "La misma ficha en el mismo hueco en menos de 0,5 s cuenta una vez"],
+  ["Una pulsación tardía repetía el intento fallido de la sala 1 tras el reinicio (sesión 0103)", "Ejecutar no responde durante 0,75 s tras el reinicio"],
 ], { title: "Errores identificados y corregidos", sz: 17 });
 
 heading(2, "Observaciones de uso");
@@ -569,9 +624,10 @@ bullet("**Sala 3:** en la dificultad básica sobran las instrucciones visibles; 
 bullet("**Sala 4:** se propone una animación de regreso (Tierra → Ecuador → Yachay Tech) y un juego de figuras basado en el alfabeto Yachay para la dificultad intermedia.");
 bullet("**General:** revisar el funcionamiento del clic y la respuesta de los botones, mejorar el contraste del texto de los botones, incorporar sonido en cada interacción, reducir el tiempo necesario para comprender cada sala e incluir una demostración inicial de las interacciones.");
 bullet("**Registro de datos:** contar los reinicios, registrar el tiempo de cada selección y colocación y el tiempo total, identificar el visor, usar valores verdadero o falso, separar y depurar los tipos de error y no contar las deselecciones.");
+bullet("**Revisión con los responsables del proyecto (octubre de 2026):** comprobar las opciones de la sala 2 con un botón Probar y desmarcarlas tras un fallo (reunión del 20 de octubre); medir el porcentaje de solución de cada intento (reunión de métricas); registrar cinco minutos en una sala agotada.");
 
 heading(2, "Limitaciones técnicas encontradas");
-bullet("**Rendimiento sin medir en el visor:** falta comprobar el objetivo de 60 FPS y corregir el perfil de calidad de Android (sección {{§Ajustes para la ejecución en Meta Quest}}).");
+bullet("**Rendimiento sin medir en el visor:** falta comprobar el objetivo de 60 FPS (RNF-01). Además, el perfil de calidad de Android apunta a una configuración de render que ya no existe en el proyecto, por lo que se aplica la de escritorio, más exigente para el visor.");
 bullet("**Seguimiento de manos:** habilitado, pero sin validar en el visor.");
 bullet("**Envío al cerrar la aplicación:** el sistema del visor cierra el proceso sin esperar a que termine un envío, por lo que no es fiable enviar los datos en ese momento. La sesión queda guardada en el visor y, desde el 12 de octubre de 2026, se envía de forma automática la siguiente vez que se abre la pantalla del supervisor.");
 bullet("**Dependencia de la red:** el envío requiere conexión; sin ella, los archivos se extraen por cable.");
@@ -584,20 +640,23 @@ table([["Fecha", 0.8], ["Ajuste", 5]], [
   ["29/09/2026", "Texto de la narración completo de una vez; cuatro opciones en las dos dificultades de la sala 2; repeticiones a cero al colocar la ficha de tipo en la sala 3; física y aviso de acierto en la sala 4"],
   ["30/09/2026", "La ficha incorrecta sale expulsada; el reinicio respeta las fichas acertadas; nivel intermedio definitivo de la sala 1"],
   ["06/10/2026", "Formato definitivo del registro (reinicios, tiempo por acción, tiempo total, código del visor, valores verdadero o falso, tipos de error separados, sin deselecciones); el botón incorrecto de la sala 2 se suelta solo; tutorial inicial con botón INICIAR; fila de huecos de la sala 1 en horizontal"],
-  ["09/10/2026", "Dificultades en una sola escena; sala 3 básica sin instrucciones visibles; textos «Sistema de motores» y «Agregar combustible»; tiempo límite de 5 minutos por sala; herramientas de comprobación y prueba automática de la escena"],
-  ["12/10/2026", "Voz definitiva de la narración; sala 4 intermedia con las letras de YACHAY en glifos cuadrados; reloj de sesión de 15 minutos con máximo de 5 por sala; envío automático de las sesiones pendientes y botón de envío en la pantalla del supervisor; un fondo de panel por dificultad en la sala 3; sonidos del brazo robótico; el bloque encaja al soltarlo; una sola apertura por reto; retirada de escenas, recursos y código sin uso"],
+  ["09/10/2026", "Sala 3 básica sin instrucciones visibles; textos «Sistema de motores» y «Agregar combustible»; tiempo límite de 5 minutos por sala"],
+  ["12/10/2026", "Sala 4 intermedia con las letras de YACHAY en glifos cuadrados; reloj de sesión de 15 minutos con máximo de 5 por sala; un fondo de panel por dificultad en la sala 3; sonidos del brazo robótico; el bloque encaja al soltarlo"],
+  ["13/10/2026", "Regreso a la Tierra al completar la sala 4: la Tierra se acerca hasta llenar la ventana; el botón del tutorial se tiñe de verde al pulsarlo"],
+  ["22/10/2026", "Botón Probar en la sala 2, con desmarcado tras un fallo y sonido al reparar un módulo; máquinas junto a los módulos; porcentaje de solución en cada intento; cinco minutos registrados en una sala agotada; bloques de la sala 1 bloqueados hasta que arranca el reloj"],
+  ["23/10/2026", "Porcentaje de solución registrado sin redondear"],
 ], { title: "Ajustes aplicados en el periodo" });
 
 heading(2, "Ajustes priorizados para la siguiente etapa");
 para("A partir de las observaciones y limitaciones anteriores, se priorizan los ajustes de la Tabla {{Ajustes priorizados para la siguiente etapa}}.");
-table([["Prioridad", 0.7], ["Ajuste", 4.3], ["Ámbito", 1]], [
-  ["1", "Compilar la versión actual, probarla en el visor con el plan de prueba del registro de datos, validar el acople al soltar, el cierre por tiempo de sesión y el envío de sesiones pendientes, y medir el rendimiento", "General"],
-  ["2", "Pruebas con estudiantes de la población objetivo y su incorporación al registro de pruebas", "General"],
-  ["3", "Indicaciones visuales de dónde colocar los bloques y del objetivo de abrir la puerta", "Sala 1"],
-  ["4", "Separar los bloques de la paleta intermedia que se superponen entre sí sobre la mesa (Figura {{Sala 1, dificultad intermedia: 13 bloques para una fila de 11 huecos}})", "Sala 1"],
-  ["5", "Simplificar los enunciados y reducir el tamaño de los paneles", "Sala 2"],
-  ["6", "Repeticiones a cero tras cada ejecución; retirar los intentos fallidos del registro y registrar la cantidad disponible por intento", "Sala 3"],
-  ["7", "Animación de regreso (Tierra, Ecuador, Yachay Tech)", "Sala 4"],
+table([["Prioridad", 0.9], ["Ajuste", 4.1], ["Ámbito", 1]], [
+  ["1", "Compilar la versión con las correcciones del 23 de octubre de 2026 y probarla en el visor, en especial el cierre por tiempo de sesión, el acople al soltar y el regreso a la Tierra; medir el rendimiento", "General"],
+  ["2", "Indicaciones visuales de dónde colocar los bloques y del objetivo de abrir la puerta; dos de los tres estudiantes agotaron el tiempo de la sala", "Sala 1"],
+  ["3", "Separar los bloques de la paleta intermedia que se superponen entre sí sobre la mesa (Figura {{Sala 1, dificultad intermedia: 13 bloques para una fila de 11 huecos}})", "Sala 1"],
+  ["4", "Simplificar los enunciados y reducir el tamaño de los paneles", "Sala 2"],
+  ["5", "Bloquear los bloques y las fichas hasta que termine la narración de instrucciones, como en la sala 1", "Salas 3 y 4"],
+  ["6", "Repeticiones a cero tras cada ejecución y retirar los intentos fallidos del registro", "Sala 3"],
+  ["7", "Completar la animación de regreso con Ecuador y Yachay Tech", "Sala 4"],
   ["8", "Revisar que cada locución coincide con su texto en pantalla, en especial la frase que anuncia el tiempo, tras el cambio del reloj a 15 minutos", "Narración"],
   ["9", "Perfil de render para el visor y validación del seguimiento de manos", "General"],
 ], { title: "Ajustes priorizados para la siguiente etapa" });
@@ -685,7 +744,8 @@ for (let n = 0; n <= 23; n++) {
 cover.push(stripComments(items[24].xml));
 
 // Índice: mismas piezas que el del mes 1, con las entradas de este informe. Los números de
-// página son una estimación; Word los recalcula al abrir (updateFields en settings.xml).
+// página salen primero de una estimación y, si está OnlyOffice, de maquetar el documento con él
+// (al final del script). Word además los recalcula al abrir (updateFields en settings.xml).
 const toc = items[25].xml;
 const sdtPr = toc.slice(0, toc.indexOf("<w:sdtContent>"));
 const tocInner = topLevel(toc.slice(toc.indexOf("<w:sdtContent>") + "<w:sdtContent>".length, toc.lastIndexOf("</w:sdtContent>")));
@@ -701,7 +761,7 @@ blocks.forEach((b, i) => {
   used += b.lines;
 });
 
-const tocEntries = headings.map((h, i) => {
+const buildToc = pages => headings.map((h, i) => {
   const style = ["1348", "1349", "1350"][h.level - 1];
   const tab = [567, 850, 1418][h.level - 1];
   const sz = '<w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr>';
@@ -716,18 +776,19 @@ const tocEntries = headings.map((h, i) => {
     `<w:r><w:rPr><w:rStyle w:val="1346"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${esc(h.text)}</w:t></w:r>` +
     `<w:r>${sz}<w:tab/></w:r>` +
     `<w:r>${sz}<w:fldChar w:fldCharType="begin"/></w:r><w:r>${sz}<w:instrText xml:space="preserve"> PAGEREF ${h.bookmark} \\h </w:instrText></w:r>` +
-    `<w:r>${sz}<w:fldChar w:fldCharType="separate"/></w:r><w:r>${sz}<w:t>${pageOf[h.block]}</w:t></w:r><w:r>${sz}<w:fldChar w:fldCharType="end"/></w:r>` +
+    `<w:r>${sz}<w:fldChar w:fldCharType="separate"/></w:r><w:r>${sz}<w:t>${pages[i]}</w:t></w:r><w:r>${sz}<w:fldChar w:fldCharType="end"/></w:r>` +
     `</w:hyperlink></w:p>`;
 });
-const newToc = `${sdtPr}<w:sdtContent>${tocEntries.join("")}${tocClose}</w:sdtContent></w:sdt>`;
+const tocXml = pages => `${sdtPr}<w:sdtContent>${buildToc(pages).join("")}${tocClose}</w:sdtContent></w:sdt>`;
 
 // Salto de sección tras el índice y, al final, la sección del cuerpo del mes 1 (cabecera con
 // el título del informe y número de página).
 const tocSection = items[26].xml;
 const bodySectPr = items[170].xml.match(/<w:sectPr[\s\S]*?<\/w:sectPr>/)[0];
 
-const newBody = [...cover, newToc, tocSection, ...blocks.map(b => resolveReferences(b.xml)), bodySectPr].join("");
-files.set("word/document.xml", docXml.slice(0, bodyStart) + newBody + docXml.slice(bodyEnd));
+const bodyXml = blocks.map(b => resolveReferences(b.xml)).join("");
+const documentXml = pages => docXml.slice(0, bodyStart) + [...cover, tocXml(pages), tocSection, bodyXml, bodySectPr].join("") + docXml.slice(bodyEnd);
+files.set("word/document.xml", documentXml(headings.map(h => pageOf[h.block])));
 
 // Relaciones: fuera las imágenes del cuerpo del mes 1, su enlace y los comentarios; dentro las
 // capturas del mes 2.
@@ -779,5 +840,17 @@ const ordered = new Map([["[Content_Types].xml", files.get("[Content_Types].xml"
 for (const [k, v] of files) if (k !== "[Content_Types].xml") ordered.set(k, v);
 writeZip(OUTPUT, ordered);
 
+// Páginas reales del índice: OnlyOffice maqueta el documento y se vuelve a escribir con ellas.
+// Cambiar los números no mueve nada: el índice cabe en su página.
+let paginas = "estimadas (sin OnlyOffice)";
+const reales = paginasDelIndice(OUTPUT);
+if (reales && reales.length === headings.length) {
+  ordered.set("word/document.xml", documentXml(reales));
+  writeZip(OUTPUT, ordered);
+  paginas = `maquetadas con OnlyOffice (último título en la pág. ${reales[reales.length - 1]})`;
+} else if (reales) {
+  paginas = `estimadas: OnlyOffice dio ${reales.length} enlaces para ${headings.length} títulos`;
+}
+
 console.log(`${path.relative(ROOT, OUTPUT)}: ${headings.filter(h => h.level === 1).length} capítulos, ${headings.length} títulos, ` +
-            `${tableNo} tablas, ${figureNo} figuras, ${blocks.length} bloques; cuerpo estimado en ${page - FIRST_BODY_PAGE + 1} páginas`);
+            `${tableNo} tablas, ${figureNo} figuras, ${blocks.length} bloques; índice con páginas ${paginas}`);

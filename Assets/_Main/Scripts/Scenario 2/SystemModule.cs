@@ -77,7 +77,7 @@ public class SystemModule : MonoBehaviour, IStepAction
     public event Action<SystemModule, int, bool, bool> OnOptionToggled;
 
     /// <summary>Módulo, acciones marcadas, cuántas correctas, cuántas incorrectas, si lo reparó y porcentaje.</summary>
-    public event Action<SystemModule, List<string>, int, int, bool, int> OnTried;
+    public event Action<SystemModule, List<string>, int, int, bool, float> OnTried;
 
     private readonly HashSet<int> selected = new HashSet<int>();
 
@@ -263,8 +263,9 @@ public class SystemModule : MonoBehaviour, IStepAction
     /// El botón Probar. Repara el módulo si lo marcado es exactamente la solución; si no,
     /// suena el error y, pasado un momento, se desmarcan todos los botones.
     ///
-    /// Probar sin nada marcado también cuenta como intento: es una decisión del niño, y la
-    /// más reveladora de todas si no ha entendido qué tiene que hacer.
+    /// Probar sin nada marcado no hace nada ni cuenta como intento (sesiones del 22/10/2026).
+    /// Casi siempre era una segunda pulsación justo después de que el módulo se desmarcara
+    /// solo, y sumaba un fallo que el niño no había decidido.
     /// </summary>
     [ContextMenu("Probar")]
     public void Try()
@@ -277,8 +278,14 @@ public class SystemModule : MonoBehaviour, IStepAction
 
         if (IsSolved || timedOut || resetting) return;
 
+        if (selected.Count == 0)
+        {
+            Debug.Log($"[Escenario2] '{name}': Probar sin nada marcado, ignorado.", this);
+            return;
+        }
+
         bool solved = MatchesSolution();
-        int percent = SolutionScore.SelectionPercent(selected, CorrectIndices());
+        float percent = SolutionScore.SelectionPercent(selected, CorrectIndices());
         List<string> marked = SelectedLabels();
 
         int correctMarked = 0;

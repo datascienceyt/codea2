@@ -125,7 +125,7 @@ public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     /// <summary>Un Probar: va a attempts[] y, si reparó el módulo, puede cerrar el escenario.</summary>
     private void HandleTried(SystemModule module, List<string> selection, int correct, int wrong,
-                             bool solved, int percent)
+                             bool solved, float percent)
     {
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterModuleAttempt(challengeId, module.ModuleId, selection,

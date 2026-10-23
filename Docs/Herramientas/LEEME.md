@@ -103,7 +103,7 @@ node Docs/Herramientas/generar_informe_mes2.js otra/ruta.docx  # si el informe e
 - **Datos de portada** (fecha, nombre del producto, cabecera): constantes al principio del script.
   `FECHA_PROVISIONAL` subraya la fecha en rojo
 - **Registro de pruebas**: se calcula de los JSON de `Docs/JSON Samples/originales/`; para añadir una
-  sesión, poner su JSON ahí y su fila en `SESIONES`
+  sesión, poner su JSON ahí y su fila en `SESIONES` (usuarios clave) o `ESTUDIANTES`
 - **Citas**: el texto cita tablas, figuras y secciones por su título (`{{Título}}`, `{{§Título}}`) y el
   número se pone al montar: añadir una tabla no descuadra nada
 - **Texto**: en el propio script, sección por sección. Para corregir algo, editar ahí y regenerar;
@@ -111,8 +111,12 @@ node Docs/Herramientas/generar_informe_mes2.js otra/ruta.docx  # si el informe e
 - **Figuras**: `Docs/Entregable-Mes2/capturas/*.jpg`, que hace `Tools → Codea → Capturas para
   informes` en Unity (en batch: `-executeMethod CodeaCaptures.RunBatch`, **con** gráficos: sin
   `-nographics` y sin `-quit`)
-- **Números de página del índice**: son una estimación; Word los recalcula al abrir (el documento
-  lleva `updateFields`). Si Word pregunta si actualiza los campos, decir que sí
+- **Números de página del índice**: con OnlyOffice Desktop Editors instalado (y abierto al menos una
+  vez, para que genere su índice de fuentes), el script maqueta el documento con su conversor `x2t`
+  y pone las páginas reales (`paginas_onlyoffice.js`). Sin OnlyOffice quedan estimadas; Word las
+  recalcula al abrir (el documento lleva `updateFields`)
+
+Para revisar el resultado, el mismo módulo saca el PDF: `convertir(docx, "informe.pdf")`.
 
 Para el informe de otro mes, copiar el script y cambiar el contenido: el montaje sobre la plantilla
 (final del script) sirve igual.
@@ -121,3 +125,8 @@ Para el informe de otro mes, copiar el script y cambiar el contenido: el montaje
 
 Lectura y escritura de zip sin dependencias, troceado del cuerpo de un `document.xml` y
 escape de texto. La usa `generar_informe_mes2.js`.
+
+## `paginas_onlyoffice.js` — maquetar con OnlyOffice
+
+Convierte un `.docx` con el conversor de OnlyOffice (`x2t.exe`) y lee del PDF la página real de
+cada entrada del índice. La usa `generar_informe_mes2.js`; sin OnlyOffice devuelve `null`.

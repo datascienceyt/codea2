@@ -125,8 +125,50 @@ public static class CodeaSceneCheck
         CheckSession(scene, report);
         CheckDesign(scene, report);
         CheckSetupScene(report);
+        CheckSolutionScore(report);
 
         return report;
+    }
+
+    // --- Porcentaje de solución: casos de las sesiones del 22/10/2026 ---
+
+    private static void CheckSolutionScore(Report report)
+    {
+        report.Title("Porcentaje de solución");
+
+        List<SolutionPath> basic = CodeaSolutions.Scenario1Basic.Select(s => new SolutionPath(null, s)).ToList();
+
+        // 0103, intentos 5 y 7: contra el camino del Context dan 50 y 75; contra el otro, 62,5 y 87,5.
+        (string attempt, IList<SolutionPath> solutions, float expected)[] cases =
+        {
+            ("Avanzar, Avanzar, Avanzar 2, Avanzar 2, Usar, Girar Derecha, Girar Izquierda, Girar Derecha", basic, 62.5f),
+            ("Avanzar, Avanzar, Avanzar 2, Girar Derecha, Girar Derecha, Avanzar 2, Girar Izquierda, Usar", basic, 87.5f),
+            ("Avanzar, Avanzar, Avanzar 2, Avanzar 2, Usar, Girar Derecha, Girar Izquierda, Girar Derecha", basic.GetRange(1, 1), 50),
+            ("Avanzar, Avanzar, Avanzar 2, Girar Derecha, Girar Derecha, Avanzar 2, Girar Izquierda, Usar", basic.GetRange(1, 1), 75),
+            (CodeaSolutions.Scenario1Basic[1], basic, 100),
+            ("Avanzar", new[] { new SolutionPath(null, "Avanzar 2") }, 0),
+        };
+
+        int failed = 0;
+
+        foreach ((string attempt, IList<SolutionPath> solutions, float expected) in cases)
+        {
+            float got = SolutionScore.Percent(new SolutionPath(null, attempt).Steps, solutions);
+            if (Mathf.Approximately(got, expected)) continue;
+
+            failed++;
+            report.Error($"'{attempt}' contra {solutions.Count} solución(es): da {got}, se esperaba {expected}");
+        }
+
+        // Escenario 2, sin redondear: dos correctas, marcó las dos y una de más.
+        float selection = SolutionScore.SelectionPercent(new[] { 0, 1, 2 }, new[] { 0, 1 });
+        if (!Mathf.Approximately(selection, 200f / 3f))
+        {
+            failed++;
+            report.Error($"Esc. 2, dos correctas y una de más: da {selection}, se esperaba {200f / 3f}");
+        }
+
+        if (failed == 0) report.Ok($"{cases.Length + 1} casos, sin redondear, con las dos soluciones de la básica del Esc. 1 y sin confundir Avanzar con Avanzar 2");
     }
 
     // --- Diseño: datos para la lista de pendientes. Solo informa, no falla ---

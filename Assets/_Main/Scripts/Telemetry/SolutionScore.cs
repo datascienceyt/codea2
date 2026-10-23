@@ -62,16 +62,20 @@ public class SolutionPath
 ///   solución A R A U, intento U A R A   → 75 %  (la U fuera de orden no cuenta)
 ///
 /// Con varias soluciones válidas (la básica del Escenario 1 tiene dos caminos de 8) vale la
-/// más cercana.
+/// más cercana. Por eso un intento puede puntuar más de lo que daría contarlo contra una sola:
+/// "Avanzar · Avanzar · Avanzar 2 · Avanzar 2 · Usar · Girar Der · Girar Izq · Girar Der" es
+/// 4 de 8 contra un camino y 5 de 8 contra el otro, y vale 62,5. Lo comprueba CodeaSceneCheck.
+///
+/// Sin redondear (pedido del 23/10/2026): 5 de 8 es 62,5 y 2 de 3, 66,67.
 /// </summary>
 public static class SolutionScore
 {
     /// <summary>De 0 a 100. -1 si no hay ninguna solución que aplique: el dato falta, no es un 0.</summary>
-    public static int Percent(IList<string> attempt, IEnumerable<SolutionPath> solutions, string runArgument = null)
+    public static float Percent(IList<string> attempt, IEnumerable<SolutionPath> solutions, string runArgument = null)
     {
-        if (solutions == null) return -1;
+        if (solutions == null) return -1f;
 
-        int best = -1;
+        float best = -1f;
 
         foreach (SolutionPath solution in solutions)
         {
@@ -86,15 +90,15 @@ public static class SolutionScore
         return best;
     }
 
-    public static int Percent(IList<string> attempt, IList<string> solution)
+    public static float Percent(IList<string> attempt, IList<string> solution)
     {
         int attemptCount = attempt != null ? attempt.Count : 0;
         int longest = Mathf.Max(attemptCount, solution.Count);
 
-        if (longest == 0) return 100;
-        if (attemptCount == 0) return 0;
+        if (longest == 0) return 100f;
+        if (attemptCount == 0) return 0f;
 
-        return Mathf.RoundToInt(100f * CommonInOrder(attempt, solution) / longest);
+        return 100f * CommonInOrder(attempt, solution) / longest;
     }
 
     /// <summary>Longitud de la subsecuencia común más larga. Las secuencias son de 4 a 11 pasos.</summary>
@@ -117,9 +121,9 @@ public static class SolutionScore
     /// igual que dejarse una.
     ///
     ///   correctas {agua, ventilador}, marcó {agua}                  → 50 %
-    ///   correctas {agua, ventilador}, marcó {agua, ventilador, gas} → 67 %
+    ///   correctas {agua, ventilador}, marcó {agua, ventilador, gas} → 66,67 %
     /// </summary>
-    public static int SelectionPercent(ICollection<int> selected, ICollection<int> correct)
+    public static float SelectionPercent(ICollection<int> selected, ICollection<int> correct)
     {
         int hits = 0;
         foreach (int index in selected)
@@ -127,6 +131,6 @@ public static class SolutionScore
 
         int union = selected.Count + correct.Count - hits;
 
-        return union == 0 ? 100 : Mathf.RoundToInt(100f * hits / union);
+        return union == 0 ? 100f : 100f * hits / union;
     }
 }

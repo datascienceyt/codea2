@@ -62,7 +62,7 @@ Se registran una vez por participante.
 | `deviceId` | texto | **Código del visor**, 5 letras y cifras. El mismo en todas las sesiones de ese visor |
 | `sessionId` | entero | Contador interno del visor, sube en cada sesión |
 | `difficulty` | entero | **1 = básica, 2 = intermedia**. Fija para toda la sesión; por eso no se repite en cada intento |
-| `startedUtc` | fecha | Inicio de la sesión |
+| `startedUtc` | fecha | Inicio de la sesión: cuando carga la escena de juego, justo después de teclear el PIN en `Setup`. Incluye el tutorial. Es reloj real: si el visor se quita y entra en reposo, ese hueco sale aquí pero no en `totalSeconds` (en la sesión 0601 del 22/10/2026 pasaron 62 min hasta el Esc. 1, casi todos con el visor en reposo) |
 | `endedUtc` | fecha | Cierre de la sesión |
 | `totalSeconds` | decimal | **Tiempo total de juego**, de principio a fin de la sesión. Incluye la narración y los traslados entre salas, así que es mayor que la suma de los cuatro escenarios |
 
@@ -116,9 +116,13 @@ Cada vez que el niño pulsa el botón de ejecutar se guarda un registro completo
 |---|---|---|
 | `sequence` | lista de textos | **La secuencia exacta que montó**, en lenguaje natural |
 | `solved` | `true`/`false` | Si ese intento resolvió el reto |
-| `solutionPercent` | entero | **Porcentaje de solución**, de 0 a 100: cuánto se parece la secuencia al camino correcto en número de instrucciones y orden (ver *Porcentaje de solución*, más abajo). La básica tiene dos caminos correctos y se compara con el más cercano. `-1` si faltaba la solución |
+| `solutionPercent` | decimal | **Porcentaje de solución**, de 0 a 100: cuánto se parece la secuencia al camino correcto en número de instrucciones y orden (ver *Porcentaje de solución*, más abajo). La básica tiene dos caminos correctos y se compara con el más cercano. `-1` si faltaba la solución |
 | `durationSeconds` | decimal | **Segundos que tardó en preparar este intento**: desde que empezó el reto (o desde el fallo anterior) hasta que pulsó ejecutar |
 | `timestamp` | fecha | Cuándo lo ejecutó |
+
+> Desde el 22/10/2026, **Ejecutar no hace nada en los 0,75 s que siguen al reinicio automático**.
+> Una pulsación que llegaba tarde se registraba como un intento nuevo idéntico al fallido, con
+> `durationSeconds` de 0,18 (sesión 0103).
 
 > `durationSeconds` **no incluye** el tiempo que el robot tarda en moverse. Ese tiempo lo
 > determina la longitud de la secuencia, no el razonamiento: si se contara, una solución larga
@@ -165,16 +169,18 @@ agua"* aparece en los tres módulos y solo es correcta en uno.
 
 ## Variables por intento (cada Probar)
 
-Lista `attempts`, con una entrada por cada pulsación de Probar:
+Lista `attempts`, con una entrada por cada pulsación de Probar **con algo marcado**. Desde el
+22/10/2026, Probar sin nada marcado no hace nada ni suma a `failedAttempts`: casi siempre era una
+segunda pulsación justo después de que el módulo se desmarcara solo.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `module` | texto | En qué módulo |
-| `selection` | lista de textos | **Lo que tenía marcado al probar**, en el orden de los botones. Vacía si probó sin marcar nada |
+| `selection` | lista de textos | **Lo que tenía marcado al probar**, en el orden de los botones. Nunca vacía desde el 22/10/2026 (antes, vacía si probó sin marcar nada) |
 | `correctSelected` | entero | Cuántas de las marcadas eran correctas |
 | `wrongSelected` | entero | Cuántas de las marcadas eran incorrectas |
 | `solved` | `true`/`false` | Si reparó el módulo |
-| `solutionPercent` | entero | Acertadas entre todas las que intervienen (marcadas o correctas), de 0 a 100. Marcar de más resta igual que dejarse una: con dos correctas, marcar solo una da 50; marcar las dos y una de más, 67 |
+| `solutionPercent` | decimal | Acertadas entre todas las que intervienen (marcadas o correctas), de 0 a 100. Marcar de más resta igual que dejarse una: con dos correctas, marcar solo una da 50; marcar las dos y una de más, 66,67 |
 | `durationSeconds` | decimal | Segundos desde el Probar anterior del escenario, o desde que se abrió |
 | `timestamp` | fecha | Cuándo |
 
@@ -248,9 +254,9 @@ registra el error. Así el niño ve la consecuencia sin tener que rescatar el ob
 | `itemType` | texto | **Con qué ficha se ejecutó**: `"Barril"` o `"Caja"` |
 | `remaining` | entero | **Cuántos objetos de ese tipo faltaban por clasificar** al pulsar Ejecutar. Se compara con `repetitions`: iguales es la elección exacta; más repeticiones, se pasa; menos, se queda corto. `-1` si no se pudo contar |
 | `sequence` | lista de textos | **Las instrucciones del bucle, en orden** |
-| `repetitions` | entero | **Cuántas repeticiones eligió** |
+| `repetitions` | entero | **Cuántas repeticiones eligió**, con los botones del contador. También en básica: **no se ponen solas** (al poner la ficha vuelven a 0). Si en básica coincide siempre con `remaining`, es que el niño contó bien |
 | `solved` | `true`/`false` | `true` solo en la ejecución que completó el escenario |
-| `solutionPercent` | entero | Porcentaje de solución de la fila frente a la correcta **para ese tipo**. No mide las repeticiones, que van aparte. En básica la fila es fija y vale siempre 100 |
+| `solutionPercent` | decimal | Porcentaje de solución de la fila frente a la correcta **para ese tipo**. No mide las repeticiones, que van aparte. En básica la fila es fija y vale siempre 100 |
 | `durationSeconds` | decimal | Tiempo de preparación del intento |
 | `timestamp` | fecha | Cuándo |
 
@@ -299,6 +305,10 @@ encajada. Las colocaciones incorrectas son las que tienen `correct: false`; ya n
 contador `wrongPlacements` aparte, ni uno de fichas soltadas: una ficha encajada ya es una
 entrada de la lista.
 
+Desde el 22/10/2026, la **misma ficha en el mismo hueco en menos de 0,5 s es una sola
+colocación**. Antes, una suelta con temblor de mano salía dos veces (sesión 0103: dos entradas
+iguales con 0,2 s de diferencia).
+
 **Intermedia (desde el 12/10/2026).** El panel tiene 6 huecos con las letras de **YACHAY** en un
 alfabeto de glifos cuadrados, y las mismas 18 fichas llevan letras de ese alfabeto: dos Y, dos A,
 una C, una H y doce distractoras, las mismas en todas las sesiones. La palabra repite letras, y
@@ -330,6 +340,21 @@ y una instrucción fuera de orden no cuenta.
 | A R A U | A R U (falta una) | 75 |
 | A R A U | A R A A U (sobra una) | 80 |
 | A R A U | U A R A (la U fuera de orden) | 75 |
+
+Se compara la etiqueta exacta: "Avanzar" y "Avanzar 2" son instrucciones distintas. El resultado
+va **sin redondear** (desde el 23/10/2026), con decimales: 5 de 8 es 62,5 y 2 de 3, 66,67. Los
+JSON anteriores lo traen entero.
+
+**Con dos soluciones vale la más cercana**, y por eso un intento puede puntuar más de lo que
+daría contarlo contra una sola. Casos reales de la sesión 0103 (básica):
+
+| Intento | contra S1 | contra S2 | % |
+|---|---|---|---|
+| A A A2 A2 U R L R | 5/8 | 4/8 | 62,5 |
+| A A A2 R R A2 L U | 7/8 | 6/8 | 87,5 |
+
+S1 = A R A A2 R A2 L U · S2 = A R A2 R A2 L A U (A = Avanzar, A2 = Avanzar 2, R/L = Girar
+Derecha/Izquierda, U = Usar). Los dos casos están en `Tools → Codea → Comprobar escena de juego`.
 
 Soluciones usadas. Las pone la herramienta 3 de Unity en cada variante de dificultad:
 

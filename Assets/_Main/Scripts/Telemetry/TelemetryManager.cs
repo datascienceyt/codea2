@@ -486,7 +486,7 @@ public class TelemetryManager : MonoBehaviour
     /// <param name="solutionPercent">Cuánto se parece a la solución, de 0 a 100; -1 sin solución cargada.</param>
     /// <param name="remaining">Esc. 3: objetos de ese tipo por clasificar al pulsar; -1 si no aplica.</param>
     public void RegisterBlockAttempt(string challengeId, List<string> sequence, int repetitions = 1,
-                                     string itemType = null, int solutionPercent = -1, int remaining = -1)
+                                     string itemType = null, float solutionPercent = -1f, int remaining = -1)
     {
         ScenarioRecord scenario = GetScenario(challengeId);
         if (scenario == null) return;
@@ -568,7 +568,7 @@ public class TelemetryManager : MonoBehaviour
     /// acercaba a la solución. Si no lo reparó, cuenta como intento fallido.
     /// </summary>
     public void RegisterModuleAttempt(string challengeId, string moduleId, List<string> selection,
-                                      int correctSelected, int wrongSelected, bool solved, int solutionPercent)
+                                      int correctSelected, int wrongSelected, bool solved, float solutionPercent)
     {
         if (!(GetScenario(challengeId) is Scenario2Record scenario)) return;
 

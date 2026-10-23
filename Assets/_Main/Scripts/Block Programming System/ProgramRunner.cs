@@ -12,6 +12,9 @@ public class ProgramRunner : MonoBehaviour
     public bool IsRunning { get; private set; }
     public bool HasRun { get; private set; }
 
+    /// <summary>Time.time del último ResetRunner. Para ignorar un Ejecutar pegado al reinicio.</summary>
+    public float LastResetTime { get; private set; } = float.NegativeInfinity;
+
     /// <summary>
     /// Ejecuta la cadena. Con repetitions &gt; 1 la recorre varias veces seguidas: es el bucle
     /// del Escenario 3, donde la fila entera es el cuerpo del ciclo.
@@ -41,5 +44,6 @@ public class ProgramRunner : MonoBehaviour
     public void ResetRunner()
     {
         HasRun = false;
+        LastResetTime = Time.time;
     }
 }

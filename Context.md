@@ -10,7 +10,7 @@ código: avisa y corrige este documento.
 
 ## 0. Para retomar en un chat nuevo
 
-**Dónde estamos (22/10/2026).** La versión se presentó el 30/09/2026 y desde entonces se ajusta
+**Dónde estamos (23/10/2026).** La versión se presentó el 30/09/2026 y desde entonces se ajusta
 con el feedback. Todo lo de abajo está **en `dev`, subido a los dos remotos**. **Solo se usa
 la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se borró el 22/10/2026).
 
@@ -132,40 +132,61 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
     mantienen las variables actuales. No se vuelven a poner `errorIncompleteSequence`, `selected`,
     `wrongSelections`, `wrongPlacements` ni `chipsReleased`; cada métrica del PDF se calcula con
     lo que hay (tabla "Métricas del PDF con las variables actuales", sección 7)
-- **Sin probar en el visor.** El APK de `Build/app.apk` es el del 30/09: formato viejo de
-  telemetría, sin tutorial y carga `Basico`/`Intermedio`, que ya no existen como escenas de juego
+- **APK del 22/10/2026** (`Build/app.apk`, versión 0.9.0) con todo lo anterior. Probado en el
+  visor en tres sesiones de básica (0601, 0102 y 0103), analizadas en el dashboard
+- **22-23/10/2026, correcciones tras esas tres sesiones** (en `dev`; compila,
+  SceneCheck y PlayCheck con 0 fallos; 👓 sin probar en el visor):
+  - **Esc. 1, porcentaje "de más":** no era un fallo. La básica tiene dos caminos (sección 5) y
+    vale el más cercano. Desde el 23/10/2026 `solutionPercent` es **decimal, sin redondear**
+    (62,5 en vez de 62 o 63; antes `Mathf.RoundToInt` redondeaba al par). Los casos de 0103 son ahora una
+    prueba de `Comprobar escena de juego` ("Porcentaje de solución")
+  - **Esc. 1:** Ejecutar no hace nada en los 0,75 s que siguen al reinicio automático
+    (`ProgramTrigger → Press After Reset Seconds`). Durante la espera del reintento ya se
+    ignoraba; el intento repetido de 0103 entró a los 0,18 s del reinicio
+  - **Esc. 2:** Probar sin nada marcado no hace nada ni cuenta como intento
+  - **Esc. 4:** misma ficha en el mismo hueco en menos de 0,5 s es una sola colocación
+    (`Scenario4Controller → Duplicate Placement Seconds`)
+  - **Informe del mes 2 al día (23/10/2026):** fecha de entrega 24/10 (sin subrayar), índice con las páginas reales, las tres sesiones con estudiantes del
+    Colegio Luis Felipe Borja (Urcuquí) en el registro de pruebas y en una tabla de resultados propia,
+    capturas nuevas (botón Probar) y menos redundancia: el tiempo límite se explica solo en 1.7.4,
+    la Tabla 2 recoge hitos y la 18 solo ajustes por retroalimentación, los pendientes solo en 3.6
+  - **Esc. 3 básica:** las repeticiones las pone el niño, no son automáticas. `startedUtc` de la
+    sesión se fija al cargar `Juego` (tras el PIN) y es reloj real; documentado en
+    `Docs/VARIABLES_TELEMETRIA.md`
 
-**Por dónde seguir, en este orden:**
+**Por dónde seguir, en este orden** (fijado el 23/10/2026 para la sesión siguiente):
 
-- **Pendiente para el final (pedido del 22/10/2026):** bloquear también los bloques y fichas de los
-  escenarios 3 y 4 hasta que termine la narración de instrucciones, como la paleta del Esc. 1
-  (`Scenario1Controller.lockBlocksUntilStart`). Ahí el reto se abre al llegar a la sala, antes de
-  la narración, así que el desbloqueo tendría que colgarse de otro paso del Director
+1. **Recompilar el APK** (mismo keystore) con las correcciones del 23/10/2026: el de `Build/app.apk`
+   es la 0.9.0 del 22/10 y no las lleva
+2. **Probar en el visor** (lo hace el usuario): las correcciones del 23/10 (Probar vacío, colocación
+   duplicada, Ejecutar tras el reinicio, `solutionPercent` con decimales) y lo que nunca se vio en el
+   visor: cierre por los 15 minutos de sesión, acople al soltar y regreso a la Tierra. Tabla de la
+   sección 14 y plan de `Docs/Pruebas/`
+3. **Escuchar las locuciones** contra el CSV (`Tools → Codea → Asignar la voz del narrador`, sección
+   6), en especial la frase 3: dice "cinco minutos para reparar cada sistema" y el reloj marca 15
+4. **Feedback de las sesiones y de los responsables**, uno a uno con plan corto antes (es la Tabla 19
+   del informe del mes 2):
+   - **Sala 1:** indicaciones visuales de dónde van los bloques y de que el objetivo es abrir la
+     puerta. Lo más urgente: dos de los tres estudiantes del 22/10 agotaron el tiempo ahí
+   - **Salas 3 y 4:** bloquear bloques y fichas hasta que termine la narración de instrucciones, como
+     la paleta del Esc. 1 (`Scenario1Controller.lockBlocksUntilStart`). Ahí el reto se abre al llegar
+     a la sala, antes de la narración: el desbloqueo tiene que colgarse de otro paso del Director
+   - **Sala 1 intermedia:** separar los bloques de la paleta que se superponen
+   - **Sala 2:** enunciados más simples y paneles más pequeños
+   - **Sala 3:** repeticiones a cero tras cada ejecución y retirar los intentos fallidos del registro
+     (pedidos 7, 8 y 10 de la sección 11)
+   - **Sala 4:** completar el regreso con Ecuador y Yachay Tech (la aproximación a la Tierra ya está)
+   - **General:** perfil de render para Quest, validar las manos en el visor, depurar logs del Esc. 1
+5. **En el editor** (lo hace el usuario): en `Setup`, recolocar si hace falta **Subir datos** y
+   `EstadoSubida`; en `Juego`, revisar la paleta del Esc. 1 con `Ver como básica / intermedia`
 
-0. **Probar los cambios del 22/10/2026** (en curso, lo hace el usuario): botón Probar del Esc. 2,
-   fila incompleta, tamaño de los bloques y fila bloqueada en marcha del Esc. 3, paleta del Esc. 1 bloqueada hasta el reloj, teletransporte y sonido de módulo reparado (sección 14, filas 5c, 5d, 8, 9, 10b, 10c y 10d), y revisar
-   en el JSON `solutionPercent` y los 300 s de una sala agotada. Confirmar las soluciones de la
-   tabla de `Docs/VARIABLES_TELEMETRIA.md` ("Porcentaje de solución"). El dashboard se alimenta de
-   la sección 7 de este archivo y de `Metricas CODEA2.pdf` adaptado (tabla "Métricas del PDF con
-   las variables actuales")
-
-1. **Cerrar el informe del mes 2** (`Docs/Informe-Mes2.docx`, regenerado el 13/10/2026 con el estado
-   de ese día): abrirlo en Word (aceptar actualizar los campos, para el índice), fijar la fecha definitiva (constantes `FECHA_*` y
-   `FECHA_PROVISIONAL = false` en `Docs/Herramientas/generar_informe_mes2.js`) y regenerar. Cuando
-   haya pruebas con estudiantes, añadir su JSON a `Docs/JSON Samples/originales/` y su fila en
-   `SESIONES`. Ver "Informe del mes 2" en la sección 11
-2. **Voz: ya es la de Camy** (12/10/2026), las 24 frases del CSV y las 5 de error, asignadas con
-   `Tools → Codea → Asignar la voz del narrador` (sección 6). Falta **escucharlas en Play**: nadie
-   ha comprobado que lo que dice cada audio coincide con el texto del CSV, en especial la frase 3
-   (el reloj visible marca 15 minutos y el texto dice "cinco minutos para reparar cada sistema")
-3. **En el editor** (lo hace el usuario): abrir `Setup` y recolocar si hace falta el botón
-   **Subir datos** y su etiqueta `EstadoSubida`; abrir `Juego`, revisar la paleta del Esc. 1 con
-   `Ver como básica / intermedia` y jugar las dos dificultades (`Sesion → DifficultyApplier →
-   Editor Difficulty`, y dejarlo después en `De La Pantalla De Setup`)
-4. **Recompilar el APK** (mismo keystore) y pasar en el visor la tabla de la sección 14 y el plan
-   de `Docs/Pruebas/`
-5. **Pendientes de la sección 11**, uno a uno con plan corto antes: pedidos 7, 8 y 10 del Esc. 3, depurar logs del Esc. 1, textos y
-   paneles del Esc. 2, indicaciones del Esc. 1, perfil de render para Quest
+El **informe del mes 2** está cerrado (`Docs/Informe-Mes2.docx`, entrega 24/10/2026). El usuario no
+usa Word sino **OnlyOffice**: el script maqueta el documento con su conversor
+(`paginas_onlyoffice.js`) y pone las páginas reales en el índice. **El informe se edita en el
+script, no a mano**: regenerar pisa el `.docx`. Sesiones con usuarios clave en `SESIONES`, con
+estudiantes (Colegio Luis Felipe Borja, Urcuquí) en `ESTUDIANTES`, con su JSON en
+`Docs/JSON Samples/originales/`. Ver "Informe del mes 2" en la sección 11. Quedó abierto, sin
+prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 
 **Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
 
@@ -254,7 +275,7 @@ dependencia:
 
 ## 3. Mapa de archivos
 
-69 scripts en `Assets/_Main/` (62 de juego y 7 de editor). Agrupados por responsabilidad:
+73 scripts en `Assets/_Main/` (64 de juego y 9 de editor; unas 15 500 líneas). Agrupados por responsabilidad:
 
 ### `Scripts/Block Programming System/` — núcleo compartido por escenarios 1, 3 y 4
 
@@ -461,7 +482,7 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 
 | | Archivo | Solución | Paleta · huecos |
 |---|---|---|---|
-| Básica | `reto.json` (6×5) | 8 bloques: Avanzar · Girar Der · Avanzar 2 · Avanzar · Girar Der · Avanzar 2 · Girar Izq · Usar | 8 · 8, sin sobrantes |
+| Básica | `reto.json` (6×5) | Dos caminos de 8 bloques (`resolver_nivel.js`): Avanzar · Girar Der · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Avanzar · Usar, y Avanzar · Girar Der · Avanzar · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Usar. El porcentaje de solución usa el más cercano | 8 · 8, sin sobrantes |
 | Intermedia | `escenario1_intermedio.json` (6×5) | Un camino de 11 y un distractor de 14; ver abajo | 13 · 11 |
 
 **Los dos niveles comparten la geometría de la sala**: 6×5, Salida en **(0,1)**, que es donde
@@ -724,7 +745,7 @@ cambiado el 06/10/2026; la tabla de equivalencias con el anterior está al final
 
 ### Porcentaje de solución (22/10/2026)
 
-`solutionPercent` en cada intento, de 0 a 100. Escenarios 1 y 3: subsecuencia común más larga
+`solutionPercent` en cada intento, de 0 a 100, decimal y sin redondear (desde el 23/10/2026; antes, entero). Escenarios 1 y 3: subsecuencia común más larga
 entre el intento y la solución, dividida entre la más larga de las dos (`SolutionScore.Percent`):
 falta o sobra una instrucción, resta; fuera de orden, no cuenta. Con varias soluciones, la más
 cercana; en el Esc. 3, la del tipo (`argument`). `-1` si no hay solución cargada. Escenario 2:
@@ -1169,8 +1190,8 @@ respaldadas fuera del repositorio en `X:\Backup\codea_unificar_2026-10-09\`, con
 Unity. Compila; **sin probar en Play ni en el visor**.
 
 **El 06/10/2026 cambiaron el código de telemetría, el botón del Escenario 2 y las escenas de juego** (cuarto del tutorial y retoques visuales del usuario en materiales y prefabs).
-El APK de `Build/app.apk` es el del 30/09 a mediodía: **emite el formato viejo** y sus botones
-del Escenario 2 se desmarcan a mano. Hay que recompilarlo antes de recoger datos.
+Entonces el APK de `Build/app.apk` era el del 30/09, con el formato viejo. El del 22/10/2026
+(versión 0.9.0) ya lleva todo esto (sección 0).
 
 **Cambios de telemetría del 06/10/2026 — compilan; sin probar en Play ni en el visor:**
 
@@ -1430,7 +1451,7 @@ alfabeto de glifos cuadrados; la básica no cambia (4 huecos, figuras de `symbol
 - **En el editor** las fichas enseñan siempre el dibujo de básica: el de intermedia se pone al
   cargar. `Ver como intermedia` sí enseña los seis huecos
 
-**Informe del mes 2 (hecho el 09/10/2026 y puesto al día el 13/10/2026).** `Docs/Informe-Mes2.docx`, con el
+**Informe del mes 2 (hecho el 09/10/2026 y puesto al día el 23/10/2026).** `Docs/Informe-Mes2.docx`, con el
 mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.3, hoja de firmas,
 índice, cabecera "Implementación, integración y pruebas del módulo" y tres capítulos (18 tablas y 12 figuras tras la puesta al día: se añadió la de la sala 4 intermedia). Cómo está hecho, para cambiarlo:
 

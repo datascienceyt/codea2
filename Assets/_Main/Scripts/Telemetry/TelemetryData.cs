@@ -26,7 +26,7 @@ public class AttemptRecord
     /// Cuánto se parece la secuencia a la solución correcta, de 0 a 100: número de
     /// instrucciones y orden (ver SolutionScore). -1 si el nivel no tiene solución cargada.
     /// </summary>
-    public int solutionPercent = -1;
+    public float solutionPercent = -1f;
 
     /// <summary>
     /// Segundos que el jugador tardó en preparar este intento: desde que empezó el escenario
@@ -159,7 +159,7 @@ public class ModuleAttemptRecord
     /// Acertadas entre todas las que intervienen (marcadas o correctas), de 0 a 100. Marcar de
     /// más resta igual que dejarse una (ver SolutionScore.SelectionPercent).
     /// </summary>
-    public int solutionPercent;
+    public float solutionPercent;
 
     /// <summary>Segundos desde el Probar anterior del escenario, o desde su inicio.</summary>
     public float durationSeconds;
@@ -223,7 +223,7 @@ public class LoopAttemptRecord
     /// instrucciones y orden, frente a la solución de ese tipo (ver SolutionScore). No mide
     /// las repeticiones, que van aparte. -1 si no hay solución cargada.
     /// </summary>
-    public int solutionPercent = -1;
+    public float solutionPercent = -1f;
 
     /// <summary>Mismo criterio que AttemptRecord.durationSeconds: tiempo de preparación.</summary>
     public float durationSeconds;

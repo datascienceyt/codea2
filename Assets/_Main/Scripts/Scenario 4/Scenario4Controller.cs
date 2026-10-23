@@ -124,8 +124,25 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         TelemetryManager.Instance.StartChallenge(challengeId);
     }
 
+    [Tooltip("Misma ficha en el mismo hueco antes de estos segundos: es la misma colocación y " +
+             "no se registra otra vez. En una sesión del 22/10/2026 salió dos veces con 0,2 s.")]
+    [SerializeField] private float duplicatePlacementSeconds = 0.5f;
+
+    private ShapeSocket lastSocket;
+    private ShapeChip lastChip;
+    private float lastPlacementTime = float.NegativeInfinity;
+
     private void HandleChipEvaluated(ShapeSocket socket, ShapeChip chip, bool correct)
     {
+        // Se ignora entera, no solo la telemetría: el rechazo de la primera ya está en marcha
+        // y expulsa la ficha que haya, y así tampoco suena el error dos veces.
+        if (socket == lastSocket && chip == lastChip && Time.time - lastPlacementTime < duplicatePlacementSeconds)
+            return;
+
+        lastSocket = socket;
+        lastChip = chip;
+        lastPlacementTime = Time.time;
+
         if (HasTelemetry)
             TelemetryManager.Instance.RegisterPlacement(
                 challengeId,
