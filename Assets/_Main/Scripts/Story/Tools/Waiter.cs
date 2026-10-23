@@ -1,14 +1,15 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// Espera unos segundos. Como acción de un paso del Director, lo retiene ese tiempo; los
+/// segundos se fijan desde los instantEvents del mismo paso con SetSeconds.
+/// </summary>
 public class Waiter : MonoBehaviour, IStepAction
 {
-    [SerializeField] public float seconds = 1f;
+    public float seconds = 1f;
 
-    public IEnumerator Execute()
-    {
-        yield return StartCoroutine(Wait());
-    }
+    public IEnumerator Execute() => Wait();
 
     public void SetSeconds(float newSeconds)
     {

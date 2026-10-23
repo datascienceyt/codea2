@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -18,6 +19,10 @@ public class Scenario1Difficulty : DifficultyVariant<Scenario1Difficulty.Setting
 
         [Tooltip("Huecos de la fila. Con los justos de la solución, un camino más largo no cabe.")]
         public int sockets = 8;
+
+        [Tooltip("Caminos correctos del nivel, para el porcentaje de solución de cada intento. " +
+                 "Si hay varios, cada intento se compara con el más cercano.")]
+        public List<SolutionPath> solutions = new List<SolutionPath>();
     }
 
     [SerializeField] private LevelLoader levelLoader;
@@ -30,6 +35,32 @@ public class Scenario1Difficulty : DifficultyVariant<Scenario1Difficulty.Setting
 
         if (row != null) row.SetSocketsQuantity(settings.sockets);
         else Debug.LogError($"[Dificultad] Escenario 1: falta la fila en '{name}'.", this);
+
+        ApplySolutions(row, settings.solutions, this);
+    }
+
+    /// <summary>
+    /// Pasa las soluciones al botón de ejecutar de esa fila. Se busca por la fila, que el botón
+    /// ya conoce: así no hace falta un cable más en el inspector.
+    /// </summary>
+    public static void ApplySolutions(SocketRow row, List<SolutionPath> solutions, MonoBehaviour context)
+    {
+        if (row == null) return;
+
+        if (solutions == null || solutions.Count == 0)
+            Debug.LogWarning($"[Dificultad] '{context.name}' no tiene soluciones: el porcentaje de " +
+                             "solución de los intentos saldrá -1.", context);
+
+        foreach (ProgramTrigger trigger in FindObjectsByType<ProgramTrigger>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (trigger.socketRow != row) continue;
+
+            trigger.SetSolutions(solutions);
+            return;
+        }
+
+        Debug.LogWarning($"[Dificultad] '{context.name}': ningún ProgramTrigger usa la fila '{row.name}'; " +
+                         "los intentos saldrán sin porcentaje de solución.", context);
     }
 
     public void SetTargets(LevelLoader loader, SocketRow socketRow)

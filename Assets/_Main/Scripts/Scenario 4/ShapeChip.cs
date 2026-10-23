@@ -193,9 +193,10 @@ public class ShapeChip : BlockNode
 
     /// <summary>
     /// Nombre del hijo que lleva el SpriteRenderer de la figura. Fijo a propósito: todas las
-    /// fichas salen del mismo prefab y todas traen ese hijo.
+    /// fichas salen del mismo prefab y todas traen ese hijo. Los huecos (ShapeSocket) usan el
+    /// mismo, así no hay dos convenciones que recordar.
     /// </summary>
-    private const string SpriteChildName = "Sprite";
+    public const string SpriteChildName = "Sprite";
 
     /// <summary>
     /// Engancha el SpriteRenderer del hijo "Sprite" y pinta la figura de una vez.
@@ -208,7 +209,7 @@ public class ShapeChip : BlockNode
     [ContextMenu("Aplicar figura al hijo 'Sprite'")]
     public void ApplyShapeToChild()
     {
-        SpriteRenderer target = FindSpriteChild();
+        SpriteRenderer target = FindSpriteChild(transform);
 
         if (target == null)
         {
@@ -232,16 +233,17 @@ public class ShapeChip : BlockNode
 #endif
     }
 
-    private SpriteRenderer FindSpriteChild()
+    /// <summary>El SpriteRenderer del hijo "Sprite" de una ficha o de un hueco. Null si no lo hay.</summary>
+    public static SpriteRenderer FindSpriteChild(Transform root)
     {
-        Transform child = transform.Find(SpriteChildName);
+        Transform child = root.Find(SpriteChildName);
 
         if (child != null && child.TryGetComponent(out SpriteRenderer direct))
             return direct;
 
         // Rebusca más abajo e incluye los desactivados, por si la figura cuelga de un pivote
         // o de un grupo de visuales en vez de ser hija directa.
-        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>(true))
+        foreach (SpriteRenderer renderer in root.GetComponentsInChildren<SpriteRenderer>(true))
             if (renderer.name == SpriteChildName) return renderer;
 
         return null;

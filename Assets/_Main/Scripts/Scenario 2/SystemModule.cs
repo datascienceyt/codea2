@@ -4,15 +4,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
-/// Un módulo de la sala de sistemas: una pantalla con el problema y varios botones de acción
-/// que se seleccionan y deseleccionan libremente.
+/// Un módulo de la sala de sistemas: una pantalla con el problema, varios botones de acción
+/// que se marcan y desmarcan libremente, y un botón Probar.
 ///
-/// El módulo se repara cuando el conjunto seleccionado coincide EXACTAMENTE con el conjunto de
-/// acciones correctas: ni de menos ni de más. Eso obliga a descartar los distractores de forma
-/// activa, no solo a acertar uno.
+/// Marcar no comprueba nada. Al pulsar Probar, el módulo se repara si lo marcado coincide
+/// EXACTAMENTE con las acciones correctas: ni de menos ni de más. Si no, suena el error y se
+/// desmarcan todos los botones para empezar de nuevo (reunión del 20/10/2026: "botón azul
+/// probar, si error reiniciar 4 botones"). Cada Probar es un intento en la telemetría.
 /// </summary>
 public class SystemModule : MonoBehaviour, IStepAction
 {
@@ -50,32 +52,37 @@ public class SystemModule : MonoBehaviour, IStepAction
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
     [SerializeField] private ModuleOptionButton[] optionButtons;
 
-    [Tooltip("Segundos que un botón incorrecto se queda marcado antes de soltarse solo. " +
-             "Con 0 se suelta en el acto y el niño no llega a ver qué pulsó.")]
-    [SerializeField] private float wrongOptionSeconds = 0.8f;
+    [Tooltip("Segundos que los botones se quedan como estaban tras un Probar fallido, antes de " +
+             "desmarcarse todos. Con 0 se desmarcan en el acto y el niño no llega a ver qué probó.")]
+    [FormerlySerializedAs("wrongOptionSeconds")]
+    [SerializeField] private float resetAfterErrorSeconds = 0.8f;
+
+    [Tooltip("Opcional. El botón Probar del módulo: se apaga al repararse o al agotarse el tiempo.")]
+    [SerializeField] private GameObject tryButton;
+
+    [Tooltip("Sonido al repararse. El mismo que suena en el Escenario 4 al acertar una ficha.")]
+    [SerializeField] private AudioClip solvedSound;
 
     [Header("Eventos")]
-    [Tooltip("Al seleccionar o deseleccionar cualquier acción: sonido, parpadeo...")]
+    [Tooltip("Al marcar o desmarcar cualquier acción: sonido, parpadeo...")]
     public UnityEvent OnSelectionChanged;
 
-    [Tooltip("Al SELECCIONAR una acción que no forma parte de la solución. Aquí va la frase de " +
-             "error del narrador, o un sonido.")]
+    [Tooltip("Al pulsar Probar sin acertar. Aquí va la frase de error del narrador, o un sonido.")]
     public UnityEvent OnWrongOption;
 
     [Tooltip("Al quedar reparado.")]
     public UnityEvent OnSolved;
 
-    /// <summary>Módulo, índice, si quedó seleccionada, si esa acción era correcta.</summary>
+    /// <summary>Módulo, índice, si quedó marcada, si esa acción era correcta.</summary>
     public event Action<SystemModule, int, bool, bool> OnOptionToggled;
+
+    /// <summary>Módulo, acciones marcadas, cuántas correctas, cuántas incorrectas, si lo reparó y porcentaje.</summary>
+    public event Action<SystemModule, List<string>, int, int, bool, int> OnTried;
 
     private readonly HashSet<int> selected = new HashSet<int>();
 
-    /// <summary>
-    /// Incorrectas que se están mostrando marcadas hasta soltarse solas. Nunca entran en
-    /// 'selected': para la solución es como si no se hubieran pulsado, y así el módulo no
-    /// depende de que una corrutina llegue a terminar para poder resolverse.
-    /// </summary>
-    private readonly HashSet<int> wrongShown = new HashSet<int>();
+    // Tras un Probar fallido, mientras se espera para desmarcar: no se admiten pulsaciones.
+    private bool resetting;
 
     public ModuleData Data => data;
     public bool IsSolved { get; private set; }
@@ -85,6 +92,9 @@ public class SystemModule : MonoBehaviour, IStepAction
 
     // Si ya pasó Start. Antes, los botones aún no están resueltos y Start pintará solo.
     private bool started;
+
+    // Se agotó el tiempo de la sala: ya no se espera a este módulo ni responden sus botones.
+    private bool timedOut;
 
     /// <summary>
     /// Cambia el problema y las opciones del módulo. Lo usa Scenario2Difficulty al cargar la
@@ -155,13 +165,33 @@ public class SystemModule : MonoBehaviour, IStepAction
             if (button == null) continue;
 
             button.SetLabel(data.LabelAt(button.OptionIndex));
-            button.SetSelected(selected.Contains(button.OptionIndex) ||
-                               wrongShown.Contains(button.OptionIndex));
-            button.SetInteractable(!IsSolved);
+            button.SetSelected(selected.Contains(button.OptionIndex));
+            button.SetInteractable(!IsSolved && !timedOut);
         }
+
+        RefreshTryButton();
     }
 
     /// <summary>
+    /// Probar se apaga al repararse el módulo o al acabarse el tiempo. Con un respiro: se repara
+    /// DENTRO del evento de pulsación del propio botón, y apagarlo en el acto le cortaba el sonido.
+    /// </summary>
+    private void RefreshTryButton()
+    {
+        if (tryButton == null) return;
+
+        bool show = !IsSolved && !timedOut;
+
+        if (show || !Application.isPlaying || !isActiveAndEnabled) tryButton.SetActive(show);
+        else if (tryButton.activeSelf) StartCoroutine(HideTryButton());
+    }
+
+    private IEnumerator HideTryButton()
+    {
+        yield return new WaitForSeconds(0.6f);
+
+        if (IsSolved || timedOut) tryButton.SetActive(false);
+    }
 
     /// <summary>
     /// Si este módulo tiene registrado ese botón.
@@ -204,9 +234,8 @@ public class SystemModule : MonoBehaviour, IStepAction
     }
 
     /// <summary>
-    /// Lo llaman los botones. Una acción correcta alterna entre seleccionada y no
-    /// seleccionada; una incorrecta se registra, se queda marcada un momento y se suelta sola.
-    /// Un módulo ya reparado ignora las pulsaciones.
+    /// Lo llaman los botones de acción: marca o desmarca, sin comprobar nada. Lo que vale es lo
+    /// que haya marcado al pulsar Probar.
     /// </summary>
     public void ToggleOption(int optionIndex)
     {
@@ -217,77 +246,95 @@ public class SystemModule : MonoBehaviour, IStepAction
             return;
         }
 
-        if (IsSolved) return;
-
-        // Mientras se muestra marcada no admite otra pulsación: se va a soltar sola.
-        if (wrongShown.Contains(optionIndex)) return;
-
-        if (!data.IsCorrectAt(optionIndex))
-        {
-            SelectWrongOption(optionIndex);
-            return;
-        }
+        if (IsSolved || timedOut || resetting) return;
 
         bool nowSelected = !selected.Contains(optionIndex);
 
         if (nowSelected) selected.Add(optionIndex);
         else selected.Remove(optionIndex);
 
+        RefreshButtons();
+
+        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, data.IsCorrectAt(optionIndex));
+        OnSelectionChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// El botón Probar. Repara el módulo si lo marcado es exactamente la solución; si no,
+    /// suena el error y, pasado un momento, se desmarcan todos los botones.
+    ///
+    /// Probar sin nada marcado también cuenta como intento: es una decisión del niño, y la
+    /// más reveladora de todas si no ha entendido qué tiene que hacer.
+    /// </summary>
+    [ContextMenu("Probar")]
+    public void Try()
+    {
+        if (data == null)
+        {
+            Debug.LogError($"[Escenario2] '{name}' no tiene ModuleData asignado: Probar no hará nada.", this);
+            return;
+        }
+
+        if (IsSolved || timedOut || resetting) return;
+
+        bool solved = MatchesSolution();
+        int percent = SolutionScore.SelectionPercent(selected, CorrectIndices());
+        List<string> marked = SelectedLabels();
+
+        int correctMarked = 0;
+        foreach (int index in selected)
+            if (data.IsCorrectAt(index)) correctMarked++;
+
         // El estado se actualiza ANTES de avisar: el controlador comprueba el IsSolved de todos
         // los módulos para saber si el escenario terminó, y si avisáramos primero vería este
         // todavía sin resolver.
-        if (MatchesSolution()) IsSolved = true;
+        if (solved)
+        {
+            IsSolved = true;
+            Refresh();
+        }
 
-        // Reparado, lo que quedara marcado por error se suelta ya: el módulo está cerrado.
-        if (IsSolved) wrongShown.Clear();
+        OnTried?.Invoke(this, marked, correctMarked, selected.Count - correctMarked, solved, percent);
 
-        Refresh();
+        if (solved)
+        {
+            if (solvedSound != null) AudioSource.PlayClipAtPoint(solvedSound, transform.position);
 
-        OnOptionToggled?.Invoke(this, optionIndex, nowSelected, true);
-        OnSelectionChanged?.Invoke();
+            OnSolved?.Invoke();
+            return;
+        }
 
-        if (IsSolved) OnSolved?.Invoke();
-    }
-
-    /// <summary>
-    /// Una acción incorrecta: cuenta como selección para la telemetría y dispara la frase de
-    /// error, pero el niño no tiene que quitarla. Su desmarcado no se avisa a nadie, porque
-    /// no es una decisión suya.
-    /// </summary>
-    private void SelectWrongOption(int optionIndex)
-    {
-        wrongShown.Add(optionIndex);
-        RefreshButtons();
-
-        OnOptionToggled?.Invoke(this, optionIndex, true, false);
-        OnSelectionChanged?.Invoke();
         OnWrongOption?.Invoke();
 
-        // Con el módulo apagado (una pulsación de prueba desde el inspector) no hay corrutina
-        // que la suelte después.
-        if (isActiveAndEnabled) StartCoroutine(ReleaseWrongOption(optionIndex));
-        else wrongShown.Remove(optionIndex);
+        // Con el módulo apagado (una prueba desde el inspector) no hay corrutina que espere.
+        if (isActiveAndEnabled && resetAfterErrorSeconds > 0f) StartCoroutine(ResetAfterError());
+        else ClearSelection();
     }
 
-    private IEnumerator ReleaseWrongOption(int optionIndex)
+    private IEnumerator ResetAfterError()
     {
-        if (wrongOptionSeconds > 0f)
-            yield return new WaitForSeconds(wrongOptionSeconds);
+        resetting = true;
 
-        wrongShown.Remove(optionIndex);
+        yield return new WaitForSeconds(resetAfterErrorSeconds);
+
+        ClearSelection();
+    }
+
+    /// <summary>Desmarca todos los botones. No se avisa a la telemetría: no es una decisión del niño.</summary>
+    private void ClearSelection()
+    {
+        resetting = false;
+        selected.Clear();
         RefreshButtons();
     }
 
     /// <summary>
-    /// Si el módulo se apaga con un botón incorrecto aún marcado, su corrutina muere y se
-    /// quedaría marcado y sin responder para siempre.
+    /// Si el módulo se apaga a mitad de la espera, su corrutina muere: sin esto se quedaría
+    /// sin admitir pulsaciones para siempre.
     /// </summary>
     private void OnDisable()
     {
-        if (wrongShown.Count == 0) return;
-
-        wrongShown.Clear();
-        RefreshButtons();
+        if (resetting) ClearSelection();
     }
 
     /// <summary>
@@ -306,6 +353,28 @@ public class SystemModule : MonoBehaviour, IStepAction
         return true;
     }
 
+    private HashSet<int> CorrectIndices()
+    {
+        HashSet<int> correct = new HashSet<int>();
+
+        for (int i = 0; data.options != null && i < data.options.Count; i++)
+            if (data.IsCorrectAt(i)) correct.Add(i);
+
+        return correct;
+    }
+
+    /// <summary>Lo marcado, en el orden de los botones, para que dos intentos iguales se lean igual.</summary>
+    private List<string> SelectedLabels()
+    {
+        List<int> indices = new List<int>(selected);
+        indices.Sort();
+
+        List<string> labels = new List<string>();
+        foreach (int index in indices) labels.Add(data.LabelAt(index));
+
+        return labels;
+    }
+
     /// <summary>
     /// Bloquea el paso del Director hasta que ESTE módulo quede reparado.
     ///
@@ -318,15 +387,31 @@ public class SystemModule : MonoBehaviour, IStepAction
     /// </summary>
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => IsSolved);
+        yield return new WaitUntil(() => IsSolved || timedOut);
+    }
+
+    /// <summary>
+    /// Se agotó el tiempo de la sala: el paso del Director deja de esperar a este módulo y sus
+    /// botones dejan de responder. Lo llama Scenario2Controller.
+    /// </summary>
+    public void TimeOut()
+    {
+        timedOut = true;
+
+        if (resetting) StopAllCoroutines();
+        resetting = false;
+
+        RefreshButtons();
     }
 
     [ContextMenu("Reset Module")]
     public void ResetModule()
     {
+        StopAllCoroutines();
+
         IsSolved = false;
+        resetting = false;
         selected.Clear();
-        wrongShown.Clear();
         Refresh();
     }
 }

@@ -6,8 +6,10 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 
 /// <summary>
-/// Cuenta atrás de sesión (RF-06). Se maneja por funciones (StartTimer / Pause / Continue /
-/// Stop), pensadas para engancharse a los instantEvents de un Step o a cualquier UnityEvent.
+/// Cuenta atrás (RF-06). Se maneja por funciones (StartTimer / Pause / Continue / Stop),
+/// pensadas para engancharse a los instantEvents de un Step o a cualquier UnityEvent. En la
+/// escena de juego lo gobierna ScenarioTimeLimit: le fija los 15 minutos de la sesión, lo
+/// arranca con el primer reto y lo pausa entre salas.
 ///
 /// Si se le asigna un Text lo va mostrando; si se deja vacío cuenta en privado y el tiempo
 /// se consulta desde código con Elapsed y Remaining.
@@ -46,7 +48,8 @@ public class Timer : MonoBehaviour
     private readonly List<TimerDisplay> screens = new List<TimerDisplay>();
 
     [Header("Tiempo límite")]
-    [Tooltip("Tiempo límite en segundos. 900 = 15 minutos.")]
+    [Tooltip("Tiempo límite en segundos. Con ScenarioTimeLimit en la escena manda el suyo " +
+             "(Session Seconds) y este valor se ignora.")]
     [SerializeField] private int timeLimit = 900;
 
     [Header("Formato")]
@@ -54,11 +57,11 @@ public class Timer : MonoBehaviour
     [SerializeField] private bool showHours = false;
 
     [Header("Eventos")]
-    [Tooltip("Avisos por tiempo restante (RF-06: 15, 10 y 5 minutos).")]
+    [Tooltip("Avisos por tiempo restante, p. ej. a falta de un minuto. Se rearman en cada StartTimer.")]
     [SerializeField] private List<TimerAlert> alerts = new List<TimerAlert>();
 
-    [Tooltip("Se dispara UNA vez al agotarse el tiempo. Aquí va el cierre de sesión: " +
-             "guardar la telemetría y volver a la pantalla inicial.")]
+    [Tooltip("Se dispara UNA vez al agotarse el tiempo. ScenarioTimeLimit se suscribe desde " +
+             "código para cerrar la sala; aquí solo van efectos (sonido, luces).")]
     public UnityEvent OnTimeUp;
 
     /// <summary>Segundos acumulados. No avanza mientras está pausado.</summary>
@@ -181,7 +184,7 @@ public class Timer : MonoBehaviour
     }
 
     /// <summary>
-    /// Escribe la misma cadena en todas partes. Se formatea una sola vez: con cinco pantallas
+    /// Escribe la misma cadena en todas partes. Se formatea una sola vez: con varias pantallas
     /// esto corre en cada frame de la cuenta.
     /// </summary>
     private void Refresh()

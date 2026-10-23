@@ -12,7 +12,6 @@ public class Fader : MonoBehaviour, IStepAction
     [SerializeField] private Material fadeMaterial;
 
     private Material mat;
-    private Transform sphereTransform;
     private bool isFadedIn = false; // true = negro completo, false = transparente
 
     void Start()
@@ -46,11 +45,10 @@ public class Fader : MonoBehaviour, IStepAction
         mat = new Material(template); // instancia propia: no tocar el asset compartido
         mat.color = Color.black;
 
-        sphere.GetComponent<Renderer>().material = mat;
-        sphere.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        sphere.GetComponent<Renderer>().receiveShadows = false;
-
-        sphereTransform = sphere.transform;
+        Renderer sphereRenderer = sphere.GetComponent<Renderer>();
+        sphereRenderer.material = mat;
+        sphereRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        sphereRenderer.receiveShadows = false;
 
         SetAlpha(0f);
     }

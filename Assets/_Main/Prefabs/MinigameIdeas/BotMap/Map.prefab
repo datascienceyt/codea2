@@ -48,11 +48,10 @@ MonoBehaviour:
   pathPrefab: {fileID: 3508795590032697016, guid: a92ded6e4fa50024682df29808a1bb62, type: 3}
   wallPrefab: {fileID: 5250274889489871892, guid: 42d06e15501a162469cc5b685ae49c94, type: 3}
   dangerPrefab: {fileID: 7193382371715767142, guid: a49d16e68e5d57e4dbafda7179cf63e5, type: 3}
-  pointPrefab: {fileID: 6345231869145121931, guid: 7a52a58a1d4448d41817830f7f3581e6, type: 3}
   botPrefab: {fileID: 3757803444399024281, guid: 09cb29a56ba32e445b34478f9557c535, type: 3}
   exitPrefab: {fileID: 522974621567273210, guid: 91455b92baaa47f49a5efb3529ab2d6a, type: 3}
   tileSize: 0.1
-  levelJson: {fileID: 4900000, guid: be65a0bd1a938a84c8df74cea5fc9eb0, type: 3}
+  levelJson: {fileID: 4900000, guid: a53c69550b51a2a4ab193407469ce441, type: 3}
   loadOnStart: 1
 --- !u!114 &3658020510517992738
 MonoBehaviour:

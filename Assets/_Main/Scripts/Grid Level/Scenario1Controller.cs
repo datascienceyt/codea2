@@ -5,7 +5,7 @@ using UnityEngine.Events;
 /// <summary>
 /// Conecta el Escenario 1 con el Director y con la telemetría.
 /// </summary>
-public class Scenario1Controller : MonoBehaviour, IStepAction
+public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
 {
     [Header("Acciones al finalizar el nivel")]
     public UnityEvent OnLevelFinished;
@@ -35,7 +35,22 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
              "reinician el cronómetro del escenario.")]
     [SerializeField] bool startChallengeOnStart = true;
 
+    [Header("Bloques")]
+    [Tooltip("Los bloques de la paleta no se pueden agarrar hasta que arranca el reto, que es " +
+             "cuando arranca el reloj. Así nadie monta la secuencia durante la narración.")]
+    [SerializeField] bool lockBlocksUntilStart = true;
+
     bool levelFinished;
+    bool timedOut;
+
+    public string ChallengeId => challengeId;
+    public bool IsCompleted => levelFinished || IsLevelCompleted;
+
+    // Mientras el robot recorre la secuencia, el intento sigue vivo: puede ser el que gana.
+    public bool IsBusy => runner != null && runner.IsRunning;
+
+    /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar a la meta.</summary>
+    public void TimeOut() => timedOut = true;
 
     void Awake()
     {
@@ -63,6 +78,9 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
 
     void OnDestroy()
     {
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.ChallengeStarted -= HandleChallengeStarted;
+
         if (levelManager != null)
             levelManager.OnLevelCompleted -= HandleLevelFinished;
 
@@ -72,10 +90,33 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
 
     void Start()
     {
-        //OVRInput.DisableSimultaneousHandsAndControllers();
+        if (lockBlocksUntilStart && TelemetryManager.Instance != null)
+        {
+            SetPaletteInteractable(false);
+            TelemetryManager.Instance.ChallengeStarted += HandleChallengeStarted;
+        }
 
         if (startChallengeOnStart && TelemetryManager.Instance != null)
             TelemetryManager.Instance.StartChallenge(challengeId);
+    }
+
+    void HandleChallengeStarted(string id)
+    {
+        if (id != challengeId) return;
+
+        TelemetryManager.Instance.ChallengeStarted -= HandleChallengeStarted;
+        SetPaletteInteractable(true);
+    }
+
+    /// <summary>
+    /// Los bloques del escenario, sin los del tutorial, que tiene su propio bloque y se usa
+    /// antes de que arranque el reloj.
+    /// </summary>
+    void SetPaletteInteractable(bool value)
+    {
+        foreach (GridBlock block in FindObjectsByType<GridBlock>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (block.GetComponentInParent<TutorialController>(true) == null)
+                block.SetInteractable(value);
     }
 
     void HandleLevelFinished()
@@ -126,6 +167,6 @@ public class Scenario1Controller : MonoBehaviour, IStepAction
     public IEnumerator Execute()
     {
         levelFinished = false;
-        yield return new WaitUntil(() => levelFinished);
+        yield return new WaitUntil(() => levelFinished || timedOut);
     }
 }

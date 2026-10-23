@@ -40,14 +40,20 @@ function fieldsOf(name) {
 
 const isPlaceholder = value => typeof value === 'string' && value.startsWith('<VARIABLE');
 
-function check(value, type, where, errors) {
+// Campos que se añadieron el 22/10/2026 (botón Probar y porcentaje de solución). Un archivo
+// anterior no los tiene, y no es un error: se avisa como formato anterior.
+const addedOn22Oct = new Set(['AttemptRecord.solutionPercent', 'LoopAttemptRecord.solutionPercent',
+                              'Scenario2Record.failedAttempts', 'Scenario2Record.attempts',
+                              'LoopAttemptRecord.remaining']);
+
+function check(value, type, where, errors, older) {
     if (isPlaceholder(value)) return;
 
     const list = type.match(/^List<(\w+)>$/);
 
     if (list) {
         if (!Array.isArray(value)) { errors.push(`${where}: debería ser una lista`); return; }
-        value.forEach((item, i) => check(item, list[1], `${where}[${i}]`, errors));
+        value.forEach((item, i) => check(item, list[1], `${where}[${i}]`, errors, older));
         return;
     }
 
@@ -65,7 +71,11 @@ function check(value, type, where, errors) {
     const names = expected.map(f => f.name);
     const actual = Object.keys(value);
 
-    for (const name of names) if (!actual.includes(name)) errors.push(`${where}: falta '${name}'`);
+    for (const name of names) {
+        if (actual.includes(name)) continue;
+        if (addedOn22Oct.has(`${type}.${name}`)) older.add(name);
+        else errors.push(`${where}: falta '${name}'`);
+    }
     for (const name of actual) if (!names.includes(name)) errors.push(`${where}: sobra '${name}'`);
 
     const common = actual.filter(name => names.includes(name));
@@ -74,7 +84,7 @@ function check(value, type, where, errors) {
         errors.push(`${where}: orden de campos distinto al del modelo (${ordered.join(', ')})`);
 
     for (const field of expected)
-        if (field.name in value) check(value[field.name], field.type, `${where}.${field.name}`, errors);
+        if (field.name in value) check(value[field.name], field.type, `${where}.${field.name}`, errors, older);
 }
 
 function listJson(dir) {
@@ -91,9 +101,10 @@ let failed = 0;
 
 for (const file of files) {
     const errors = [];
+    const older = new Set();
 
     try {
-        check(JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, '')), 'RunRecord', 'raíz', errors);
+        check(JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, '')), 'RunRecord', 'raíz', errors, older);
     } catch (error) {
         errors.push(`no se pudo leer: ${error.message}`);
     }
@@ -101,7 +112,7 @@ for (const file of files) {
     const name = path.relative(root, file);
 
     if (errors.length === 0) {
-        console.log(`OK     ${name}`);
+        console.log(older.size === 0 ? `OK     ${name}` : `OK     ${name}  (formato anterior al 22/10/2026: sin ${[...older].join(', ')})`);
         continue;
     }
 

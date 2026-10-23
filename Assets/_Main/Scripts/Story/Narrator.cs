@@ -115,6 +115,10 @@ public class Narrator : MonoBehaviour, IStepAction
     private int lastErrorIndex = -1;
     private bool skipRequested;
 
+    // Sustitución pedida para la próxima frase de la historia (ReplaceNextLine).
+    private bool replacementPending;
+    private NarrationEntry nextReplacement;
+
     public bool IsTyping { get; private set; }
     public int LineCount => lines.Count;
 
@@ -163,7 +167,6 @@ public class Narrator : MonoBehaviour, IStepAction
     /// <summary>
     /// Reproduce la línea siguiente del tramo actual y bloquea hasta que terminen voz y texto.
     /// </summary>
-    [ContextMenu("Execute")]
     public IEnumerator Execute()
     {
         if (!HasEntries())
@@ -181,7 +184,32 @@ public class Narrator : MonoBehaviour, IStepAction
         NarrationEntry entry = currentList.entries[index];
         index++;
 
+        // La frase que tocaba se consume igual, para que las siguientes no se desplacen: el
+        // Director espera al Narrator una vez por entrada de la lista.
+        if (replacementPending)
+        {
+            NarrationEntry replacement = nextReplacement;
+            replacementPending = false;
+            nextReplacement = null;
+
+            if (replacement == null || (replacement.clip == null && string.IsNullOrEmpty(replacement.textId)))
+                yield break;
+
+            entry = replacement;
+        }
+
         yield return PlayEntry(entry);
+    }
+
+    /// <summary>
+    /// La próxima frase de la historia se sustituye por esta, o se omite si viene vacía. Lo
+    /// usa ScenarioTimeLimit: al agotarse el tiempo de una sala, la frase que sigue es la de
+    /// felicitación ("¡Muy bien, astronauta!"), que ya no corresponde.
+    /// </summary>
+    public void ReplaceNextLine(NarrationEntry replacement)
+    {
+        replacementPending = true;
+        nextReplacement = replacement;
     }
 
     /// <summary>
@@ -474,7 +502,7 @@ public class Narrator : MonoBehaviour, IStepAction
 
         UnityEditor.Undo.RecordObject(this, "Asignar textId");
 
-        System.Text.StringBuilder log = new System.Text.StringBuilder();
+        StringBuilder log = new StringBuilder();
         int assigned = 0;
 
         for (int l = 0; l < lists.Count; l++)

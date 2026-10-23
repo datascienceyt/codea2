@@ -11,7 +11,7 @@ using UnityEngine.Events;
 /// es el juego de figuras. Los huecos y fichas de una sola dificultad llevan DifficultyOnly,
 /// y los de la otra no cuentan para terminar el panel.
 /// </summary>
-public class Scenario4Controller : MonoBehaviour, IStepAction
+public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
 {
     [Header("Panel")]
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
@@ -60,6 +60,13 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
     public UnityEvent OnScenarioFinished;
 
     private bool scenarioFinished;
+    private bool timedOut;
+
+    public bool IsCompleted => scenarioFinished;
+    public bool IsBusy => false;
+
+    /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar al panel.</summary>
+    public void TimeOut() => timedOut = true;
 
     private void Awake()
     {
@@ -196,7 +203,7 @@ public class Scenario4Controller : MonoBehaviour, IStepAction
 
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => scenarioFinished);
+        yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
 
 #if UNITY_EDITOR

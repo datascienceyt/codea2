@@ -43,6 +43,11 @@ public class TutorialController : MonoBehaviour, IStepAction
              "experiencia arrancaría dos veces.")]
     [SerializeField] private bool startDirectorOnFinish = true;
 
+    [Tooltip("Color que toma el botón del Escenario 1 al pulsarlo. Es el único de los cuatro gestos " +
+             "que no deja rastro por sí solo (el otro botón se queda marcado, el bloque y la ficha " +
+             "se ven encajados), y sin esto el niño no sabe si contó.")]
+    [SerializeField] private Color doneColor = new Color(0.3f, 1f, 0.4f);
+
     [Header("Eventos")]
     [Tooltip("Al completar cada interacción, una sola vez: una luz, un sonido, una frase.")]
     public UnityEvent OnProgramButtonPressed;
@@ -95,7 +100,24 @@ public class TutorialController : MonoBehaviour, IStepAction
     }
 
     [ContextMenu("Probar/1 - Botón del Escenario 1")]
-    private void HandleProgramButton() => Complete(ref programButtonDone, OnProgramButtonPressed);
+    private void HandleProgramButton()
+    {
+        if (!programButtonDone) MarkDone(programButton);
+
+        Complete(ref programButtonDone, OnProgramButtonPressed);
+    }
+
+    /// <summary>Tiñe la pieza para que se vea que ya está hecha.</summary>
+    private void MarkDone(Component piece)
+    {
+        Renderer target = piece != null ? piece.GetComponentInChildren<Renderer>() : null;
+        if (target == null) return;
+
+        // Según el shader, el color base se llama de una forma u otra.
+        Material material = target.material;
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", doneColor);
+        else if (material.HasProperty("_Color")) material.SetColor("_Color", doneColor);
+    }
 
     [ContextMenu("Probar/2 - Botón del Escenario 2")]
     private void HandleOptionButton() => Complete(ref optionButtonDone, OnOptionButtonPressed);

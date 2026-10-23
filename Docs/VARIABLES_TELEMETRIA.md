@@ -3,7 +3,8 @@
 > Documento para el equipo de evaluación. Describe **qué registra el juego** en cada escenario
 > y qué permite observar cada variable.
 >
-> Estado verificado contra el código el **06/10/2026**. Ese día cambió el formato: los
+> Estado verificado contra el código el **22/10/2026** (botón Probar del Escenario 2, porcentaje
+> de solución y 300 s al agotarse una sala). El 06/10/2026 cambió el formato: los
 > archivos anteriores usan el antiguo, resumido al final. Las dos muestras de `JSON Samples/`
 > son sesiones del 30/09/2026 **convertidas** al formato nuevo: llevan estimados los campos que
 > entonces no se registraban (`deviceId`, `blocksConnected`, `blockResets`).
@@ -44,7 +45,7 @@ hasta que se pruebe es un compromiso firme de qué se va a recoger, no datos dis
 - Se guarda en el visor y se conserva siempre, aunque no haya red
 - Se sube solo al servidor al terminar la sesión o al agotarse el tiempo, si hay red. Cerrar la aplicación a mitad de partida no lo sube: queda en el visor
 - Todas las marcas de tiempo son **ISO-8601 en UTC**
-- Todos los indicadores (`started`, `completed`, `solved`, `correct`) son
+- Todos los indicadores (`started`, `completed`, `timedOut`, `solved`, `correct`) son
   booleanos: `true` / `false`
 - Los tiempos se llaman siempre igual: `totalSeconds` para un total (la sesión o un escenario)
   y `durationSeconds` para lo que tardó una acción concreta
@@ -83,7 +84,8 @@ Presentes en los cuatro.
 |---|---|---|
 | `started` | `true`/`false` | Si el participante llegó a este escenario |
 | `completed` | `true`/`false` | Si lo resolvió |
-| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve. En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
+| `timedOut` | `true`/`false` | **Se agotó el tiempo sin resolverlo.** Desde el 12/10/2026 hay dos límites: 5 minutos por sala (al agotarse, la historia pasa a la sala siguiente) y 15 minutos de sesión, que solo corren durante los retos (al agotarse, la experiencia termina: la sala en curso queda con `timedOut` en `true` y las siguientes con `started` en `false`). Nunca es `true` a la vez que `completed`. Un escenario con `started` en `true`, `completed` y `timedOut` en `false` y sin `endedUtc` es una sesión que se cortó (visor apagado, app cerrada) |
+| `totalSeconds` | decimal | **Tiempo de resolución**: desde que empieza hasta que lo resuelve. **Si se agotan los 5 minutos de la sala vale exactamente 300**, a petición del equipo (desde el 22/10/2026; antes podía pasar de 300 por lo que durara el último intento). Si lo que se agota es la sesión de 15 minutos, vale lo que llegó a jugarse en la sala. En los escenarios 2–4 el reto se abre al llegar a la sala, así que incluye su narración (igual para todos). En las sesiones anteriores al 30/09/2026 por la tarde (p. ej. `0101`, `0102`) los escenarios 3 y 4 se abrían al acabar la narración y su tiempo y contadores tienen un pequeño desfase |
 | `startedUtc` / `endedUtc` | fecha | Permiten reconstruir el ritmo de la sesión completa |
 
 ---
@@ -114,6 +116,7 @@ Cada vez que el niño pulsa el botón de ejecutar se guarda un registro completo
 |---|---|---|
 | `sequence` | lista de textos | **La secuencia exacta que montó**, en lenguaje natural |
 | `solved` | `true`/`false` | Si ese intento resolvió el reto |
+| `solutionPercent` | entero | **Porcentaje de solución**, de 0 a 100: cuánto se parece la secuencia al camino correcto en número de instrucciones y orden (ver *Porcentaje de solución*, más abajo). La básica tiene dos caminos correctos y se compara con el más cercano. `-1` si faltaba la solución |
 | `durationSeconds` | decimal | **Segundos que tardó en preparar este intento**: desde que empezó el reto (o desde el fallo anterior) hasta que pulsó ejecutar |
 | `timestamp` | fecha | Cuándo lo ejecutó |
 
@@ -137,10 +140,10 @@ ver cómo evoluciona la estrategia.
 
 Tres módulos averiados de la nave. Cada uno describe en texto **lo que se observa**, no la
 causa (*"Los motores hacen ruido pero no arrancan. Su tanque está vacío"*), y ofrece varias
-acciones: el niño tiene que deducir qué falta. El módulo se repara cuando están marcadas
-**todas** las acciones correctas. Una acción incorrecta se queda marcada un instante, suena la
-frase de error y **se suelta sola**: el niño no tiene que desmarcarla. Se puede reintentar sin
-límite.
+acciones: el niño tiene que deducir qué falta. Desde el 22/10/2026 el niño **marca y desmarca libremente** y
+pulsa el botón azul **Probar** del módulo. Si lo marcado es exactamente la solución, el módulo
+se repara; si no, suena la frase de error y **se desmarcan los cuatro botones** para empezar de
+nuevo. Se puede reintentar sin límite.
 
 La dificultad vive en los datos, no en el código:
 
@@ -154,10 +157,30 @@ lubricación, energía de electricidad, enfriamiento de temperatura—, así que
 acertar reconociendo el texto de la opción: hay que leer el problema y descartar. *"Agregar
 agua"* aparece en los tres módulos y solo es correcta en uno.
 
+## Variables del escenario
+
+| Variable | Tipo | Qué permite observar |
+|---|---|---|
+| `failedAttempts` | entero | Pulsaciones de Probar que no repararon el módulo |
+
+## Variables por intento (cada Probar)
+
+Lista `attempts`, con una entrada por cada pulsación de Probar:
+
+| Variable | Tipo | Qué permite observar |
+|---|---|---|
+| `module` | texto | En qué módulo |
+| `selection` | lista de textos | **Lo que tenía marcado al probar**, en el orden de los botones. Vacía si probó sin marcar nada |
+| `correctSelected` | entero | Cuántas de las marcadas eran correctas |
+| `wrongSelected` | entero | Cuántas de las marcadas eran incorrectas |
+| `solved` | `true`/`false` | Si reparó el módulo |
+| `solutionPercent` | entero | Acertadas entre todas las que intervienen (marcadas o correctas), de 0 a 100. Marcar de más resta igual que dejarse una: con dos correctas, marcar solo una da 50; marcar las dos y una de más, 67 |
+| `durationSeconds` | decimal | Segundos desde el Probar anterior del escenario, o desde que se abrió |
+| `timestamp` | fecha | Cuándo |
+
 ## Variables por pulsación
 
-El escenario no tiene contadores propios: todo está en la lista `selections`, con una entrada
-por cada acción que el niño **marca**.
+Lista `selections`, con una entrada por cada acción que el niño **marca**.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
@@ -170,10 +193,10 @@ por cada acción que el niño **marca**.
 **Los errores se cuentan sobre la lista:** son las entradas con `correct: false`. Ya no hay un
 contador `wrongSelections` aparte, porque decía lo mismo.
 
-**Las deselecciones no se registran.** Ni la automática de una acción incorrecta, ni la manual
-de una correcta (que solo puede darse en intermedia, donde hay dos correctas por módulo). Por
-eso tampoco existe ya el campo `selected`: valdría siempre `true`. Si un niño desmarca una
-correcta y la vuelve a marcar, esa acción aparece dos veces en la lista.
+**Las deselecciones no se registran** (pedido del 06/10/2026): ni las del niño ni el reinicio
+tras un Probar fallido. Por eso no existe el campo `selected`, que valdría siempre `true`. Si
+un niño desmarca una acción y la vuelve a marcar, aparece dos veces en la lista. Lo que tenía
+marcado de verdad en cada intento está en `attempts[].selection`.
 
 **Utilidad para el diseño pedagógico:** el escenario está construido sobre *fading worked
 examples*. Como se guarda el orden y el módulo de cada pulsación, se puede comprobar si los
@@ -213,7 +236,7 @@ como error de lógica.
 |---|---|---|
 | `failedAttempts` | entero | Ejecuciones que **no clasificaron ningún objeto**. Una pasada que mueve algunos pero no todos no cuenta como fallida: es menos óptima, no errónea |
 | `blocksGrabbed` / `blocksConnected` | entero | Veces que agarró y veces que encajó en un hueco un bloque **o una ficha de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
-| `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha o con 0 repeticiones. Al poner la ficha las repeticiones vuelven a 0, así que ejecutar sin elegirlas cuenta aquí y **no** como intento |
+| `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha, con 0 repeticiones o **con algún hueco de la fila vacío**. Lo último desde el 22/10/2026: antes la fila corría hasta el primer hueco y, en intermedia, un programa sin su último giro parecía correcto. Al poner la ficha las repeticiones vuelven a 0, así que ejecutar sin elegirlas cuenta aquí y **no** como intento |
 
 Soltar un objeto en el lado equivocado **no se consuma**: el objeto vuelve a su pila y solo se
 registra el error. Así el niño ve la consecuencia sin tener que rescatar el objeto.
@@ -223,9 +246,11 @@ registra el error. Así el niño ve la consecuencia sin tener que rescatar el ob
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `itemType` | texto | **Con qué ficha se ejecutó**: `"Barril"` o `"Caja"` |
+| `remaining` | entero | **Cuántos objetos de ese tipo faltaban por clasificar** al pulsar Ejecutar. Se compara con `repetitions`: iguales es la elección exacta; más repeticiones, se pasa; menos, se queda corto. `-1` si no se pudo contar |
 | `sequence` | lista de textos | **Las instrucciones del bucle, en orden** |
 | `repetitions` | entero | **Cuántas repeticiones eligió** |
 | `solved` | `true`/`false` | `true` solo en la ejecución que completó el escenario |
+| `solutionPercent` | entero | Porcentaje de solución de la fila frente a la correcta **para ese tipo**. No mide las repeticiones, que van aparte. En básica la fila es fija y vale siempre 100 |
 | `durationSeconds` | decimal | Tiempo de preparación del intento |
 | `timestamp` | fecha | Cuándo |
 
@@ -263,8 +288,8 @@ visual**: hay que comparar el detalle, no reconocer una forma conocida.
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
 | `chipsGrabbed` | entero | Cuántas veces cogió una ficha: la señal de duda y tanteo |
-| `socket` | texto | En qué hueco intentó colocar |
-| `chip` | texto | Qué figura colocó |
+| `socket` | texto | En qué hueco intentó colocar. En básica, el nombre de la figura que espera; en intermedia, posición y letra: `1_Y`, `2_A`, `3_C`, `4_H`, `5_A`, `6_Y` |
+| `chip` | texto | Qué figura colocó. En intermedia, la letra: `A`…`Z` |
 | `correct` | `true`/`false` | Si encajaba |
 | `durationSeconds` | decimal | **Segundos desde la colocación anterior**; en la primera, desde que se abrió el escenario |
 | `timestamp` | fecha | Cuándo |
@@ -273,6 +298,12 @@ Las tres últimas filas y `socket`/`chip` van en la lista `placements`, una entr
 encajada. Las colocaciones incorrectas son las que tienen `correct: false`; ya no hay un
 contador `wrongPlacements` aparte, ni uno de fichas soltadas: una ficha encajada ya es una
 entrada de la lista.
+
+**Intermedia (desde el 12/10/2026).** El panel tiene 6 huecos con las letras de **YACHAY** en un
+alfabeto de glifos cuadrados, y las mismas 18 fichas llevan letras de ese alfabeto: dos Y, dos A,
+una C, una H y doce distractoras, las mismas en todas las sesiones. La palabra repite letras, y
+por eso el hueco se identifica con su posición delante: una `Y` es correcta tanto en `1_Y` como
+en `6_Y`. Para cruzar ficha y hueco hay que comparar la letra, no el texto entero.
 
 Se guarda **qué figura fue a qué hueco**, no solo el acierto. Ese par es el dato pedagógico
 del escenario: saber **cuál confundió con cuál** dice qué detalle no llegó a distinguir, y de
@@ -285,6 +316,34 @@ ahí salen las parejas de figuras que resultaron demasiado parecidas para la eda
 
 ---
 
+# Porcentaje de solución
+
+Acuerdo de la reunión de métricas: *medir número de instrucciones y orden de instrucciones, en
+base a la solución correcta*. En los escenarios 1 y 3 se calcula con la **subsecuencia común más
+larga**: las instrucciones del intento que aparecen en el mismo orden que en la solución,
+divididas entre la más larga de las dos secuencias. Faltar instrucciones resta, sobrar también,
+y una instrucción fuera de orden no cuenta.
+
+| Solución | Intento | % |
+|---|---|---|
+| A R A U | A R A U | 100 |
+| A R A U | A R U (falta una) | 75 |
+| A R A U | A R A A U (sobra una) | 80 |
+| A R A U | U A R A (la U fuera de orden) | 75 |
+
+Soluciones usadas. Las pone la herramienta 3 de Unity en cada variante de dificultad:
+
+| Reto | Solución |
+|---|---|
+| Esc. 1 básica (dos caminos de 8; vale el más cercano) | Avanzar, Girar Derecha, Avanzar, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Usar · Avanzar, Girar Derecha, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Avanzar, Usar |
+| Esc. 1 intermedia | Girar Izquierda, Avanzar, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar, Girar Derecha, Avanzar 2, Usar |
+| Esc. 3 básica | Recoger, Girar al destino, Soltar, Volver (fila fija) |
+| Esc. 3 intermedia | Barril: Recoger, Girar Izquierda, Soltar, Girar Derecha · Caja: Recoger, Girar Derecha, Soltar, Girar Izquierda |
+
+En el Escenario 2 no hay orden: se compara el conjunto marcado con el de las correctas.
+
+---
+
 # Métricas derivadas de alto valor
 
 Estas no se guardan, pero se calculan directamente desde lo anterior:
@@ -292,6 +351,7 @@ Estas no se guardan, pero se calculan directamente desde lo anterior:
 | Métrica | Cómo se obtiene | Qué informa |
 |---|---|---|
 | **Intentos hasta resolver** | Nº de elementos en `attempts` | Persistencia, dificultad percibida |
+| **Progresión hacia la solución** | Serie de `solutionPercent` por intento | Si cada intento se acerca más a la solución o da vueltas |
 | **Tiempo hasta el primer intento** | `attempts[0].durationSeconds` | Planificación previa vs ensayo inmediato |
 | **Evolución del tiempo por intento** | Serie de `durationSeconds` | Si se acelera (va afinando) o se ralentiza (se atasca) |
 | **Eficiencia de la solución** | Longitud de la `sequence` ganadora vs la óptima del nivel | Optimización, abstracción |
@@ -302,6 +362,7 @@ Estas no se guardan, pero se calculan directamente desde lo anterior:
 | **Tiempo de decisión** | `durationSeconds` de cada selección o colocación | Si el error llega tras pensar o por pulsar rápido (Esc. 2 y 4) |
 | **Errores del Esc. 4** | Contar en `placements` las entradas con `correct: false` | Sustituye al antiguo `wrongPlacements` |
 | **Convergencia del bucle** | Serie de `repetitions` por intento | Estrategia de aproximación (Esc. 3) |
+| **Ajuste del bucle** | `repetitions - remaining` en cada intento | 0 = contó bien lo que quedaba; positivo, se pasó; negativo, se quedó corto (Esc. 3) |
 | **Eficiencia de pasadas** | Nº de intentos del Esc. 3 frente al óptimo de 2, uno por `itemType` | Si usa el bucle o lo sustituye por ejecuciones repetidas (Esc. 3) |
 | **Transferencia del parámetro** | Comparar la `sequence` de los intentos con distinto `itemType` | Si entiende que el mismo programa sirve cambiando el dato (Esc. 3, intermedia) |
 | **Matriz de confusión de figuras** | Cruzar `chip` × `socket` en los fallos | Qué equivalencias falsas construye (Esc. 4) |
@@ -356,6 +417,7 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario1": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 149.8,
         "failedAttempts": 1,
         "blocksGrabbed": 9,
@@ -367,12 +429,14 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
             {
                 "sequence": ["Avanzar", "Girar Derecha"],
                 "solved": false,
+                "solutionPercent": 25,
                 "durationSeconds": 21.4,
                 "timestamp": "2026-08-26T09:13:41.0000000Z"
             },
             {
-                "sequence": ["Avanzar", "Girar Derecha", "Avanzar 2", "Usar"],
+                "sequence": ["Avanzar", "Girar Derecha", "Avanzar", "Avanzar 2", "Girar Derecha", "Avanzar 2", "Girar Izquierda", "Usar"],
                 "solved": true,
+                "solutionPercent": 100,
                 "durationSeconds": 38.2,
                 "timestamp": "2026-08-26T09:14:32.0000000Z"
             }
@@ -382,32 +446,41 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
     "escenario2": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 84.2,
+        "failedAttempts": 1,
         "selections": [
-            { "module": "motores", "option": "Agregar agua",        "correct": false, "durationSeconds": 17.3, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar combustible", "correct": true,  "durationSeconds": 12.0, "timestamp": "..." },
+            { "module": "motores", "option": "Agregar agua",        "correct": false, "durationSeconds": 6.3,  "timestamp": "..." },
             { "module": "motores", "option": "Agregar combustible", "correct": true,  "durationSeconds": 9.1,  "timestamp": "..." },
             { "module": "motores", "option": "Agregar aceite",      "correct": true,  "durationSeconds": 4.6,  "timestamp": "..." }
+        ],
+        "attempts": [
+            { "module": "motores", "selection": ["Agregar combustible", "Agregar agua"],   "correctSelected": 1, "wrongSelected": 1, "solved": false, "solutionPercent": 33,  "durationSeconds": 20.1, "timestamp": "..." },
+            { "module": "motores", "selection": ["Agregar combustible", "Agregar aceite"], "correctSelected": 2, "wrongSelected": 0, "solved": true,  "solutionPercent": 100, "durationSeconds": 15.9, "timestamp": "..." }
         ]
     },
 
     "escenario3": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 121.7,
         "failedAttempts": 1,
         "blocksGrabbed": 3,
         "blocksConnected": 2,
         "errorInvalidCommand": 3,
         "attempts": [
-            { "itemType": "Caja",   "repetitions": 7, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
-            { "itemType": "Caja",   "repetitions": 3, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
-            { "itemType": "Barril", "repetitions": 3, "solved": true,  "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." }
+            { "itemType": "Caja",   "remaining": 7, "repetitions": 7, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Caja",   "remaining": 0, "repetitions": 3, "solved": false, "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." },
+            { "itemType": "Barril", "remaining": 3, "repetitions": 3, "solved": true,  "sequence": ["Recoger", "Girar al destino", "Soltar", "Volver"], "timestamp": "..." }
         ]
     },
 
     "escenario4": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 73.9,
         "chipsGrabbed": 6,
         "placements": [
@@ -466,3 +539,14 @@ Para leer archivos anteriores a esa fecha junto a los nuevos:
 | Esc. 2: campo `selected`, con las deselecciones registradas | Eliminado: solo se registra lo que se marca |
 | — | Esc. 2 y 4: `durationSeconds` en cada selección y colocación |
 | Esc. 4: `wrongPlacements`, `chipsReleased` | Eliminados: contar `correct: false` en `placements` |
+
+# Cambios del 22/10/2026
+
+| Antes | Ahora |
+|---|---|
+| Esc. 2: marcar la correcta reparaba el módulo; la incorrecta se soltaba sola | Se marca libremente y se pulsa **Probar**; si falla, se desmarcan los cuatro botones |
+| Esc. 2: solo `selections` | Además `failedAttempts` y `attempts[]` (uno por Probar, con `selection`, `correctSelected`, `wrongSelected` y `solutionPercent`) |
+| — | Esc. 3: `remaining` en cada intento (objetos del tipo por clasificar al pulsar) |
+| Esc. 1 y 3: sin medida de cercanía | `solutionPercent` en cada intento |
+| `totalSeconds` de una sala agotada: 300 s más el último intento en curso | Exactamente 300 |
+| Esc. 3: la fila corría hasta el primer hueco vacío | Con huecos vacíos no se ejecuta: frase de error y `errorInvalidCommand` |

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -6,7 +7,7 @@ using UnityEngine.Events;
 /// Conecta el Escenario 2 con el Director y con la telemetría, igual que Scenario1Controller
 /// hace con el Escenario 1. El escenario termina cuando todos los módulos están reparados.
 /// </summary>
-public class Scenario2Controller : MonoBehaviour, IStepAction
+public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge
 {
     [Header("Módulos")]
     [Tooltip("Si se deja vacío se buscan en los hijos, incluidos los desactivados.")]
@@ -24,6 +25,23 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
     public UnityEvent OnScenarioFinished;
 
     private bool scenarioFinished;
+    private bool timedOut;
+
+    public string ChallengeId => challengeId;
+    public bool IsCompleted => scenarioFinished;
+    public bool IsBusy => false;
+
+    /// <summary>
+    /// Se agotó el tiempo de la sala: cada módulo deja de esperar a su solución, también los
+    /// que el Director todavía no ha visitado, y los botones dejan de responder.
+    /// </summary>
+    public void TimeOut()
+    {
+        timedOut = true;
+
+        foreach (SystemModule module in modules)
+            if (module != null) module.TimeOut();
+    }
 
     private void Awake()
     {
@@ -33,7 +51,12 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
         WarnAboutMissingModules();
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionToggled += HandleOptionToggled;
+        {
+            if (module == null) continue;
+
+            module.OnOptionToggled += HandleOptionToggled;
+            module.OnTried += HandleTried;
+        }
     }
 
     /// <summary>
@@ -68,7 +91,12 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
         if (modules == null) return;
 
         foreach (SystemModule module in modules)
-            if (module != null) module.OnOptionToggled -= HandleOptionToggled;
+        {
+            if (module == null) continue;
+
+            module.OnOptionToggled -= HandleOptionToggled;
+            module.OnTried -= HandleTried;
+        }
     }
 
     private void Start()
@@ -93,9 +121,20 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
                 module.ModuleId,
                 module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString(),
                 correct);
+    }
 
-        // Se comprueba en cada pulsación: es barato y no obliga a saber aquí cuál resuelve.
-        CheckCompletion();
+    /// <summary>Un Probar: va a attempts[] y, si reparó el módulo, puede cerrar el escenario.</summary>
+    private void HandleTried(SystemModule module, List<string> selection, int correct, int wrong,
+                             bool solved, int percent)
+    {
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.RegisterModuleAttempt(challengeId, module.ModuleId, selection,
+                                                            correct, wrong, solved, percent);
+
+        Debug.Log($"[Escenario 2] Probar en '{module.ModuleId}': {(solved ? "reparado" : "fallo")} · " +
+                  $"{percent} % · [{string.Join(", ", selection)}]", this);
+
+        if (solved) CheckCompletion();
     }
 
     private void CheckCompletion()
@@ -123,7 +162,7 @@ public class Scenario2Controller : MonoBehaviour, IStepAction
     /// </summary>
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => scenarioFinished);
+        yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
 
     [ContextMenu("Reset Scenario")]

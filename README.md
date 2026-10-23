@@ -27,14 +27,14 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 
 ## Descripción
 
-El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra en menos de 15 minutos. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
+El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra, con 15 minutos en total y un máximo de 5 por sala. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
 
 | Escenario | Categoría | Pilar(es) de CT | Mecánica |
 |---|---|---|---|
 | 1 — Dormitorio | Secuencialidad | Diseño de algoritmos, Descomposición, Abstracción | Ordenar bloques de instrucciones para guiar a Roki por una cuadrícula hasta el botón verde que abre la puerta. En intermedia hay un camino tentador que no cabe en la fila de instrucciones |
 | 2 — Sala de control | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Cada módulo describe **síntomas** (*"los motores hacen ruido pero no arrancan"*) y el jugador deduce qué acciones lo reparan. Hay que marcar exactamente las correctas: ni de menos ni de más |
 | 3 — Almacén | Bucles y parámetros | Reconocimiento de patrones, Abstracción | Programar un brazo robótico que **clasifica** la carga por color para despejar el paso. La fila de instrucciones es el bucle, y una ficha de color aparte decide qué tipo recoge. En intermedia, además, hay que ordenar la fila |
-| 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Encender la nave: encontrar, entre figuras abstractas muy parecidas, la ficha **idéntica** a la que muestra cada hueco. Las fichas incorrectas salen disparadas del panel |
+| 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Encender la nave: encontrar, entre figuras abstractas muy parecidas, la ficha **idéntica** a la que muestra cada hueco. En intermedia los huecos son las seis letras de YACHAY en un alfabeto de glifos cuadrados. Las fichas incorrectas salen disparadas del panel |
 
 Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para adaptarse a la amplia diferencia de edad del público objetivo.
 
@@ -81,12 +81,11 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
   - `ProgramTrigger` — el botón de ejecutar. Registra el intento **antes** de correr y consulta las `IRunPrecondition`, que pueden vetar la ejecución
   - `BlockResetter` — devuelve los bloques a su sitio sin instanciar ni destruir nada
   - `GridBlock` — acciones del robot por enum (Escenario 1)
-  - `VRConsole` — consola de errores in-headset
 - **Sistema de selección (Escenario 2):** módulos independientes con problema y opciones, sin cadena de bloques. El contenido vive en assets `ModuleData`, así que se puede variar por dificultad sin duplicar objetos en la escena. Una opción incorrecta dispara una frase de error del narrador.
 - **Bucles y parámetros (Escenario 3):** no hay bloque contenedor — **la fila entera es el bucle**. Aparte hay un `ArmTypeSocket` donde va una ficha (barril o caja): es el argumento del programa. En básica la fila viene hecha y el propio bloque *"Girar al destino"* resuelve el sentido; en intermedia el niño ordena giros explícitos. Hacen falta al menos dos ejecuciones, una por tipo.
 - **Discriminación visual (Escenario 4):** `ShapeChip` hereda de `BlockNode`, así que reutiliza agarre, acople y reinicio. La figura **es** el sprite: ficha y hueco encajan si llevan el mismo recorte del pliego de figuras. Sobran fichas a propósito, para que el último hueco no se resuelva por descarte.
 - **Narrativa:** `Director` orquesta escenarios → pasos, con acciones que bloquean el paso hasta terminar (`IStepAction`). `Narrator` reproduce la voz y escribe el texto en pantalla a la vez, emparejados por ID contra un CSV, y espera a la más larga de las dos. Tiene además un banco de frases de error que suenan sin avanzar la historia.
-- **Temporizador:** un único `Timer` de sesión (RF-06) que escribe en varias pantallas `TimerDisplay`, una por sala y otra en la muñeca del jugador.
+- **Temporizador:** un `Timer` (RF-06) que escribe en varias pantallas `TimerDisplay`, una por sala. Muestra los 15 minutos de la sesión, que corren solo durante los retos; por dentro cada sala tiene 5 (`ScenarioTimeLimit`): al agotarse los de una sala se deja terminar el intento en marcha y la historia pasa a la siguiente; agotados los 15, o en la última se cierra la sesión.
 
 ## Sistema de telemetría
 
@@ -95,7 +94,7 @@ Pipeline de persistencia local con exportación remota manual:
 1. **`TelemetryManager`** (uno por escena) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
 2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}_{deviceId}.json` (PIN, número de sesión y código del visor) en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
 3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
-4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local.
+4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local. Lo que se quede sin subir (sin red, o con la aplicación cerrada a mitad de partida) se sube solo la próxima vez que se abre la pantalla del supervisor, que además tiene un botón **Subir datos**; `TelemetryOutbox` lleva la cuenta de lo ya subido sin tocar los archivos.
 5. Al cerrar la sesión se imprime un **informe de integridad** por escenario, que avisa de contadores sospechosamente a cero antes de dar los datos por buenos.
 
 Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 registra la secuencia de bloques de cada intento; el 3 además las repeticiones y **con qué tipo** se ejecutó; el 2 cada opción pulsada y el tiempo entre una y otra; y el 4 qué figura se intentó encajar en qué hueco.
@@ -138,7 +137,7 @@ Puntos críticos abiertos en el SRS:
 | Escenario 4 — Patrones | Funcional, probado en el APK. Falta el juego de figuras propio de intermedia |
 | Sistema narrativo | Funcional, con CSV y voces nuevas por dificultad |
 | Telemetría JSON + subida | Funcional de punta a punta |
-| Temporizador visible en todas las salas | Implementado, con cierre de sesión al agotarse (RF-06) |
+| Temporizador visible en todas las salas | Implementado: 15 minutos de sesión a la vista y 5 por sala por dentro; agotada una sala se pasa a la siguiente, y agotada la sesión o la última sala se cierra (RF-06) |
 | Selección de dificultad y PIN (RF-01) | Implementado en la escena `Setup` |
 | Dificultad intermedia | En la misma escena que la básica: cada reto declara lo que cambia en su componente de dificultad |
 | Tutorial | Cuarto inicial donde se practican los cuatro gestos de la experiencia (dos botones, un bloque y una ficha) antes de empezar la misión. No se registra en la telemetría |
@@ -188,10 +187,9 @@ Assets/
 │   │   ├── Scenario 4/                 # Fichas, huecos y pliego de figuras
 │   │   ├── Session/                    # Selección de dificultad y PIN
 │   │   ├── Story/                      # Director, Narrator, Fader, Timer…
-│   │   └── Telemetry/                  # TelemetryManager, JSONUploader
+│   │   └── Telemetry/                  # TelemetryManager, JSONUploader, TelemetryOutbox
 │   ├── Narrativa.csv        # Guion: ID_Texto, texto de cada frase
-│   └── Sounds/             # Voces (VoiceLines/Victor), efectos y ambiente
-├── _Recovery/               # Respaldos de escena (no son las escenas activas)
+│   └── Sounds/             # Voces (VoiceLines/Camila), efectos y ambiente
 ├── Scenes/
 │   ├── Setup.unity          # Pantalla del supervisor: PIN y dificultad (primera escena)
 │   └── Juego.unity          # Sesión completa, las dos dificultades

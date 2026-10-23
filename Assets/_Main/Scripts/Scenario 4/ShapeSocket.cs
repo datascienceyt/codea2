@@ -78,12 +78,6 @@ public class ShapeSocket : MonoBehaviour
     }
 
     /// <summary>
-    /// Nombre del hijo que lleva el SpriteRenderer de la figura. El mismo que en ShapeChip:
-    /// hueco y ficha se montan igual, así no hay dos convenciones que recordar.
-    /// </summary>
-    private const string SpriteChildName = "Sprite";
-
-    /// <summary>
     /// Engancha el SpriteRenderer del hijo "Sprite" y pinta la figura esperada de una vez.
     ///
     /// Gemela de ShapeChip.ApplyShapeToChild(). Deja shapeImage guardado, no solo pintado: si
@@ -93,11 +87,11 @@ public class ShapeSocket : MonoBehaviour
     [ContextMenu("Aplicar figura al hijo 'Sprite'")]
     public void ApplyShapeToChild()
     {
-        SpriteRenderer target = FindSpriteChild();
+        SpriteRenderer target = ShapeChip.FindSpriteChild(transform);
 
         if (target == null)
         {
-            Debug.LogWarning($"[Escenario4] '{name}' no tiene ningún hijo '{SpriteChildName}' " +
+            Debug.LogWarning($"[Escenario4] '{name}' no tiene ningún hijo '{ShapeChip.SpriteChildName}' " +
                              "con SpriteRenderer: no hay dónde pintar la figura.", this);
             return;
         }
@@ -115,21 +109,6 @@ public class ShapeSocket : MonoBehaviour
         UnityEditor.EditorUtility.SetDirty(this);
         UnityEditor.EditorUtility.SetDirty(target);
 #endif
-    }
-
-    private SpriteRenderer FindSpriteChild()
-    {
-        Transform child = transform.Find(SpriteChildName);
-
-        if (child != null && child.TryGetComponent(out SpriteRenderer direct))
-            return direct;
-
-        // Rebusca más abajo e incluye los desactivados, por si la figura cuelga de un pivote
-        // o de un grupo de visuales en vez de ser hija directa.
-        foreach (SpriteRenderer renderer in GetComponentsInChildren<SpriteRenderer>(true))
-            if (renderer.name == SpriteChildName) return renderer;
-
-        return null;
     }
 
     private void HandleOccupied(BlockNode block)

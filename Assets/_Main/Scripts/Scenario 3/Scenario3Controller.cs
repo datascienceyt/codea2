@@ -9,7 +9,7 @@ using UnityEngine.Events;
 /// El escenario se completa cuando cada tipo está entero en su destino: barriles a un
 /// lado, cajas al otro. Hacen falta al menos dos ejecuciones, una por tipo.
 /// </summary>
-public class Scenario3Controller : MonoBehaviour, IStepAction
+public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChallenge, IRemainingCounter
 {
     [System.Serializable]
     public class SortingGoal
@@ -64,6 +64,17 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     public UnityEvent OnScenarioFinished;
 
     private bool scenarioFinished;
+    private bool timedOut;
+
+    public string ChallengeId => challengeId;
+    public bool IsCompleted => scenarioFinished;
+
+    // Mientras el brazo ejecuta la fila, el intento sigue vivo: puede ser el que clasifica lo
+    // último que faltaba.
+    public bool IsBusy => runner != null && runner.IsRunning;
+
+    /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar a la clasificación.</summary>
+    public void TimeOut() => timedOut = true;
 
     /// <summary>
     /// Objetos ya bien clasificados al terminar la última ejecución. Es lo que permite
@@ -199,6 +210,21 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
         return null;
     }
 
+    /// <summary>
+    /// Objetos de ese tipo que aún no están en su destino. Lo pregunta ProgramTrigger al pulsar
+    /// Ejecutar, para el `remaining` del intento.
+    /// </summary>
+    public int Remaining(string argument)
+    {
+        if (!System.Enum.TryParse(argument, out ArmItemType type)) return -1;
+
+        foreach (SortingGoal goal in goals)
+            if (goal != null && goal.type == type && goal.destination != null)
+                return Mathf.Max(0, goal.required - goal.destination.CountOf(type));
+
+        return -1;
+    }
+
     /// <summary>Objetos ya colocados en el destino que les toca, sumando todos los tipos.</summary>
     private int DeliveredTotal()
     {
@@ -259,7 +285,7 @@ public class Scenario3Controller : MonoBehaviour, IStepAction
     /// </summary>
     public IEnumerator Execute()
     {
-        yield return new WaitUntil(() => scenarioFinished);
+        yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
 
     [ContextMenu("Reset Scenario")]

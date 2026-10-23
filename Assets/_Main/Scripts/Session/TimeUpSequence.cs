@@ -3,7 +3,9 @@ using UnityEngine;
 using UnityEngine.Events;
 
 /// <summary>
-/// Cierre de la sesión cuando se agota el tiempo (RF-06). Cablear Timer.OnTimeUp → Begin().
+/// Cierre de la sesión cuando se agota el tiempo de la última sala (RF-06). Lo llama
+/// ScenarioTimeLimit; desde el 09/10/2026 ya no hay un límite único de 15 minutos, sino 5 por sala,
+/// y en las salas anteriores la historia simplemente pasa a la siguiente.
 ///
 /// Es un componente y no una lista de llamadas en el propio OnTimeUp porque el orden importa
 /// y hay que ESPERAR entre medias: un UnityEvent lo dispara todo en el mismo frame, y cargar la

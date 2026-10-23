@@ -90,11 +90,11 @@ public class SessionSetup : MonoBehaviour
     public void SelectBasic() => Select(Difficulty.Basica);
 
     [ContextMenu("Elegir intermedia")]
-    public void SelectIntermediate() => Select(Difficulty.Avanzada);
+    public void SelectIntermediate() => Select(Difficulty.Intermedia);
 
     /// <summary>0 = básica, 1 = intermedia. Para cablear por UnityEvent con argumento int.</summary>
     public void SelectByIndex(int difficultyIndex) =>
-        Select(difficultyIndex == (int)Difficulty.Basica ? Difficulty.Basica : Difficulty.Avanzada);
+        Select(difficultyIndex == (int)Difficulty.Basica ? Difficulty.Basica : Difficulty.Intermedia);
 
     private void Select(Difficulty value)
     {

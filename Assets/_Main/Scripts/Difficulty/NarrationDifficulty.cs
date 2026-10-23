@@ -11,7 +11,7 @@ public class NarrationDifficulty : DifficultyVariant<NarrationDifficulty.Setting
     [Serializable]
     public class Settings
     {
-        [Tooltip("Índice de la lista en el Narrator. 1 = Victor (Basica), 2 = Victor (Intermedia).")]
+        [Tooltip("Índice de la lista en el Narrator. Lo pone Tools → Codea → Asignar la voz del narrador.")]
         public int listIndex = 1;
     }
 

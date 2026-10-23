@@ -45,7 +45,7 @@ public static class CodeaSceneCheck
         { GridActionType.MoveForward, 2 }, { GridActionType.Use, 1 },
     };
 
-    private static readonly Difficulty[] Difficulties = { Difficulty.Basica, Difficulty.Avanzada };
+    private static readonly Difficulty[] Difficulties = { Difficulty.Basica, Difficulty.Intermedia };
 
     [MenuItem("Tools/Codea/Comprobar escena de juego")]
     private static void CheckMenu()
@@ -274,6 +274,7 @@ public static class CodeaSceneCheck
         ExactlyOne<JSONUploader>("");
         ExactlyOne<TimeUpSequence>("");
         ExactlyOne<SceneLoader>("");
+        ExactlyOne<ScenarioTimeLimit>("Sin él no hay límite de tiempo por sala");
 
         DifficultyApplier applier = AllComponents<DifficultyApplier>(scene).FirstOrDefault();
         if (applier != null)
@@ -392,7 +393,8 @@ public static class CodeaSceneCheck
         report.Line($"  {stepNumber} pasos · {narratorWaits} esperas al Narrator · {starts} llamadas a StartScenario");
 
         foreach (KeyValuePair<Object, int> pair in startsByController.Where(p => p.Value > 1))
-            report.Warn($"El reto de '{pair.Key.name}' se abre {pair.Value} veces (pendiente conocido: debería ser una)");
+            report.Error($"El reto de '{pair.Key.name}' se abre {pair.Value} veces: debe ser una, al llegar a la sala. " +
+                         "Pasa Tools → Codea → 3");
 
         CheckNarratorLists(narrator, narratorWaits, report);
     }
@@ -620,7 +622,7 @@ public static class CodeaSceneCheck
                 report.Error("Esc. 3: fila oculta y editable: se podrían agarrar bloques sin verlos");
             if (difficulty == Difficulty.Basica && settings.showRow)
                 report.Warn("Esc. 3: en básica la fila debería estar oculta (las instrucciones no se enseñan)");
-            if (difficulty == Difficulty.Avanzada && !settings.showRow)
+            if (difficulty == Difficulty.Intermedia && !settings.showRow)
                 report.Error("Esc. 3: en intermedia la fila tiene que verse: el niño la reordena");
 
             report.Line($"  Esc. 3: fila {(settings.showRow ? "visible" : "OCULTA")}, {(settings.editable ? "editable" : "bloqueada")}: " +
@@ -649,7 +651,7 @@ public static class CodeaSceneCheck
             string labels = string.Join(" ", settings.initialBlocks.Select(b => b?.block is ArmBlock a ? a.action.ToString() : "-"));
             if (difficulty == Difficulty.Basica && (settings.editable || labels != "Pick RotateToDestination Drop RotateToOrigin"))
                 report.Warn("Esc. 3: la básica no es la fila bloqueada Recoger · Girar al destino · Soltar · Volver");
-            if (difficulty == Difficulty.Avanzada && (!settings.editable || labels.Contains("RotateTo")))
+            if (difficulty == Difficulty.Intermedia && (!settings.editable || labels.Contains("RotateTo")))
                 report.Warn("Esc. 3: la intermedia debería ser editable y con giros literales");
         }
 
@@ -674,12 +676,38 @@ public static class CodeaSceneCheck
 
             if (resetter == null) report.Error("Esc. 4: Scenario4Controller sin chipResetter");
 
-            foreach (ShapeSocket socket in sockets)
+            // Qué dibujo lleva cada ficha en ESTA dificultad: el que le ponga Scenario4Difficulty
+            // al cargar o, si no dice nada, el que tiene guardado en la escena.
+            Dictionary<ShapeChip, Object> shapeOf = chips.ToDictionary(c => c, c => new SerializedObject(c).FindProperty("shape").objectReferenceValue);
+            Scenario4Difficulty shapes = s4.GetComponent<Scenario4Difficulty>();
+
+            if (shapes != null)
             {
-                Object shape = new SerializedObject(socket).FindProperty("expectedShape").objectReferenceValue;
-                if (shape == null) report.Error($"Esc. 4: el hueco '{socket.name}' no tiene figura");
-                else if (!chips.Any(c => new SerializedObject(c).FindProperty("shape").objectReferenceValue == shape))
-                    report.Error($"Esc. 4: ninguna ficha tiene la figura '{shape.name}' del hueco '{socket.name}': el reto no se podría terminar");
+                List<Sprite> wanted = (difficulty == Difficulty.Basica ? shapes.Basica : shapes.Intermedia).chipShapes;
+
+                if (wanted.Count > 0 && wanted.Count != shapes.Chips.Count)
+                    report.Error($"Esc. 4: Scenario4Difficulty tiene {shapes.Chips.Count} fichas y {wanted.Count} figuras");
+
+                for (int i = 0; i < wanted.Count && i < shapes.Chips.Count; i++)
+                    if (shapes.Chips[i] != null && wanted[i] != null && shapeOf.ContainsKey(shapes.Chips[i]))
+                        shapeOf[shapes.Chips[i]] = wanted[i];
+
+                report.Line("  Esc. 4: figuras de las fichas: " + string.Join(" ", chips.Select(c => Name(shapeOf[c]))));
+            }
+
+            foreach (ShapeSocket socket in sockets.Where(s => new SerializedObject(s).FindProperty("expectedShape").objectReferenceValue == null))
+                report.Error($"Esc. 4: el hueco '{socket.name}' no tiene figura");
+
+            // Se cuenta, no basta con que esté: una ficha acertada se queda en su hueco, así
+            // que dos huecos con la misma figura necesitan dos fichas que la lleven.
+            foreach (IGrouping<Object, ShapeSocket> group in sockets.GroupBy(s => new SerializedObject(s).FindProperty("expectedShape").objectReferenceValue)
+                                                                    .Where(g => g.Key != null))
+            {
+                int available = chips.Count(c => shapeOf[c] == group.Key);
+
+                if (available < group.Count())
+                    report.Error($"Esc. 4: {group.Count()} hueco(s) piden la figura '{group.Key.name}' ({string.Join(", ", group.Select(s => s.name))}) " +
+                                 $"y solo {available} ficha(s) la llevan: el reto no se podría terminar");
             }
 
             if (chips.Count <= sockets.Count) report.Warn("Esc. 4: no hay fichas de sobra; el último hueco se resuelve por eliminación");
@@ -698,6 +726,46 @@ public static class CodeaSceneCheck
                 else if (piece is Component c && Excluded(c)) report.Error($"Tutorial: '{field}' está apagado en esta dificultad");
             }
         }
+
+        // Un botón de opción que nadie pulsa: su InteractableUnityEventWrapper tiene que llamar
+        // a Press. En el tutorial, un ajuste de la instancia dejó ese evento solo con el
+        // sonido: el botón sonaba, no se marcaba y el tutorial no se podía terminar.
+        HashSet<Object> pressed = new HashSet<Object>(
+            AllComponents<MonoBehaviour>(scene).SelectMany(b => EventCalls(b))
+                                               .Where(c => !c.IsDead && c.State != UnityEventCallState.Off &&
+                                                           c.Method == nameof(ModuleOptionButton.Press))
+                                               .Select(c => c.Target));
+
+        foreach (ModuleOptionButton button in AllComponents<ModuleOptionButton>(scene).Where(b => !Excluded(b) && !pressed.Contains(b)))
+            report.Error($"'{PathOf(button)}': ningún botón llama a su Press, así que pulsarlo no hace nada");
+
+        // Desde el 20/10/2026 marcar no comprueba nada: sin su Probar, un módulo no se repara nunca.
+        HashSet<Object> tried = new HashSet<Object>(
+            AllComponents<MonoBehaviour>(scene).SelectMany(b => EventCalls(b))
+                                               .Where(c => !c.IsDead && c.State != UnityEventCallState.Off &&
+                                                           c.Method == nameof(SystemModule.Try))
+                                               .Select(c => c.Target));
+
+        foreach (SystemModule module in AllComponents<SystemModule>(scene).Where(m => !Excluded(m)))
+        {
+            if (!tried.Contains(module))
+                report.Error($"Esc. 2 · {module.name}: ningún botón llama a su Try (Probar): el módulo no se puede reparar");
+            else if (new SerializedObject(module).FindProperty("tryButton").objectReferenceValue == null)
+                report.Warn($"Esc. 2 · {module.name}: Probar no está en 'tryButton'; no se apagará al repararse");
+        }
+
+        // Porcentaje de solución: sin soluciones, attempts[].solutionPercent sale -1.
+        foreach (DifficultyVariant variant in AllComponents<DifficultyVariant>(scene).Where(v => v is Scenario1Difficulty || v is Scenario3Difficulty))
+        {
+            SerializedObject so = new SerializedObject(variant);
+            foreach (string level in new[] { "basica", "intermedia" })
+                if (so.FindProperty($"{level}.solutions").arraySize == 0)
+                    report.Warn($"{variant.GetType().Name} ({level}): sin soluciones; el porcentaje de solución saldrá -1. Pasa la herramienta 3");
+        }
+
+        ProgramTrigger loops = AllComponents<ProgramTrigger>(scene).FirstOrDefault(t => t.ChallengeId == TelemetryManager.Scenario3Id);
+        if (loops != null && !loops.RequireFullRow)
+            report.Error("Esc. 3: el botón ejecuta con huecos vacíos (requireFullRow apagado). Pasa la herramienta 3");
     }
 
     private static void CheckDifficultyOnly(Scene scene, Report report)
@@ -726,12 +794,50 @@ public static class CodeaSceneCheck
         TimeUpSequence timeUp = AllComponents<TimeUpSequence>(scene).FirstOrDefault();
         SceneLoader loader = AllComponents<SceneLoader>(scene).FirstOrDefault();
 
-        if (timer != null && timeUp != null)
+        // Tiempo por sala: el reloj no debe cerrar la sesión por su cuenta.
+        if (timer != null && timeUp != null &&
+            CallsOf(new SerializedObject(timer).FindProperty("OnTimeUp"), "OnTimeUp")
+                .Any(c => c.Target == timeUp && c.Method == nameof(TimeUpSequence.Begin)))
+            report.Error("Timer.OnTimeUp sigue llamando a TimeUpSequence.Begin: la primera sala que agote su tiempo " +
+                         "cerraría la sesión entera. Pasa Tools → Codea → 2");
+
+        ScenarioTimeLimit limit = AllComponents<ScenarioTimeLimit>(scene).FirstOrDefault();
+        if (limit != null)
         {
-            bool wired = CallsOf(new SerializedObject(timer).FindProperty("OnTimeUp"), "OnTimeUp")
-                         .Any(c => c.Target == timeUp && c.Method == nameof(TimeUpSequence.Begin));
-            if (wired) report.Ok("Timer.OnTimeUp → TimeUpSequence.Begin");
-            else report.Error("Timer.OnTimeUp no llama a TimeUpSequence.Begin: al acabarse el tiempo no pasaría nada");
+            SerializedObject so = new SerializedObject(limit);
+            foreach (string field in new[] { "timer", "narrator", "sessionTimeUp" })
+                if (so.FindProperty(field).objectReferenceValue == null) report.Error($"ScenarioTimeLimit sin {field}");
+
+            int seconds = so.FindProperty("secondsPerScenario").intValue;
+            bool hasLine = so.FindProperty("timeUpLine.clip").objectReferenceValue != null ||
+                           !string.IsNullOrEmpty(so.FindProperty("timeUpLine.textId").stringValue);
+            string lineId = so.FindProperty("timeUpLine.textId").stringValue;
+            Narrator storyNarrator = AllComponents<Narrator>(scene).FirstOrDefault();
+            if (!string.IsNullOrEmpty(lineId) && storyNarrator != null)
+            {
+                HashSet<string> csvIds = CsvIds(new SerializedObject(storyNarrator).FindProperty("csv").objectReferenceValue as TextAsset);
+                if (csvIds.Count > 0 && !csvIds.Contains(lineId))
+                    report.Error($"ScenarioTimeLimit pide la frase '{lineId}', que no está en el CSV de narración");
+            }
+            if (!string.IsNullOrEmpty(lineId) && so.FindProperty("timeUpLine.clip").objectReferenceValue == null)
+                report.Warn($"La frase de tiempo agotado por sala ('{lineId}') no tiene audio: solo se escribirá en pantalla");
+
+            int sessionSeconds = so.FindProperty("sessionSeconds").intValue;
+
+            if (sessionSeconds < seconds)
+                report.Error($"La sesión ({sessionSeconds} s) dura menos que una sala ({seconds} s)");
+
+            report.Line($"  Relojes: {sessionSeconds / 60f:0.#} min de sesión, solo durante los retos · " +
+                        $"límite por sala (no se ve): {seconds / 60f:0.#} min · frase al agotarse una sala: " +
+                        (hasLine ? "asignada" : "ninguna (se omite la felicitación y se sigue)") +
+                        " · sesión o última sala agotadas: cierre con la frase de TimeUpSequence");
+
+            var ids = AllComponents<MonoBehaviour>(scene).OfType<ITimeLimitedChallenge>()
+                                                          .Select(c => c.ChallengeId).Where(id => !string.IsNullOrEmpty(id)).ToList();
+            foreach (string id in new[] { TelemetryManager.Scenario1Id, TelemetryManager.Scenario2Id, TelemetryManager.Scenario3Id, TelemetryManager.Scenario4Id })
+                if (!ids.Contains(id)) report.Error($"Ningún controlador con límite de tiempo para {id}");
+            if (ids.Count == ids.Distinct().Count()) report.Ok($"Límite de tiempo en {ids.Count} salas: {string.Join(", ", ids)}");
+            else report.Error("Hay dos controladores con el mismo challengeId: el límite de tiempo solo vigilaría uno");
         }
 
         if (timeUp != null)

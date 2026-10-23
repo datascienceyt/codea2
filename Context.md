@@ -1,16 +1,16 @@
 # Context — Codea VR 2
 
 **Fuente de verdad única del proyecto.** Escrito para que cualquiera —persona o agente— entienda
-el sistema completo sin leer las ~12.400 líneas de código ni depender de conversaciones previas.
+el sistema completo sin leer las ~13.800 líneas de código ni depender de conversaciones previas.
 
-Verificado contra el código el **09/10/2026**. Si algo aquí contradice al código, manda el
+Verificado contra el código el **13/10/2026**. Si algo aquí contradice al código, manda el
 código: avisa y corrige este documento.
 
 ---
 
 ## 0. Para retomar en un chat nuevo
 
-**Dónde estamos (09/10/2026).** La versión se presentó el 30/09/2026 y desde entonces se ajusta
+**Dónde estamos (22/10/2026).** La versión se presentó el 30/09/2026 y desde entonces se ajusta
 con el feedback. Todo lo de abajo está **en `dev`, subido a los dos remotos**, y el trabajo sigue
 en la rama **`informe-mes2`**, creada desde ese `dev`.
 
@@ -21,25 +21,151 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
   combustible"; corregido el "Skip Step" del Director; dos herramientas de verificación
   (`Tools → Codea → Comprobar escena de juego` y `Probar las dos dificultades en Play`), las dos
   con **0 fallos**; recopilado el material del informe del mes 2
+- **09/10/2026, rama `informe-mes2`**: **`Docs/Informe-Mes2.docx` hecho**, con el formato del
+  informe del mes 1 y los entregables 2.1, 2.2 y 2.3 (18 tablas, 11 figuras con capturas reales de
+  la escena). Se genera con `node Docs/Herramientas/generar_informe_mes2.js`. Producto 2: "Informe
+  técnico de desarrollo funcional e integración del módulo inmersivo"; fecha **subrayada en
+  rojo** porque puede cambiar (hoy, 13/10/2026). El registro de pruebas usa solo las sesiones **0105** (Gabriela
+  Cajamarca, 30/09) y **1101** (ingeniero de realidad virtual de ESPOL, 02/10), leídas de sus JSON en
+  `Docs/JSON Samples/originales/`; las pruebas con estudiantes quedan como fila pendiente
+- **09/10/2026, tarde**: **5 minutos por sala** (`ScenarioTimeLimit`, sección 5, "Tiempo de sesión y de sala"; el 12/10/2026 los relojes volvieron a marcar los 15 de la sesión).
+  Sustituye al límite de 15 minutos de la sesión. Probado en Play sin visor: la sala 1 cede el paso al
+  agotarse y la sala 3 espera a que termine el intento en curso; la telemetría registra `timedOut`
+- **12/10/2026, limpieza y arreglos** (sin commit todavía; probado en Play sin visor, 0 fallos):
+  - **Borrado:** `_Recovery/`, `Intermedio.unity`, 9 prefabs sin uso, el sistema de puntos del
+    grid (`Point`, `Interactable`, casillas 4 y 7), los niveles que no son `reto` ni
+    `escenario1_intermedio`, y los scripts `VRInteractionEvent`, `VRInteractEvents`,
+    `BlockGenerator`, `StartBlock`, `ScenarioController` y `VRConsole`
+  - **Soltar un bloque** lo encaja en el acto: `VRGrabEvents` avisa al salir de `Select`, sin
+    esperar a que el niño aparte la mano. 👓 **Sin probar en el visor**
+  - **Cada reto se abre una sola vez**, al llegar a su sala (antes los 2–4 se abrían dos veces)
+  - **Subida de datos:** las sesiones que se quedaron sin subir se suben solas al abrir `Setup`, y
+    `Setup` tiene un botón **Subir datos** con su estado (sección 7, "Sesiones pendientes")
+  - **Robustez:** un fallo al escribir el JSON no corta el juego, una run nueva nunca pisa un
+    archivo existente, el cierre de sala por tiempo no espera más de 90 s a un intento colgado
+  - **Relojes a 15 minutos:** lo que se ve es el tiempo de la sesión, que corre solo durante los
+    retos; los 5 minutos de cada sala siguen por dentro, sin mostrarse, para pasar a la siguiente.
+    Agotados los 15, la experiencia termina (sección 5, "Tiempo de sesión y de sala")
+  - **Voz de Camy** en toda la narración (24 frases y 5 de error), asignada con una herramienta
+  - **Sala 4 intermedia con YACHAY** en glifos cuadrados: 6 huecos y las mismas 18 fichas, con letras
+  - **Sala 3:** un fondo de panel por dificultad (en básica solo cubre REPETIR), sonidos del brazo
+    (el giro al 20 %) y `Ver como básica` oculta también la fila y sus bloques
+  - **Sala 1** (cambios del usuario en el editor): la fila es `Escenario (1)/SocketRow`, de 1,40 m,
+    con dos flechas `rightArrows` que marcan el sentido de lectura; ya no hay panel `Sockets` ni
+    reloj de escritorio (quedan 4 relojes). Los bloques que coloca el juego encajan sin sonido
+  - **13/10/2026, tras la primera prueba del APK nuevo en el visor:**
+    - **Tutorial:** no se podía terminar. En `Tutorial.prefab`, un ajuste sobre `Boton del
+      Escenario 2` había dejado su `WhenSelect` solo con el sonido, sin la llamada a
+      `ModuleOptionButton.Press`: sonaba pero no se marcaba. Quitado el ajuste. El botón del
+      Escenario 1 se tiñe ahora de verde al pulsarlo (`TutorialController → Done Color`). La
+      comprobación de escena marca como fallo un botón de opción al que nadie llama a `Press`
+    - **Regreso a la Tierra:** al completar el Escenario 4, `EarthApproach` (en `Pos_earth`)
+      acerca la Tierra al jugador durante 25 s y acaba llenando la ventana. `Approach Fraction`
+      0,3; con 0,4 la cámara queda dentro de la atmósfera. Arranca solo, desde código
+    - **Aviso falso de subida:** en el visor salió "2 sesiones por subir. El servidor no
+      responde" con los datos ya en el servidor. Causa sin confirmar (no había registro del
+      visor). Ahora el estado se vuelve a contar tras cada pasada, dice el motivo ("Sin respuesta
+      del servidor" o "El servidor respondió N"), un archivo rechazado no detiene a los demás, y
+      si falla la conexión se reintenta solo cada 20 s hasta 6 veces
+    - 👓 Los tres, sin probar en el visor
+  - **13/10/2026:** documentación al día (este archivo, README, GDD regenerado, variables de
+    telemetría, plan de prueba) e **informe del mes 2 regenerado** con capturas nuevas
+  - `Tools → Codea → 3` es ahora **Poner al día Setup y Juego**; `Difficulty.Avanzada` pasa a
+    `Difficulty.Intermedia` (mismo índice); `SceneManager.cs` pasa a `SceneController.cs`
+- **22/10/2026, tras la reunión del 20/10** (sin commit; compila, SceneCheck y PlayCheck con 0 fallos;
+  👓 sin probar en el visor):
+  - **Esc. 2 con botón Probar:** marcar ya no comprueba nada. Cada módulo lleva el botón azul del
+    Esc. 1 (`StartButton` con `Blue.mat`), rotulado "Probar", bajo la cuadrícula; lo montó
+    `Tools → Codea → Escenario 2: botón Probar` en los tres prefabs. Si falla: frase de error y,
+    a los 0,8 s, se desmarcan los cuatro botones. Telemetría: `failedAttempts` y `attempts[]`
+  - **Porcentaje de solución** (`solutionPercent`) en cada intento de los escenarios 1, 2 y 3
+    (`SolutionScore`; sección 7). Las soluciones las pone la herramienta 3 (`CodeaSolutions`).
+    Decidido por el usuario: Esc. 1 solo porcentaje; Esc. 2 porcentaje más `correctSelected` y
+    `wrongSelected` por Probar; Esc. 3 porcentaje más `remaining` (objetos del tipo de la ficha
+    que faltaban al pulsar Ejecutar; lo da `Scenario3Controller` como `IRemainingCounter`)
+  - **Sala agotada = 300 s** en `totalSeconds` (pedido de los responsables). `ForceTimeUp` simula
+    la sala gastada, así que PlayCheck lo comprueba
+  - **Esc. 3:** con un hueco de la fila vacío no se ejecuta: frase de error y `errorInvalidCommand`
+    (`ProgramTrigger.requireFullRow`). En intermedia corría sin el último giro y parecía correcto.
+    Además **los bloques ya no encogen al agarrarlos**: el Grabbable de Meta fija la escala *local*,
+    y al soltarlos en la raíz (su columna está a escala 1,5) quedaban a 2/3. Ahora vuelven a su
+    padre de origen (`BlockNode.homeParent`)
+  - **Esc. 1: la paleta no se puede agarrar hasta que arranca el reloj** (`Scenario1Controller →
+    Lock Blocks Until Start`, activado). Se desbloquea con `TelemetryManager.ChallengeStarted` del
+    reto 1, que es lo que pone en marcha el reloj. Para que funcionara, `BlockNode` busca solo el
+    hijo con los interactables cuando no tiene `interactionRoot` (los bloques del Esc. 1 no lo
+    tenían, y `SetInteractable` no les hacía nada). El bloque del tutorial no se bloquea.
+    **Primera versión fallida** (vista en el visor): comparaba con `IInteractable` sin espacio de
+    nombres, que es la interfaz propia del grid (`Grid Level/IInteractable.cs`), no la de Meta; y
+    bloqueaba bloques que aún no habían pasado por `Awake`. Ahora usa
+    `Oculus.Interaction.IInteractable`, busca al bloquear y reaplica en `Awake`. PlayCheck
+    comprueba que no quede ningún interactable de Meta activo en la paleta bloqueada
+  - **Fila bloqueada durante la ejecución** (`ProgramTrigger → Lock Row While Running`, activado):
+    mientras corre el programa, los huecos de la fila y el de la ficha de tipo no admiten bloques
+    y lo que tienen no se puede agarrar. Al terminar (o si la estación se apaga) vuelve todo a
+    como estaba. Evita que el niño reordene con el brazo en marcha y quede registrado un orden que
+    no es el que se ejecutó. Vale para los escenarios 1 y 3
+  - **Teletransporte desorientado:** `Teleporter` alineaba la **cabeza** con el destino. Si el
+    jugador miraba a un lado justo al saltar, el mundo giraba esos grados respecto a su cuerpo y el
+    desvío se sumaba sala tras sala. Ahora alinea el frente del **rig** (su frente físico), girando
+    alrededor de la cabeza. Si mira a un lado al saltar, sigue mirando a ese lado, y al volver al
+    frente queda de cara al destino
+  - **Esc. 2: sonido al reparar un módulo**: `SystemModule → Solved Sound` = `taskCompleted.mp3`,
+    el de acertar una ficha en el Esc. 4. Lo asigna `Tools → Codea → Escenario 2: botón Probar`
+  - **Servidor caído (22/10/2026, en el visor):** la subida devolvió 530 con la página "Cloudflare
+    Tunnel error 1033": el túnel `cloudflared` del servidor no estaba conectado. **Se arregla en el
+    servidor**, no en la app. Desde ahora la app trata 502–504 y 520–530 como "sin conexión":
+    deja el JSON pendiente, muestra "Servidor fuera de servicio (530)" y reintenta cada 20 s; y en
+    el log resume la página HTML de error a su título y código
+  - **"N sesiones por subir. Sin respuesta del servidor", con el ping y la prueba bien:** el
+    `JSONUploader` de **Setup** (el que sube las pendientes) tenía la URL y la API key de un
+    servidor antiguo (`csv.penginexr.com`); el ping y la prueba se hacían con el de **Juego**
+    (`codea2.penginexr.com`). La herramienta 3 ahora copia servidor, clave y timeout del uploader
+    de Juego al de Setup en cada pasada. Hay que pasarla y **recompilar el APK**: las sesiones
+    pendientes siguen en el visor y suben solas al abrir Setup
+  - **Sala 2, ambientación:** máquinas del pack Sci-Fi junto a cada módulo (rotor como ventilador,
+    dos baterías, generador como motor), con `Tools → Codea → Escenario 2: ambientación`, en
+    `Escenario (2)/Ambientación`. Se probó vestir las bases con `comuter_wall` y quedaban casi
+    negras; siguen con `Module.mat`
+  - **Documento de métricas del equipo** (`Metricas CODEA2.pdf`): es anterior a los cambios del
+    06/10 y **no es la referencia exacta, se adapta**. Decidido por el usuario el 22/10/2026: se
+    mantienen las variables actuales. No se vuelven a poner `errorIncompleteSequence`, `selected`,
+    `wrongSelections`, `wrongPlacements` ni `chipsReleased`; cada métrica del PDF se calcula con
+    lo que hay (tabla "Métricas del PDF con las variables actuales", sección 7)
 - **Sin probar en el visor.** El APK de `Build/app.apk` es el del 30/09: formato viejo de
   telemetría, sin tutorial y carga `Basico`/`Intermedio`, que ya no existen como escenas de juego
 
 **Por dónde seguir, en este orden:**
 
-1. **Informe del mes 2 en Word** (`Docs/Informe-Mes2.docx`), con el **mismo formato** que
-   `Docs/Informe-Mes1.docx` y los entregables 2.1, 2.2 y 2.3. El contenido ya está reunido en
-   `Docs/Entregable-Mes2/Recopilacion_Producto2.md`; lo marcado ⟨pendiente⟩ lo tiene que dar el
-   usuario (nombre del Producto 2, fecha, participantes de las pruebas, fotos). Ver "Informe del
-   mes 2" en la sección 11 para el plan técnico
-2. **En el editor** (lo hace el usuario): abrir `Juego`, `Tools → Codea → Comprobar escena de
-   juego`, revisar la paleta del Esc. 1 con `Ver como básica / intermedia`, jugar las dos
-   dificultades (`Sesion → DifficultyApplier → Editor Difficulty`, y dejarlo después en `De La
-   Pantalla De Setup`) y **borrar `Assets/Scenes/Intermedio.unity`**
-3. **Recompilar el APK** (mismo keystore) y pasar en el visor la tabla de la sección 14 y el plan
+- **Pendiente para el final (pedido del 22/10/2026):** bloquear también los bloques y fichas de los
+  escenarios 3 y 4 hasta que termine la narración de instrucciones, como la paleta del Esc. 1
+  (`Scenario1Controller.lockBlocksUntilStart`). Ahí el reto se abre al llegar a la sala, antes de
+  la narración, así que el desbloqueo tendría que colgarse de otro paso del Director
+
+0. **Probar los cambios del 22/10/2026** (en curso, lo hace el usuario): botón Probar del Esc. 2,
+   fila incompleta, tamaño de los bloques y fila bloqueada en marcha del Esc. 3, paleta del Esc. 1 bloqueada hasta el reloj, teletransporte y sonido de módulo reparado (sección 14, filas 5c, 5d, 8, 9, 10b, 10c y 10d), y revisar
+   en el JSON `solutionPercent` y los 300 s de una sala agotada. Confirmar las soluciones de la
+   tabla de `Docs/VARIABLES_TELEMETRIA.md` ("Porcentaje de solución"). El dashboard se alimenta de
+   la sección 7 de este archivo y de `Metricas CODEA2.pdf` adaptado (tabla "Métricas del PDF con
+   las variables actuales")
+
+1. **Cerrar el informe del mes 2** (`Docs/Informe-Mes2.docx`, regenerado el 13/10/2026 con el estado
+   de ese día): abrirlo en Word (aceptar actualizar los campos, para el índice), fijar la fecha definitiva (constantes `FECHA_*` y
+   `FECHA_PROVISIONAL = false` en `Docs/Herramientas/generar_informe_mes2.js`) y regenerar. Cuando
+   haya pruebas con estudiantes, añadir su JSON a `Docs/JSON Samples/originales/` y su fila en
+   `SESIONES`. Ver "Informe del mes 2" en la sección 11
+2. **Voz: ya es la de Camy** (12/10/2026), las 24 frases del CSV y las 5 de error, asignadas con
+   `Tools → Codea → Asignar la voz del narrador` (sección 6). Falta **escucharlas en Play**: nadie
+   ha comprobado que lo que dice cada audio coincide con el texto del CSV, en especial la frase 3
+   (el reloj visible marca 15 minutos y el texto dice "cinco minutos para reparar cada sistema")
+3. **En el editor** (lo hace el usuario): abrir `Setup` y recolocar si hace falta el botón
+   **Subir datos** y su etiqueta `EstadoSubida`; abrir `Juego`, revisar la paleta del Esc. 1 con
+   `Ver como básica / intermedia` y jugar las dos dificultades (`Sesion → DifficultyApplier →
+   Editor Difficulty`, y dejarlo después en `De La Pantalla De Setup`)
+4. **Recompilar el APK** (mismo keystore) y pasar en el visor la tabla de la sección 14 y el plan
    de `Docs/Pruebas/`
-4. **Pendientes de la sección 11**, uno a uno con plan corto antes: frase 3 de la narración
-   (decisión del usuario), pedidos 7, 8 y 10 del Esc. 3, depurar logs del Esc. 1, textos y
-   paneles del Esc. 2, indicaciones del Esc. 1, glifos Yachay, perfil de render para Quest
+5. **Pendientes de la sección 11**, uno a uno con plan corto antes: pedidos 7, 8 y 10 del Esc. 3, depurar logs del Esc. 1, textos y
+   paneles del Esc. 2, indicaciones del Esc. 1, perfil de render para Quest
 
 **Cómo se trabaja en este proyecto** (acuerdos con el usuario, no negociables):
 
@@ -61,11 +187,18 @@ en la rama **`informe-mes2`**, creada desde ese `dev`.
 | Para | Usar |
 |---|---|
 | Montar o reparar las escenas | `Tools → Codea → 1` y `2` en Unity (`Editor/CodeaSceneTools.cs`) |
+| Poner las escenas ya montadas al día con el código (botón de subir datos en `Setup`; en `Juego`, una apertura por reto y fuera ajustes de prefab sin uso) | `Tools → Codea → 3`. Sin abrir Unity: `-executeMethod CodeaSceneTools.UpdateScenesBatch`. Informe en `Logs/Codea_PuestaAlDia.txt` |
 | Montar y cablear el tutorial | `Tools → Codea → 4`, con la escena de juego abierta |
+| Poner la voz del narrador (listas, frases de error y de tiempo agotado) desde la carpeta de audios | `Tools → Codea → Asignar la voz del narrador`. Informe en `Logs/Codea_Voz.txt` |
+| Poner al brazo robótico sus tres sonidos | `Tools → Codea → Asignar sonidos del brazo robótico` |
+| Montar la intermedia del Escenario 4 o cambiar las letras de sus fichas | `Tools → Codea → Escenario 4` (`Editor/CodeaScenario4.cs`). Informe en `Logs/Codea_Escenario4.txt` |
+| Sacar capturas sin pisar las figuras de los informes | Variable de entorno `CODEA_CAPTURAS` con la carpeta de destino, antes de lanzar `CodeaCaptures.RunBatch` |
 | Ver en el editor solo las piezas de una dificultad | `Tools → Codea → Ver como básica / Ver como intermedia / Ver todas las piezas` (solo visibilidad, no cambia la escena) |
 | Probar una dificultad en Play sin pasar por `Setup` | `Sesion → DifficultyApplier → Editor Difficulty` |
 | Revisar la escena de juego entera sin jugarla: llamadas de UnityEvent rotas, scripts perdidos, el Director paso a paso, narración contra el CSV, cada reto en cada dificultad, `Setup` | `Tools → Codea → Comprobar escena de juego` (`Editor/CodeaSceneCheck.cs`). Informe en `Logs/Codea_Comprobacion.txt`. **Pasarla tras tocar la escena o renombrar un método** |
 | Jugar las dos dificultades sin visor y recorrer el Director entero | `Tools → Codea → Probar las dos dificultades en Play` (`Editor/CodeaPlayCheck.cs`). Se para antes de subir el JSON; restaura las PlayerPrefs y borra sus JSON. Informe en `Logs/Codea_PruebaPlay.txt` |
+| Capturas de cada sala, en básica e intermedia, para informes | `Tools → Codea → Capturas para informes` (`Editor/CodeaCaptures.cs`). JPG 1600×900 en `Docs/Entregable-Mes2/capturas`. Sin abrir Unity: `-executeMethod CodeaCaptures.RunBatch`, **con gráficos** (sin `-nographics`) y sin `-quit` |
+| Generar el informe del mes 2 | `node Docs/Herramientas/generar_informe_mes2.js` (texto y datos de portada dentro del script) |
 | Las dos anteriores sin abrir Unity | `Unity.exe -batchmode -quit -nographics -projectPath . -executeMethod CodeaSceneCheck.CheckBatch` · la de Play igual pero **sin `-quit`** y con `CodeaPlayCheck.RunBatch` (sale sola; tarda ~5 min) |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
@@ -82,7 +215,7 @@ niños de 8-17 años de contexto rural en Ecuador. Respaldo de Yachay Tech.
 **Presentado el 30 de septiembre de 2026; en fase de ajustes.**
 
 El jugador es un astronauta en una nave que atravesó una tormenta espacial. Con la ayuda de
-Roki, el robot de mantenimiento, repara cuatro sistemas en 15 minutos para volver a la Tierra.
+Roki, el robot de mantenimiento, repara cuatro sistemas para volver a la Tierra, con 15 minutos en total y un máximo de 5 por sistema.
 Cada sala trabaja un pilar: secuencialidad, condicionales, bucles y patrones. Un supervisor
 teclea el PIN y fija la dificultad antes de entregar el visor; los datos se guardan en el
 visor y se suben solos al terminar si hay red.
@@ -121,7 +254,7 @@ dependencia:
 
 ## 3. Mapa de archivos
 
-63 scripts en `Assets/_Main/`. Agrupados por responsabilidad:
+69 scripts en `Assets/_Main/` (62 de juego y 7 de editor). Agrupados por responsabilidad:
 
 ### `Scripts/Block Programming System/` — núcleo compartido por escenarios 1, 3 y 4
 
@@ -130,12 +263,10 @@ dependencia:
 | `BlockNode.cs` | Base abstracta. Agarre, acople por proximidad contra `Socket`, `InstructionLabel` |
 | `Socket.cs` | Un hueco. `Next` encadena, `CurrentBlock`, `AcceptsBlocks`, registro estático `Active` |
 | `SocketRow.cs` | Genera N sockets por `Lerp`. Repeticiones, bloqueo de edición, bloques iniciales |
-| `ProgramRunner.cs` | `Run(inicio, repeticiones)` recorre la cadena. `ExecuteChain` estático |
+| `ProgramRunner.cs` | `Run(inicio, repeticiones)` recorre la cadena hasta el primer hueco vacío |
 | `ProgramTrigger.cs` | Botón de ejecutar. Registra el intento **antes** de correr |
 | `BlockResetter.cs` | Devuelve bloques a su sitio sin instanciar ni destruir |
 | `IRunPrecondition.cs` | Contrato: condición que puede vetar la ejecución y aporta su argumento |
-| `StartBlock.cs` | Bloque inicial |
-| `BlockGenerator.cs` | **Obsoleto**, sustituido por `BlockResetter`. Solo lo referencian las escenas de `_Recovery/`: borrarlo solo las degradaría más |
 
 ### `Scripts/Grid Level/` — Escenario 1
 
@@ -144,10 +275,9 @@ dependencia:
 | `Bot.cs` | Robot. Movimiento relativo: avanzar, girar izq/der, usar |
 | `GridBlock.cs` | Acciones del bot por enum |
 | `LevelManager.cs` | Grid numérico y de objetos, validación, estado de completado |
-| `LevelLoader.cs` | Instancia el nivel desde JSON. `TileType` vive aquí |
+| `LevelLoader.cs` | Instancia el nivel desde JSON. `TileType` vive aquí: camino 0, muro 1, salida del robot 2, peligro 3, meta 5, vacío 6 (el 4 y el 7 eran del sistema de puntos, retirado) |
 | `Exit.cs` | Meta. Implementa `IInteractable` |
 | `Scenario1Controller.cs` | Puente con Director y telemetría. Reintento automático |
-| `Interactable.cs`, `Point.cs` | Vestigios del sistema de puntos, pero **NO borrables**: `LevelLoader` los llama (líneas 84 y 118) y ambos tienen prefab activo. Quitarlos rompe la compilación |
 
 ### `Scripts/Scenario 2/` — Condicionales · `Scripts/Scenario 3/` — Bucles · `Scripts/Scenario 4/` — Patrones
 
@@ -173,9 +303,7 @@ dependencia:
 | `IStepAction.cs` | Contrato: acción que bloquea el paso hasta terminar |
 | `TutorialController.cs` | Cuarto del tutorial: vigila cuatro interacciones (dos botones, un bloque, una ficha) y termina cuando están todas. `IStepAction`, sin telemetría |
 | `Narrator.cs` | Voz **y** texto en pantalla, emparejados por ID contra un CSV |
-| `VRGrabEvents.cs` | Envuelve `Grabbable` de Meta en UnityEvents |
-| `VRInteractEvents.cs` | Dispara por menú contextual los eventos de un `InteractableUnityEventWrapper` |
-| `VRInteractionEvent.cs` | `IStepAction` que espera a un grab/release/hover |
+| `VRGrabEvents.cs` | Envuelve el agarre de Meta en UnityEvents. Un `onGrabbed` por agarre y un `onReleased` por suelta, que sale **al salir de `Select`** (no al llegar a `Normal`) y en el `LateUpdate` de ese frame, cuando el `Grabbable` ya terminó de soltar |
 | `Tools/Fader.cs` | Fundido mediante esfera en la cámara |
 | `Tools/Timer.cs` | Cuenta atrás con avisos por umbral y `OnTimeUp` (RF-06). Reparte la hora entre N pantallas |
 | `Tools/TimerDisplay.cs` | Una pantalla donde el Timer escribe. Se registra sola al activarse |
@@ -186,19 +314,23 @@ dependencia:
 | `Session/SessionSetup.cs` | Pantalla del supervisor: PIN + dificultad, y lanza la escena (RI-03) |
 | `Session/PinEntry.cs` | Teclado numérico del PIN. `AppendDigit`, borrar, siguiente correlativo |
 | `Session/SceneLoader.cs` | Carga una escena cerrando antes la run y esperando a que acabe la subida. Para volver con el siguiente niño |
-| `Session/TimeUpSequence.cs` | Tiempo agotado: para Director y narración, cierra y sube la run, dice la frase y vuelve |
+| `Session/TimeUpSequence.cs` | Cierre por tiempo agotado en la **última** sala: para Director y narración, cierra y sube la run, dice la frase 20 y vuelve |
+| `Session/ScenarioTimeLimit.cs` · `Session/ITimeLimitedChallenge.cs` | Los dos límites: 15 minutos de sesión (los que muestran los relojes; al agotarse termina la experiencia) y 5 por sala (no se ven; al agotarse se pasa a la siguiente). Deja terminar el intento en curso (sección 5, "Tiempo de sesión y de sala") |
 | `Difficulty/DifficultyApplier.cs` | Monta la escena en la dificultad de la sesión al cargar, antes que ningún otro script (orden -1000). Antes era `DifficultyScene` (mismo guid) |
 | `Difficulty/DifficultyVariant.cs` | Base de lo que cambia en un reto: un juego de datos `basica` y otro `intermedia` |
-| `Difficulty/Scenario1Difficulty.cs` · `Scenario2Difficulty.cs` · `Scenario3Difficulty.cs` · `NarrationDifficulty.cs` | Lo que cambia en cada reto y en la narración (sección 5, "Dificultad") |
+| `Difficulty/Scenario1Difficulty.cs` · `Scenario2Difficulty.cs` · `Scenario3Difficulty.cs` · `Scenario4Difficulty.cs` · `NarrationDifficulty.cs` | Lo que cambia en cada reto y en la narración (sección 5, "Dificultad"). El del 4 cambia el dibujo de las fichas |
 | `Difficulty/DifficultyOnly.cs` | Marca una pieza que solo existe en una dificultad; en la otra se apaga |
 | `Telemetry/TelemetryData.cs` | Modelo serializable del JSON |
 | `Telemetry/TelemetryManager.cs` | Singleton **por escena**, sin `DontDestroyOnLoad` (los `UnityEvent` de la escena apuntan al suyo). Captura, escritura diferida, pruebas |
-| `Telemetry/JSONUploader.cs` | Sube el JSON de la sesión por POST multipart, con reintentos |
+| `Telemetry/JSONUploader.cs` | Sube por POST multipart, con reintentos: la sesión que acaba de terminar (`UploadTelemetry`) o todas las que faltan (`UploadPending`) |
+| `Telemetry/TelemetryOutbox.cs` | Estático. Qué JSON del visor no están aún en el servidor: apunta cada subida (nombre + huella del contenido) en `subidos.txt`. No mueve ni borra ningún JSON |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
-| `VRConsole.cs` | Consola de errores dentro del visor |
-| `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` | Comprobación de la escena y prueba en Play de las dos dificultades (tabla de herramientas, sección 0) |
+| `Map/EarthApproach.cs` | El regreso: al completar el último escenario, acerca la Tierra de `Pos_earth` hacia el jugador. Lo añade `Tools → Codea → 3` |
+| `SceneController.cs` | Vista exterior de la nave: `ChangeScenario(0)` enciende `Pos_earth` y apaga `Pos_sun`. El Director lo llama al terminar los escenarios 3 y 4 |
+| `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` · `Editor/CodeaCaptures.cs` | Comprobación de la escena, prueba en Play de las dos dificultades y capturas de cada sala para informes (tabla de herramientas, sección 0) |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
-| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara la escena de juego (`DifficultyApplier`, tiempo agotado, vuelta a `Setup`). **3** unificó `Basico` e `Intermedio` en `Juego` (se pasó el 09/10/2026; no hace falta volver a pasarla y se puede quitar al borrar `Intermedio`). **4** monta en el cuarto del tutorial las cuatro interacciones y su `TutorialController`. **Ver como…** oculta en la vista de escena las piezas de la otra dificultad. Repetibles |
+| `Editor/CodeaScenario4.cs` | `Tools → Codea → Escenario 4`: monta la intermedia (pliego de glifos de la A a la Z, huecos de la palabra, letras de las fichas) y vuelve a sortear las letras |
+| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara la escena de juego (`DifficultyApplier`, tiempo agotado, vuelta a `Setup`). **3** pone al día `Setup` y `Juego` sin rehacerlas (botón de subir datos, una apertura por reto, limpieza de ajustes de prefab sin uso). **4** monta en el cuarto del tutorial las cuatro interacciones y su `TutorialController`. **Ver como…** oculta en la vista de escena las piezas de la otra dificultad. Repetibles |
 
 ## 4. Sistema de bloques
 
@@ -206,7 +338,7 @@ El mecanismo central. Lo comparten los escenarios 1, 3 y 4.
 
 ```
 El jugador agarra una pieza
-  └─ BlockNode.OnGrabbed ── libera su socket, se desparenta, cuenta el agarre
+  └─ BlockNode.OnGrabbed ── libera su socket, vuelve a su padre de origen, cuenta el agarre
        └─ Update ── busca el socket libre más cercano (registro Socket.Active)
             └─ OnReleased ── ¿vacío, acepta bloques y no es hijo de sí mismo?
                  ├─ sí → AttachTo ── copia pose, se acopla, Socket.OnOccupied
@@ -214,9 +346,10 @@ El jugador agarra una pieza
 
 El jugador pulsa Ejecutar
   └─ ProgramTrigger.OnPlayPressed
-       ├─ RegisterBlockAttempt(secuencia, repeticiones)   ← ANTES de ejecutar
+       ├─ preconditions y, con requireFullRow (esc. 3), fila completa ← si no: frase de error
+       ├─ RegisterBlockAttempt(secuencia, repeticiones, tipo, solutionPercent) ← ANTES de ejecutar
        └─ ProgramRunner.Run(FirstSocket, repeticiones)
-            └─ ExecuteChain × N ── recorre Socket.Next hasta el primer hueco vacío
+            └─ la cadena × N ── recorre Socket.Next hasta el primer hueco vacío
                  └─ BlockNode.Execute()
                       ├─ GridBlock  → Bot        (escenario 1)
                       ├─ ArmBlock   → RoboticArm (escenario 3)
@@ -265,6 +398,49 @@ propios** (`… (Girar Izquierda)`, `… (Girar Derecha)`), no los de básica re
   `DifficultyApplier` corre antes que todos (orden -1000)
 - **No activar una pieza con `DifficultyOnly` desde el Director** (`Tools.SetActive`): volvería
   a aparecer en la dificultad que no le toca. Activar su padre
+
+### Tiempo de sesión y de sala (12/10/2026)
+
+Hay dos límites, los dos en `Sesion → ScenarioTimeLimit`:
+
+| Límite | Campo | Se ve | Al agotarse |
+|---|---|---|---|
+| **Sesión: 15 minutos** | `Session Seconds` (900) | Sí: es lo que marcan los cuatro relojes, uno por sala (`Timer` y sus `TimerDisplay`; el de escritorio de la sala 1 se quitó el 12/10/2026) | Termina la experiencia: `TimeUpSequence`, frase 20 y vuelta a `Setup` |
+| **Sala: 5 minutos** | `Seconds Per Scenario` (300) | No | La historia pasa a la sala siguiente, con la frase 21 |
+
+El de sala existe para que nadie se quede atascado; el de sesión es el que ve el niño. Con cuatro
+salas, **quien agote las tres primeras consume los 15 minutos y la sesión se cierra ahí**, sin
+cuarta sala. Funcionamiento:
+
+- Los dos corren **solo mientras hay un reto abierto**. Empiezan cuando un reto empieza de verdad
+  (`TelemetryManager.ChallengeStarted`): la sala 1 en el paso "Iniciar temporizador", tras su
+  narración; las salas 2–4 al llegar, como su telemetría. Al terminar el reto se pausan: en
+  narraciones, puertas y traslados el reloj está quieto. La cuenta de la sala vuelve a cero en
+  cada reto; el reloj de la sesión sigue donde lo dejó la sala anterior
+- Al agotarse cualquiera de los dos, si hay un intento ejecutándose (`ITimeLimitedChallenge.IsBusy`:
+  el robot o el brazo, salas 1 y 3) **se le deja terminar**, con un tope de 90 s. Si ese intento
+  resuelve la sala y queda tiempo de sesión, no pasa nada más
+- **Sala agotada, con sesión:** `TelemetryManager.TimeOutChallenge` la cierra con `timedOut: true`,
+  `completed: false` y `totalSeconds` = 300 justos (desde el 22/10/2026; si se agota la sesión,
+  lo jugado en la sala), y `ITimeLimitedChallenge.TimeOut()` suelta la espera del Director. Puertas
+  y traslados siguen igual. La frase de felicitación que viene después (7, 10, 15) se **sustituye**
+  por `ScenarioTimeLimit → Time Up Line` (`Narrator.ReplaceNextLine`): la **frase 21**, "¡Se acabó
+  el tiempo en esta sala! No te preocupes, astronauta: sigamos con la siguiente" (sin audio hasta
+  que se grabe `21.wav`; vacía, se omitiría). La lista del Narrator avanza igual, así que las
+  frases siguientes no se desplazan
+- **Sesión agotada, o agotada la última sala:** la sala en curso queda con `timedOut: true` y se
+  llama a `TimeUpSequence`, que para la historia, dice la frase 20, cierra, sube y vuelve a
+  `Setup`. Las salas a las que no se llegó quedan con `started: false`. Excepción: si el último
+  intento resuelve la **última** sala justo al agotarse, la misión cuenta como cumplida
+- `Timer.OnTimeUp` no debe llamar a `TimeUpSequence.Begin` desde la escena: lo escucha
+  `ScenarioTimeLimit` desde código, que es quien deja terminar el intento y cierra la telemetría.
+  Lo comprueba `Tools → Codea → Comprobar escena de juego`, y la herramienta 2 lo quita
+
+**Ojo con el guion:** la frase 3 dice "Tienes cinco minutos para reparar cada sistema", y el reloj
+que el niño ve marca 15. Decidir el texto antes de grabar `3.wav`.
+
+Para probar sin esperar: `ScenarioTimeLimit` → menú contextual "Agotar el tiempo de la sala
+actual" (cierra la sala, no la sesión).
 
 ### Escenario 1 — Secuencialidad *(funcional, verificado en visor)*
 
@@ -318,10 +494,11 @@ solución más un Girar Derecha y un Avanzar 2 de sobra. Nivel y huecos están e
 
 ### Escenario 2 — Condicionales *(montado, sin probar en visor)*
 
-Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones. Una
-acción **correcta** alterna entre seleccionada y no seleccionada; una **incorrecta** se queda
-marcada `wrongOptionSeconds` (0,8 s) y se suelta sola. El módulo se repara cuando están
-marcadas todas las correctas.
+Tres módulos averiados. Cada uno enuncia un problema en texto y ofrece varias acciones, que se
+marcan y desmarcan libremente. Al pulsar el botón azul **Probar** (`SystemModule.Try`), el
+módulo se repara si lo marcado es exactamente la solución; si no, suena la frase de error y, a
+los `resetAfterErrorSeconds` (0,8 s), se desmarcan todos (reunión del 20/10/2026: "botón azul
+probar, si error reiniciar 4 botones"). Probar se apaga al repararse (`tryButton`).
 
 | | Opciones | Correctas |
 |---|---|---|
@@ -356,11 +533,11 @@ vacío"*: hay que deducir qué falta. Tres reglas al escribirlos:
 *"Su tanque está vacío"* aparece igual en Motores y en Enfriamiento a propósito: el síntoma es
 idéntico y la respuesta distinta, y lo que decide es la primera frase.
 
-**Al seleccionar una opción incorrecta**, `SystemModule.OnWrongOption` dispara la frase de error
-del narrador (sección 6) y el botón se suelta solo: el niño ya no la desmarca a mano (pedido
-del 06/10/2026). La incorrecta **nunca entra en el conjunto seleccionado** —solo se dibuja
-marcada—, así que el módulo puede repararse aunque su corrutina de soltado no haya terminado.
-Mientras está marcada ignora otra pulsación.
+**Al pulsar Probar sin acertar**, `SystemModule.OnWrongOption` dispara la frase de error del
+narrador (sección 6). Mientras espera para desmarcar, el módulo ignora las pulsaciones; si se
+apaga en esa espera, desmarca en `OnDisable`. Probar se apaga con 0,6 s de retraso al
+repararse: se repara dentro del evento de pulsación del propio botón, y apagarlo en el acto le
+cortaba el sonido.
 
 ### Escenario 3 — Bucles y parametrización *(reescrito, sin probar en visor)*
 
@@ -493,25 +670,33 @@ acciones a esperar (componentes `IStepAction`).
 | `Any` (1) | En paralelo. Termina con la **primera**; las demás siguen |
 | `Sequence` (2) | **En serie**, una tras otra, en el orden de la lista |
 
-Implementan `IStepAction`: `Waiter`, `Fader`, `Narrator`, `VRInteractionEvent`, `AutomaticDoor`
+Implementan `IStepAction`: `Waiter`, `Fader`, `Narrator`, `AutomaticDoor`
 y los cuatro `ScenarioNController`.
 
 **El texto aparece entero de golpe** (`revealProgressively` desactivado por defecto), decidido en la reunión del 29/09.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 21 IDs (el `0` es la frase del tutorial) más 2 variantes
-por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el tiempo agotado.
+(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 22 IDs (el `0` es la frase del tutorial) más 2 variantes
+por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el cierre de sesión por tiempo (agotados los 15 minutos, o la última sala) y el `21`, el tiempo agotado en las demás ("Tiempo de sesión y de sala", sección 5). Ni el 20 ni el 21 están en las listas: los dicen `TimeUpSequence` y `ScenarioTimeLimit`. La frase 3 cambió el 09/10/2026 a "Tienes cinco minutos para reparar cada sistema. Si se acaba el tiempo, pasaremos al siguiente. ¡Adelante, astronauta!"
 
 **`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
 existía y la línea se saltaba en silencio. Los audios se nombran con su ID
-(`Sounds/VoiceLines/Victor/9.1.wav`), y el menú contextual del Narrator **"Asignar textId por
+(`Sounds/VoiceLines/Camila/9.1.wav`), y el menú contextual del Narrator **"Asignar textId por
 nombre del clip"** los rellena solos: escribirlos a mano ya dejó una vez toda la lista
 desplazada a partir de la primera variante.
 
-**Una lista por dificultad**, que elige `NarrationDifficulty` (en el `Narrator`): `1` =
-`Victor (Basica)`, `2` = `Victor (Intermedia)`. La `0` (`Camila`) es la grabación anterior y
-no se usa. Las dos listas tienen **20 entradas en el mismo orden** (la frase `0` del tutorial
+**La voz es la de Camy** (12/10/2026; las grabaciones anteriores, la suya y la de Víctor, se
+borraron). Los audios viven en `Sounds/VoiceLines/Camila/` con el ID de su frase por nombre, y
+los de error en `Camila/Error/` como `e1.wav`…`e5.wav`. Llegaron en `.m4a`, que Unity no importa
+de forma fiable: se convirtieron a WAV. **`Tools → Codea → Asignar la voz del narrador`** los
+pone en su sitio sin arrastrar nada —listas, frases de error y las dos frases de tiempo agotado
+(20 y 21)— y es lo que hay que pasar si se regraba o se añade un audio; una frase sin audio en
+la carpeta queda solo con texto, y sale en `Logs/Codea_Voz.txt`. Sin abrir Unity:
+`-executeMethod CodeaSceneTools.AssignVoiceBatch`.
+
+**Una lista por dificultad**, que elige `NarrationDifficulty` (en el `Narrator`): `0` =
+`Camila (Basica)`, `1` = `Camila (Intermedia)`. Las dos listas tienen **20 entradas en el mismo orden** (la frase `0` del tutorial
 y las 19 de la historia) y deben seguir así: el Director reproduce una por cada vez que un
 paso espera al Narrator, así que una lista con una línea de más desplaza todas las
 siguientes. El Director espera al Narrator 20 veces.
@@ -537,15 +722,77 @@ Un JSON por participante en `Application.persistentDataPath/{pin}_{sessionId}_{d
 cambiado el 06/10/2026; la tabla de equivalencias con el anterior está al final de
 `Docs/VARIABLES_TELEMETRIA.md`.
 
+### Porcentaje de solución (22/10/2026)
+
+`solutionPercent` en cada intento, de 0 a 100. Escenarios 1 y 3: subsecuencia común más larga
+entre el intento y la solución, dividida entre la más larga de las dos (`SolutionScore.Percent`):
+falta o sobra una instrucción, resta; fuera de orden, no cuenta. Con varias soluciones, la más
+cercana; en el Esc. 3, la del tipo (`argument`). `-1` si no hay solución cargada. Escenario 2:
+acertadas entre la unión de marcadas y correctas (`SelectionPercent`).
+
+Las soluciones viven en `Scenario1Difficulty` / `Scenario3Difficulty` (`solutions`), que las
+pasan al `ProgramTrigger` de su fila. Las escribe `CodeaSolutions` desde la herramienta 3: las del
+Esc. 1 son fijas (comprobadas con el resolvedor sobre los JSON de nivel); las del Esc. 3
+intermedio se **deducen de la escena** con la misma cuenta que `RoboticArm.RotateToSlot`.
+
+### Guía para el dashboard (formato al 22/10/2026)
+
+Pensada para actualizar el dashboard desde otro proyecto sin abrir el código. Detalle de cada
+variable en `Docs/VARIABLES_TELEMETRIA.md`; archivo completo de ejemplo en
+`Docs/ejemplo_run_telemetria.json`; modelo exacto en `Assets/_Main/Scripts/Telemetry/TelemetryData.cs`.
+
+**Un archivo = una sesión** (`{pin}_{sessionId}_{deviceId}.json`), subido por POST multipart
+(campo `file`, cabecera `X-API-Key`) a `https://codea2.penginexr.com/upload`.
+
+**Raíz:** `pin` (texto), `deviceId` (5 caracteres), `sessionId`, `difficulty` (1 básica, 2
+intermedia), `startedUtc`, `endedUtc`, `totalSeconds` (sesión entera, con narración y traslados),
+y `escenario1`…`escenario4`.
+
+**En los cuatro escenarios:** `started`, `completed`, `timedOut`, `totalSeconds`, `startedUtc`,
+`endedUtc`.
+- Resuelto: `completed` true.
+- Sala agotada (5 min): `timedOut` true y `totalSeconds` = **300 justos**.
+- Se acabaron los 15 min de sesión: `timedOut` true y `totalSeconds` < 300 en la sala en curso; las siguientes, `started` false.
+- `started` true sin `completed` ni `timedOut` ni `endedUtc`: sesión cortada (visor apagado).
+
+| Escenario | Contadores | Una entrada por… | Campos de cada entrada |
+|---|---|---|---|
+| 1 | `failedAttempts`, `blocksGrabbed`, `blocksConnected`, `blockResets`, `errorCollisionBot`, `errorInvalidUse` | `attempts[]`: cada Ejecutar | `sequence`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
+| 2 | `failedAttempts` | `attempts[]`: cada Probar | `module`, `selection`, `correctSelected`, `wrongSelected`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
+| 2 | — | `selections[]`: cada marca (no las desmarcas) | `module`, `option`, `correct`, `durationSeconds`, `timestamp` |
+| 3 | `failedAttempts`, `blocksGrabbed`, `blocksConnected`, `errorInvalidCommand` | `attempts[]`: cada Ejecutar | `sequence`, `repetitions`, `itemType`, `remaining`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
+| 4 | `chipsGrabbed` | `placements[]`: cada ficha encajada | `socket`, `chip`, `correct`, `durationSeconds`, `timestamp` |
+
+**Valores a tratar aparte:** `solutionPercent` y `remaining` valen **-1** cuando no se pudo
+calcular (excluir de medias, no contar como 0). `durationSeconds` de un intento es tiempo de
+preparación, sin la ejecución.
+
+**Qué mide `solutionPercent`:** esc. 1 y 3, parecido de la secuencia con la solución en número y
+orden de instrucciones (subsecuencia común más larga / la más larga de las dos); en el esc. 3
+básico vale siempre 100 (fila fija). Esc. 2, acertadas / (marcadas ∪ correctas). Esc. 3:
+`repetitions - remaining` = 0 es el bucle ajustado a lo que quedaba.
+
+**Versiones de archivo:** los anteriores al 22/10/2026 no tienen `solutionPercent`, `remaining`
+ni `attempts`/`failedAttempts` en el esc. 2 (y el esc. 2 de entonces se resolvía sin Probar).
+Los anteriores al 06/10/2026 usan el formato viejo (tabla al final de `VARIABLES_TELEMETRIA.md`).
+Detectar por la presencia del campo, no por la fecha.
+
+**Métricas del PDF del equipo** (`Metricas CODEA2.pdf`): se adaptan con la tabla "Métricas del PDF
+con las variables actuales", más abajo en esta sección.
+
 ### Jerarquía de registros
 
 ```
-ScenarioRecord            started, completed, totalSeconds, startedUtc, endedUtc
+ScenarioRecord            started, completed, timedOut, totalSeconds, startedUtc, endedUtc
 ├── Scenario1Record       + failedAttempts, blocksGrabbed, blocksConnected, blockResets,
-│                           errorCollisionBot, errorInvalidUse, attempts[]  (AttemptRecord)
-├── Scenario2Record       + selections[]  (cada una con durationSeconds)
+│                           errorCollisionBot, errorInvalidUse, attempts[]  (AttemptRecord:
+│                           sequence, solved, solutionPercent)
+├── Scenario2Record       + failedAttempts, selections[] (cada una con durationSeconds),
+│                           attempts[]  (ModuleAttemptRecord: module, selection, correctSelected,
+│                                        wrongSelected, solved, solutionPercent)
 ├── Scenario3Record       + failedAttempts, blocksGrabbed, blocksConnected,
-│                           errorInvalidCommand, attempts[]  (LoopAttemptRecord: + repetitions, itemType)
+│                           errorInvalidCommand, attempts[]  (LoopAttemptRecord: + repetitions, itemType,
+│                                                              remaining, solutionPercent)
 └── Scenario4Record       + chipsGrabbed, placements[]  (cada una con durationSeconds)
 
 RunRecord (raíz) ── pin, deviceId, sessionId, difficulty, startedUtc, endedUtc, totalSeconds
@@ -566,18 +813,37 @@ la sesión, no de cada intento. **Todas las banderas son booleanas** (`started`,
 colocación anterior).
 
 **No hay contadores que repitan una lista.** `wrongSelections` y `wrongPlacements` se quitaron:
-son las entradas con `correct: false`. Tampoco se cuentan las sueltas: `blocksConnected` suma
+son las entradas con `correct: false`. (`failedAttempts` del Esc. 2 sí se guarda aunque sea
+contable en `attempts[]`, por coherencia con los escenarios 1 y 3.) Tampoco se cuentan las sueltas: `blocksConnected` suma
 solo cuando el jugador **encaja** un bloque en un hueco (`BlockNode.AttachTo` con
 `byPlayer`), no cuando `SocketRow` monta la fila por código. En el Escenario 4 no hay
 contador de conexiones porque cada ficha encajada ya es una entrada de `placements[]`.
 
 **Errores de lógica.** El destino lo decide primero el reto activo. En el Escenario 1,
 `LogicErrorType.UsoInvalido` va a `errorInvalidUse` ("Usar" donde no hay nada) y cualquier
-otro tipo a `errorCollisionBot` (salirse o chocar). En el 3 todo va a `errorInvalidCommand`.
+otro tipo a `errorCollisionBot` (salirse o chocar). En el 3 todo va a `errorInvalidCommand`,
+también ejecutar con la fila incompleta (`ProgramTrigger.requireFullRow`, desde el 22/10/2026).
 
-**El Escenario 2 solo registra lo que el niño marca.** Las deselecciones no van al JSON —ni la
-automática de una incorrecta ni la manual de una correcta— y por eso `SelectionRecord` no
-tiene campo `selected`.
+**El Escenario 2 solo registra lo que el niño marca.** Las deselecciones no van al JSON —ni las
+del niño ni el desmarcado tras un Probar fallido— y por eso `SelectionRecord` no tiene campo
+`selected`. Lo que tenía marcado en cada intento está en `attempts[].selection`.
+
+### Métricas del PDF con las variables actuales
+
+`Metricas CODEA2.pdf` es anterior al 06/10/2026 y nombra campos que ya no existen. Se adapta así:
+
+| El PDF usa | Se calcula con |
+|---|---|
+| `errorIncompleteSequence` (esc. 1) | No existe: en el esc. 1 la fila incompleta se ejecuta y queda en `attempts[]` (secuencia más corta que la fila; `solutionPercent` < 100) |
+| `errorInvalidCommand` (esc. 1) | `errorInvalidUse` |
+| `errorCollisionBot` / `errorIncompleteSequence` (esc. 3) | No aplican: no hay robot que choque, y la fila incompleta cuenta en `errorInvalidCommand` |
+| `selections[].selected` (esc. 2) | Solo se registran marcas (`selected` sería siempre `true`); lo marcado al probar está en `attempts[].selection` |
+| `wrongSelections` (esc. 2) | Nº de `selections` con `correct: false` |
+| Intentos del esc. 2 | `attempts[]` (un Probar = un intento) y `failedAttempts` |
+| `wrongPlacements` (esc. 4) | Nº de `placements` con `correct: false` |
+| `chipsReleased` (esc. 4) | No existe; `chipsGrabbed` y `placements[]` |
+| Tiempo de sala agotada (MC2) | `totalSeconds` = 300 con `timedOut: true` |
+| Cercanía a la solución (reunión) | `solutionPercent` en `attempts[]` de los escenarios 1, 2 y 3 |
 
 ### Identificador del visor y nombre del archivo
 
@@ -612,14 +878,16 @@ análisis sin tener que jugar una sesión entera.
 | Dato | Dónde |
 |---|---|
 | Inicio / fin de escenario | Escenarios 2–4: el **primer paso** de su escenario en el Director llama a `StartScenario`, antes de la narración, porque el niño manipula mientras escucha. El controlador lo repite después; `StartChallenge` es idempotente y **gana la primera llamada**. Escenario 1: arranca con el temporizador. `totalSeconds` incluye por tanto la narración de la sala |
-| Intento (secuencia + repeticiones + tipo) | `ProgramTrigger.OnPlayPressed`. El `itemType` lo aporta la `IRunPrecondition`, así que sin el socket de tipo en `preconditions` sale vacío |
+| Intento (secuencia + repeticiones + tipo + `solutionPercent`) | `ProgramTrigger.OnPlayPressed`, con las soluciones que le pasa la variante de dificultad. El `itemType` lo aporta la `IRunPrecondition`, así que sin el socket de tipo en `preconditions` sale vacío |
 | Piezas agarradas | `BlockNode.OnGrabbed`, **desde código**. Enruta a `blocksGrabbed` (esc. 1 y 3) o a `chipsGrabbed` (esc. 4) según el reto activo |
 | Piezas conectadas | `BlockNode.AttachTo(socket, byPlayer: true)`, **desde código**. Solo esc. 1 y 3. Una vez por frame: el prefab cablea además `TryAtattch` en `onReleased` y una suelta puede pasar dos veces |
 | Reinicio de bloques (esc. 1) | `BlockResetter.ResetBlocks`, **desde código**. `TelemetryManager` solo lo cuenta con el Escenario 1 activo |
-| Error de lógica | `LevelManager.ValidMovementInGrid` (esc. 1 → `errorCollisionBot`), `Bot.Use` (esc. 1 → `errorInvalidUse`) · `RoboticArm.OnInvalidAction` y `ArmTypeSocket.CanRun` (esc. 3 → `errorInvalidCommand`) |
+| Error de lógica | `LevelManager.ValidMovementInGrid` (esc. 1 → `errorCollisionBot`), `Bot.Use` (esc. 1 → `errorInvalidUse`) · `RoboticArm.OnInvalidAction`, `ArmTypeSocket.CanRun` y fila incompleta en `ProgramTrigger` (esc. 3 → `errorInvalidCommand`) |
 | Intentos fallidos (esc. 1) | `Scenario1Controller.OnAttemptFailed` — **cableado en escena** |
 | Intentos fallidos (esc. 3) | `Scenario3Controller.HandleRunFinished` — **desde código** |
 | Selecciones (esc. 2) | `Scenario2Controller`. Solo al **marcar**; ninguna deselección se registra |
+| Intentos (esc. 2) | `SystemModule.Try` (botón Probar) → `Scenario2Controller.HandleTried` → `RegisterModuleAttempt` |
+| Sala agotada | `ScenarioTimeLimit.Close` → `TimeOutChallenge(id, 300)` |
 | Colocaciones (esc. 4) | `Scenario4Controller` |
 
 **Todo se atribuye al reto activo** (`_currentChallengeId`, que fija `StartChallenge`). Si el
@@ -656,6 +924,28 @@ cuál de las cuatro capas falló (red del visor, DNS, túnel, Flask), y **Subir 
 manda un archivo con el formato real por el mismo camino que una subida de verdad. Los dos
 necesitan Play Mode. En la Pi, el traceback está en `docker logs -f json-uploader`.
 
+### Sesiones pendientes
+
+Una sesión puede terminar sin subirse: sin red, con el servidor caído, o con la aplicación
+cerrada a mitad de partida. En Quest cerrar es matar el proceso, así que **no hay forma fiable
+de subir en ese momento**; lo que sí está garantizado es que el JSON ya está en el visor (se
+guarda en cada evento importante y al pausar) y que se sube después:
+
+- **Al abrir `Setup`**, su `JSONUploader` (`Upload Pending On Start` activado) sube solo todo lo
+  que falte. `Setup` es la primera escena y a la que se vuelve tras cada partida
+- **Botón "Subir datos"** de `Setup` → `JSONUploader.UploadPending()`. La etiqueta
+  `EstadoSubida` dice cuántas sesiones faltan, cómo va la subida y si no hay conexión
+- Qué falta lo decide `TelemetryOutbox`: tras cada subida confirmada por el servidor apunta en
+  `subidos.txt` (misma carpeta que los JSON) el nombre del archivo y la huella MD5 de lo enviado.
+  Un JSON está pendiente si no figura ahí **con el contenido que tiene ahora**
+
+Por qué no puede estropear datos: no mueve, renombra ni borra ningún JSON; no reenvía lo ya
+subido por mucho que se pulse; una sesión subida a medias que luego siguió vuelve a estar
+pendiente sola, con el mismo nombre y más datos; la run abierta se salta; y si una subida falla
+tras sus reintentos, se detiene y lo demás queda para la próxima vez. Borrar `subidos.txt` solo
+hace que se vuelva a subir todo. Además, `TelemetryManager` nunca abre una run sobre un archivo
+que ya exista: si el contador de sesiones volviera atrás, salta al siguiente número libre.
+
 ### Utilidades de prueba
 
 Click derecho en `TelemetryManager` → submenú **Test**: simular partida, subir, y volcar el JSON
@@ -673,19 +963,20 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 
 | Componente | Métodos |
 |---|---|
-| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
-| `JSONUploader` | `UploadTelemetry()`, `UploadFile(string)` |
+| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `RegisterModuleAttempt(...)` (esc. 2, desde código), `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · `TimeOutChallenge(string, segundos)` · eventos `ChallengeStarted`, `ChallengeEnded` · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
+| `ScenarioTimeLimit` | `ForceTimeUp()` (menú contextual "Agotar el tiempo de la sala actual") · `CurrentChallengeId` |
+| `JSONUploader` | `UploadTelemetry()`, `UploadPending()`, `UploadFile(string)` · evento `OnPendingUploadFinished` |
 | `ProgramTrigger` | `OnPlayPressed()`, `AddPrecondition(IRunPrecondition)` (desde código) |
 | `ProgramRunner` | `ResetRunner()` |
-| `SocketRow` | `IncreaseRepetitions()`, `DecreaseRepetitions()`, `SetRepetitions(int)`, `Lock()`, `Unlock()`, `SetEditable(bool)`, `SetVisible(bool)`, `ClearRow(bool)`, `PlaceInitialBlocks()` · desde código, antes de `Awake`: `SetSocketsQuantity(int)`, `SetInitialBlocks(…)` |
+| `SocketRow` | `IncreaseRepetitions()`, `DecreaseRepetitions()`, `SetRepetitions(int)`, `Lock()`, `Unlock()`, `SetEditable(bool)`, `SetVisible(bool)`, `ClearRow()`, `PlaceInitialBlocks()` · desde código, antes de `Awake`: `SetSocketsQuantity(int)`, `SetInitialBlocks(…)` |
 | `BlockResetter` | `ResetBlocks()` (no mueve las piezas bloqueadas), `ReturnBlock(BlockNode)` |
 | `LevelLoader` / `LevelManager` | `ReloadLevel()` · `ResetLevel()`, `CompleteLevel()` |
-| `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `ResetModule()`, `Refresh()`, `SetData(ModuleData)` · `Press()` |
+| `SystemModule` / `ModuleOptionButton` | `ToggleOption(int)`, `Try()` (Probar), `ResetModule()`, `Refresh()`, `SetData(ModuleData)` · `Press()` |
 | `RoboticArm` | `ResetArm()`, `ReturnHeldToOrigin()` |
 | `ScenarioNController` | `StartScenario()`, `ResetScenario()` |
 | `ShapeChip` | `ApplyShape()`, `SetShape(Sprite)`, `ApplyShapeToChild()`, `DropInPlace(Vector3)` |
 | `ShapeSocket` | `Refresh()`, `ResetSocket()`, `Eject()`, `ApplyShapeToChild()` |
-| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` |
+| `Narrator` | `PlayAudio(int/string)`, `PlayErrorLine()`, `StopAudio()`, `Interrupt()`, `SetAudioListIndex(int)`, `ShowLineById(int/string)`, `CompleteInstantly()`, `Clear()` · desde código: `ReplaceNextLine(NarrationEntry)` |
 | `Timer` | `StartTimer()`, `Pause()`, `Continue()`, `Stop()`, `SetTimeLimit(int)` |
 | `Fader` | `TriggerFadeIn()`, `TriggerFadeOut()` |
 | `SessionSetup` | `SelectBasic()`, `SelectIntermediate()`, `SelectByIndex(int)`, `StartSession()` |
@@ -717,9 +1008,9 @@ resolver.
 secuencia; incluirlo mediría el tamaño de la solución en vez del razonamiento.
 
 **El Escenario 2 no registra deselecciones** (pedido 5 del 01/10/2026). Hasta el 06/10/2026 sí:
-las incorrectas se desmarcaban a mano y eso se leía como autocorrección. Ahora se sueltan
-solas, y lo único que quedaba —desmarcar a mano una correcta— no era un dato que el equipo
-quisiera. Al quitarlo, el campo `selected` valía siempre `true` y se eliminó.
+las incorrectas se desmarcaban a mano y eso se leía como autocorrección. Del 06/10 al 22/10 se
+soltaban solas; desde el 22/10 se marca libremente y se comprueba con Probar. Desmarcar no es un
+dato que el equipo quisiera, así que `selected` (siempre `true`) sigue fuera.
 
 **`RoboticArm` fuerza el sentido de giro** en vez de tomar el camino más corto: con ciertos
 `yaw`, "Girar Derecha" giraba visualmente a la izquierda.
@@ -736,6 +1027,12 @@ devuelve el control hasta que la condición se cumple: hasta el 09/10/2026 el sa
 en serie se quedaba esperando a que se resolviera el reto. `Director.Pump` recorre la acción
 como lo haría Unity (anidadas en el mismo frame, `WaitUntil` frame a frame) y corta al pedir
 el salto. Sin salto, el comportamiento es el mismo.
+
+**5 minutos por sala, además de los 15 de sesión** (09/10/2026; desde el 12/10/2026 conviven los dos y el reloj muestra los 15). Con un límite único, quien se atascaba
+en una sala no llegaba a las siguientes y la sesión no medía las cuatro. Al agotarse se deja
+terminar el intento en curso (puede ser el ganador) y la frase de felicitación se sustituye en vez
+de saltarse, porque el Director espera al Narrator una vez por entrada: saltarla desplazaría todas
+las frases siguientes.
 
 **Una sola escena para las dos dificultades** (09/10/2026; antes, decisión del 08/09/2026).
 Con dos escenas, todo lo común —tutorial, Director, retoques visuales— había que hacerlo dos
@@ -895,9 +1192,8 @@ Restos sin efecto en `Juego`: varios bloques tienen overrides de
 de lista, así que no llaman a nada. `RegisterBlockReleased` ya no existe.
 
 **Escenas:** `Setup` (pantalla del supervisor) y `Juego` (las dos dificultades), activas en
-Build Settings en ese orden. `Intermedio.unity` **sigue en disco pero fuera de Build
-Settings**: borrarla cuando `Juego` esté probada. `Main 2.unity` se borró; quedan
-`Tests.unity` y 8 respaldos en `_Recovery/`, que no son escenas activas.
+Build Settings en ese orden. `Intermedio.unity` y los respaldos de `_Recovery/` se borraron el 12/10/2026; queda
+`Tests.unity`, que no es una escena activa.
 
 **`Juego`, comprobado el 09/10/2026 tras la migración** (log de la herramienta y YAML):
 
@@ -927,6 +1223,11 @@ Settings**: borrarla cuando `Juego` esté probada. `Main 2.unity` se borró; que
 | Servidor | ✅ `~/Services/JSONServer` en la Pi |
 | Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso grabadas) |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
+
+**Decidido el 09/10/2026 (tarde):** 5 minutos por sala; al agotarse se pasa a la siguiente, dejando
+terminar el intento en curso, y suena la frase 21. Frase 3 reescrita. Los audios 3 y 21 los graba el
+usuario. El informe del mes 2 no se sube todavía (queda solo en local). Producto 2 del informe: "Informe técnico de
+desarrollo funcional e integración del módulo inmersivo".
 
 **Decidido el 09/10/2026:** los relojes se quedan; en el Esc. 3 de básica la fila se oculta y
 funciona sola; "Sistema de motores" y "Agregar combustible".
@@ -965,19 +1266,6 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 **Pendiente, por orden de importancia:**
 
-- **Los retos 2–4 se abren dos veces.** El primer paso de cada escenario del Director llama a
-  `StartScenario` al llegar a la sala (lo añadió `Tools → Codea → 2`), y el paso "Esperar
-  completar" lo vuelve a llamar al terminar la narración, porque el controlador es su acción
-  de espera. Hoy es inofensivo: `StartChallenge` es idempotente y gana la primera llamada.
-  Pero **debería haber un único punto de apertura**. Opciones: quitar la llamada del paso
-  "Esperar completar" (y la de "Teletransportar a panel 1" del esc. 2), o que `Execute()` del
-  controlador no abra el reto. En `Juego` hay 6 `StartScenario` en el
-  Director; deberían quedar 3. Hacerlo antes de recoger datos reales para no depender de la
-  idempotencia
-- **Figuras del Escenario 4 en intermedia:** hoy usa las mismas 4 que básica
-  (`circulo_cuadrado`, `cuadrado_rombo`, `cuadrado_trianguloinv`, `triangulo_circulo`), así
-  que la dificultad no cambia en esa sala. Lo resuelve el pedido 11: huecos y fichas nuevos
-  con `DifficultyOnly` Intermedia, y los actuales con `DifficultyOnly` Básica
 - **Rótulo del bloque "Volver":** el texto visible dice "Regresar" y la telemetría "Volver". Desde
   que la fila de básica está oculta ya no lo ve nadie; solo importa al leer el JSON
 - Probar la intermedia en el visor con la tabla "Prueba del APK" (sección 14), en especial el
@@ -995,17 +1283,17 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 
 | # | Pedido | Tipo | Notas |
 |---|---|---|---|
-| 1 | Esc. 1 · Depurar logs | Código | Plan listo, ver abajo |
+| 1 | Esc. 1 · Depurar logs | Código | ✅ **Hecho el 12/10/2026**, ver abajo |
 | 2 | Esc. 2 · Título "Sistema de motores" | Datos | ✅ **Hecho el 09/10/2026** en `Motores_Basica` y `Motores_Intermedia` |
 | 3 | Esc. 2 · "Agregar combustible" | Datos | ✅ **Hecho el 09/10/2026** en los 5 assets, el plan de prueba, el JSON esperado y el de ejemplo. Las muestras reales de `Docs/JSON Samples` conservan "Agregar gasolina": es lo que se vio el 30/09 |
-| 4 | Esc. 2 · El botón se desactiva solo tras un error | Código | ✅ **Hecho el 06/10/2026**: se suelta solo a los 0,8 s, no se bloquea. Falta verlo en el visor |
+| 4 | Esc. 2 · El botón se desactiva solo tras un error | Código | ✅ **Hecho el 06/10/2026**; **sustituido el 22/10/2026** por el botón Probar (si falla, se desmarcan los cuatro) |
 | 5 | Esc. 2 · No contar deselecciones en telemetría | Código + formato | ✅ **Hecho el 06/10/2026**: `Scenario2Controller` solo registra lo que se marca y `SelectionRecord` ya no tiene `selected`. Sección 9 y `VARIABLES_TELEMETRIA.md` actualizadas. Falta verlo en el visor |
 | 6 | Esc. 2 · Reducir el tamaño de los paneles | Escena / prefabs | Hoy no se ve el estado corregido / sin corregir. Revisar en visor qué queda fuera de vista |
 | 7 | Esc. 3 · Repeticiones a 0 al terminar cada ejecución | Código | `Scenario3Controller.HandleRunFinished` → `SocketRow.SetRepetitions(0)` |
 | 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Desde el 06/10/2026 cada escenario tiene su clase: basta con quitarlo de `Scenario3Record` y de la rama del esc. 3 en `RegisterFailedAttempt`. Actualizar la guía de variables y el informe de integridad |
 | 9 | Esc. 3 · `solved: true` al terminar barriles o cajas | Formato | ✅ Aclarado el 09/10/2026: se refería a que `solved` salía como 1/0. Todas las banderas son `true`/`false` desde el 06/10/2026 |
 | 10 | Esc. 3 · Cantidad disponible por intento | Código + formato | Campo nuevo en `LoopAttemptRecord`: objetos de ese tipo que quedaban por clasificar al ejecutar. Actualizar ejemplo y guía |
-| 11 | Esc. 4 · Intermedia con el alfabeto Yachay en glifos cuadrados | Recursos + escena | Hacen falta las imágenes. Sustituye el pendiente de las "figuras densas" |
+| 11 | Esc. 4 · Intermedia con el alfabeto Yachay en glifos cuadrados | Recursos + escena | ✅ **Hecho el 12/10/2026**, ver "Escenario 4 en intermedia" abajo. 👓 |
 | 12 | Tutorial · Botón, chip + socket | Diseño | 🟡 **En curso (06/10/2026)**, ver "Tutorial" abajo |
 
 **Tutorial (pedido 12), estado al 09/10/2026:**
@@ -1028,7 +1316,7 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
   cuando están todas, en cualquier orden. No escribe telemetría
 - **Arranque (plan del usuario, 06/10/2026):** `StartButton → Director.Play`. El primer paso
   del Director, **"Iniciar tutorial"** (escenario `Inicio`, en serie), apaga `StartButton`,
-  enciende las piezas, espera al Narrator (frase `0`, `Sounds/VoiceLines/Victor/0.wav`) y
+  enciende las piezas, espera al Narrator (frase `0`, `Sounds/VoiceLines/Camila/0.wav`) y
   después al `Tutorial` (`TutorialController`). Luego sigue "Teletransportar a Escenario 1".
   Montado a mano por el usuario. El botón de inicio es un objeto renombrado a `StartButton`
   dentro de la instancia del prefab
@@ -1074,13 +1362,14 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | Esc. 1 · Fila de huecos horizontal | ✅ En escena (0°). 👓 |
 | Esc. 1 · Contar reinicios · unificar errores · quitar errorIncompleteSequence y la dificultad por intento | ✅ (`errorInvalidUse` aparte, confirmado el 06/10) |
 | Esc. 1 · Panel de botones sobre la mesa | 👓 Probablemente resuelto con la fila horizontal |
+| Esc. 1 · Paleta intermedia | ❌ Encontrado al hacer las capturas (09/10/2026): varios bloques de la paleta intermedia quedan **encima del reloj y de los botones** de la mesa. Se colocaron en `Intermedio`, que no tenía el reloj de mesa. Recolocarlos en el editor con `Ver como intermedia` (Figura 5 del informe del mes 2) |
 | Esc. 1 · Que se entienda que el objetivo es abrir la puerta · indicaciones visuales | 🟡 Lo dicen las frases 4 y 7; no hay indicador visual |
-| Esc. 1 · Depurar logs | ❌ Plan listo, abajo |
+| Esc. 1 · Depurar logs | ✅ 12/10/2026 |
 | Esc. 2 · Instrucciones ambiguas · simplificar preguntas | ❌ Enunciados y frases 9.1/9.2 |
 | Esc. 2 · Tiempo por selección · quitar wrongSelections · duration · no contar deselecciones | ✅ |
 | Esc. 2 · Luces de resuelto / sin resolver | ✅ Asignadas en los tres módulos. 👓 que se vean (pedido 6) |
 | Esc. 2 · "Sistema de motores" · "Agregar combustible" | ✅ 09/10/2026 |
-| Esc. 2 · El botón incorrecto se suelta solo | ✅ 👓 |
+| Esc. 2 · El botón incorrecto se suelta solo | Sustituido el 22/10/2026 por el botón Probar 👓 |
 | Esc. 2 · Reducir paneles | ❌ Pregunta abierta (pedido 6) |
 | Esc. 3 · Quitar instrucciones en básica · eliminar el panel | ✅ 09/10/2026: en básica la fila no se ve y funciona sola; el rótulo INSTRUCCIONES y su fondo solo salen en intermedia. 👓 |
 | Esc. 3 · Centrado / posición inicial del jugador | ❌ 👓 (`tp (3)`) |
@@ -1088,65 +1377,79 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | Esc. 3 · `solved` en true/false (pedido 9) | ✅ |
 | Esc. 4 · Quitar wrongPlacements · duration | ✅ |
 | Esc. 4 · Animación Tierra → Ecuador → Yachay Tech | ❌ Sin empezar; faltan recursos |
-| Esc. 4 · Glifos Yachay en intermedia | ❌ Faltan las imágenes. El mecanismo ya está: `DifficultyOnly` en huecos y fichas |
+| Esc. 4 · Glifos Yachay en intermedia | ✅ 12/10/2026: seis huecos con YACHAY y las 18 fichas con letras. 👓 |
 | Tutorial · Botón · chip + socket | ✅ Montado. 👓 |
 | General · Quitar temporizadores | Descartado el 09/10/2026: los relojes se quedan |
 | General · Tiempo total · código de visor · 0/1 a false/true | ✅ |
-| General · Subir antes de cerrar la app | ❌ Al cerrar solo se guarda en el visor. Subir en `OnApplicationQuit` no es fiable en Quest; lo viable es subir al arrancar los JSON que queden pendientes |
+| General · Subir antes de cerrar la app | ✅ 12/10/2026: al cerrar se guarda en el visor (subir en ese momento no es fiable en Quest) y lo pendiente se sube solo al abrir `Setup`, o con su botón **Subir datos**. 👓 |
 | General · Clic, respuesta de las interacciones, contraste del texto | 👓 |
 | General · Sonido en cada botón e interacción | 🟡 Todos los botones y los huecos tienen sonido; falta `solvedSound` del Esc. 4. 👓 el resto |
 | General · Reducir el tiempo de comprensión | ❌ Diseño |
 | General · Demostración inicial | ✅ Es el tutorial |
 
-**Plan del punto 1 (depurar logs del esc. 1), listo para aplicar:**
+**Punto 1 (depurar logs del esc. 1), hecho el 12/10/2026:** el tablero ya no se vuelca al cargar
+ni en cada reintento (sigue en `LevelManager → Print grid`); los choques salen como
+`[Escenario1] Choque en (x,y): …`; el botón de ejecutar avisa en español con el id del reto; fuera
+el `print("Iniciando.")`. Los errores de configuración y `[Escenario 1] COMPLETADO` no se tocaron.
 
-| Dónde | Hoy | Qué hacer |
-|---|---|---|
-| `LevelLoader.cs:196` y `LevelManager.cs:94` | Volcado del tablero entero al cargar y en cada reintento | Quitarlos, o dejarlos tras una casilla `Log Grid` desactivada por defecto |
-| `LevelManager.cs:45` y `:55` | `print("Out of grid...")`, `print("Ilegal move...")` | Un aviso en español con prefijo: `[Escenario1] Choque en (x,y)` |
-| `ProgramTrigger.cs:32` y `:41` | `"Programm is running"` / `"Programm has run"` | En español y con prefijo |
-| `StartBlock.cs:11` | `print("Iniciando.")` | Quitar |
-| Errores de configuración y `[Escenario 1] COMPLETADO` | — | No tocar: son las señales que usamos para verificar |
+**Limpieza del 12/10/2026 — lo que queda abierto:**
+
+| Qué | Estado |
+|---|---|
+| Soltar un bloque lo encaja en el acto (`VRGrabEvents`) | Hecho, **sin probar en el visor**. Si una ficha del Esc. 4 se cayera del hueco al soltarla, o un bloque quedara flotando, mirar aquí primero |
+| Botón **Subir datos** de `Setup` | Lo colocó la herramienta 3 encima de EMPEZAR, con su etiqueta debajo del teclado. Revisar la posición en el editor |
+| Si el servidor ya tiene un archivo con el mismo nombre | No se sabe qué hace (su código no está en este repositorio). Una sesión que se subió a medias y luego siguió se vuelve a enviar con el mismo nombre: conviene que el servidor la sustituya |
+| Datos de la app borrados o reinstalación con otra firma | El contador de sesiones vuelve a 1 y los JSON del visor desaparecen: una sesión nueva puede repetir el nombre de una antigua **ya subida**. En el visor no se pisa nada; en el servidor depende de lo anterior |
+| Clave del servidor en `JSONUploader.apiKey` | Se queda: el repositorio es privado (decisión del 12/10/2026) |
+| El reloj de las salas 2–4 arranca al llegar, antes de la narración; el de la sala 1, después | Sin tocar. Si el tiempo se agotara durante la narración, la frase sustituida sería una instrucción y no la felicitación |
 
 **Preguntas abiertas para esa sesión:**
 
 - **Punto 12:** resuelto en parte: el tutorial es el cuarto `Tutorial` de la propia escena y no se registra en la telemetría. Queda: ¿lleva narración propia (frases nuevas en el CSV)?
 - **Punto 6:** ¿qué es exactamente lo que no se ve: el icono, la luz o el texto "Sistema restablecido"? ¿Desde dónde mira el jugador?
-- **Punto 11:** ¿hay ya imágenes del alfabeto Yachay en glifos cuadrados? ¿Cuántos huecos y fichas tendrá la intermedia?
+- **Punto 11:** resuelto (12/10/2026)
 
-**Informe del mes 2 (siguiente tarea, rama `informe-mes2`).** Pedido del usuario: `Docs/Informe-Mes2.docx`
-con el **mismo formato** que `Docs/Informe-Mes1.docx` y los entregables:
+**Escenario 4 en intermedia (12/10/2026).** El panel pide las seis letras de **YACHAY** en el
+alfabeto de glifos cuadrados; la básica no cambia (4 huecos, figuras de `symbols.png`).
 
-- **2.1 Implementación de funcionalidades principales**: navegación, interacciones, elementos
-  educativos y lógica de funcionamiento
-- **2.2 Integración de recursos 3D e interacciones inmersivas**: recursos 3D, programación de
-  interacciones, controles y ajustes para Meta Quest
-- **2.3 Pruebas funcionales preliminares con usuarios clave**: errores, observaciones de uso,
-  limitaciones, ajustes aplicados y priorizados
+- **Pliego:** `Scripts/Scenario 4/Figuras/squareGlyphs.png`, 26 recortes de 81 px nombrados de la
+  **A** a la **Z** en orden de lectura (5 por fila). A 44 px por unidad, sin filtro ni compresión
+- **Huecos:** los 4 de siempre llevan `DifficultyOnly` de básica; hay 6 nuevos de intermedia,
+  `Hueco 1 (Y)` … `Hueco 6 (Y)`, en fila desde el primero y algo más juntos. Su `socketId` lleva
+  la posición (`1_Y`, `2_A`, `3_C`, `4_H`, `5_A`, `6_Y`): la palabra repite letras y sin ella
+  dos huecos serían el mismo en la telemetría
+- **Fichas:** las mismas 18 en las dos dificultades, en el mismo sitio. `Scenario4Difficulty` (en
+  `Escenario (4)`) les cambia el dibujo al cargar: en básica el de siempre, en intermedia una
+  letra cada una. Las letras se sortearon al montar y **quedan fijas en la escena** (todos los
+  niños ven las mismas): dos Y, dos A, una C y una H, que son las que hacen falta, y doce
+  distractoras sin repetir. En el JSON, el `chip` de cada colocación es la letra
+- **Herramienta:** `Tools → Codea → Escenario 4 → Montar la intermedia (YACHAY)`
+  (`Editor/CodeaScenario4.cs`; sin abrir Unity, `-executeMethod CodeaScenario4.BuildBatch`).
+  Repetible. `Volver a sortear las letras de las fichas` cambia las distractoras y el reparto.
+  Para otra palabra, cambiar `Word` en ese archivo y borrar antes los huecos de intermedia
+- **En el editor** las fichas enseñan siempre el dibujo de básica: el de intermedia se pone al
+  cargar. `Ver como intermedia` sí enseña los seis huecos
 
-El contenido está en `Docs/Entregable-Mes2/Recopilacion_Producto2.md`; el GDD (`Docs/Codea2_GDD.docx`)
-sirve para controles, retroalimentación y salas. Plan técnico, ya estudiado:
+**Informe del mes 2 (hecho el 09/10/2026 y puesto al día el 13/10/2026, rama `informe-mes2`).** `Docs/Informe-Mes2.docx`, con el
+mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.3, hoja de firmas,
+índice, cabecera "Implementación, integración y pruebas del módulo" y tres capítulos (18 tablas y 12 figuras tras la puesta al día: se añadió la de la sala 4 intermedia). Cómo está hecho, para cambiarlo:
 
-- **Usar el informe del mes 1 como plantilla**: un `.docx` es un zip. Desempaquetar con
-  `System.IO.Compression` (PowerShell), editar `word/document.xml` con Node y volver a empaquetar.
-  **En este equipo no hay Word, LibreOffice, pandoc ni Python**: no se puede pasar a PDF para
-  mirarlo; comprobar que el XML está bien formado y leerlo convertido a HTML (`mammoth` de npm)
-- `node Docs/Herramientas/esqueleto_docx.js <carpeta>/word/document.xml` lista el cuerpo. En el
-  del mes 1 (207 elementos): **0–22 portada** ("Proyecto:", título del proyecto, "Producto 1:" y
-  su nombre, "El presente informe contempla…", los tres entregables con su descripción en estilo
-  `1361` con viñetas, lugar y fecha, salto de página, tabla de fecha de entrega / elaborado por /
-  aprobado por); **23** salto de sección; **24–25** "Contenido" y el índice (`w:sdt` con campo TOC,
-  estilos `1348`–`1350`); **26** salto de sección; **27 en adelante, el cuerpo**
-- Estilos del cuerpo: `1173` título 1 (numerado solo: 1, 2, 3), `1174` título 2, `1175` título 3,
-  `1339` pie de figura o tabla (con campo SEQ), `1361` párrafo de lista. Las tablas y las figuras
-  (12 imágenes en `word/media`) se copian como modelo
-- **Quitar los comentarios de revisión** del mes 1: marcas `commentRangeStart/End` y
-  `commentReference` en el cuerpo, los cuatro `comments*.xml`, sus relaciones y sus entradas en
-  `[Content_Types].xml`
-- Conservar cabeceras (6, con logos) y pies (2). Poner `<w:updateFields w:val="true"/>` en
-  `settings.xml` para que Word rehaga el índice al abrir
-- Figuras de evidencia: capturas de cada sala renderizando desde Unity en modo batch (con
-  gráficos, sin `-nographics`), o fotos del visor que dé el usuario
+- **Se genera, no se edita a mano**: `node Docs/Herramientas/generar_informe_mes2.js` toma el
+  informe del mes 1 como plantilla (portada, firmas, estilos, cabeceras y pies), le cambia los
+  textos de portada y escribe el cuerpo con los mismos estilos (`1173`–`1175` títulos, `1361`
+  viñetas, `1339` pies, tablas `1185` con cabecera `EAEAEA`). Quita los comentarios de revisión
+  del mes 1. El texto y los datos de portada están en el script
+- **Figuras**: `Docs/Entregable-Mes2/capturas/`, hechas con `Tools → Codea → Capturas para informes`
+  en Play (la rejilla, el robot y los huecos solo existen al arrancar)
+- **Índice**: números de página estimados; el documento pide a Word actualizar los campos al
+  abrirse
+- **Sin Word en este equipo**: se verificó que las 32 partes XML están bien formadas, que no hay
+  relaciones, listas ni marcadores rotos, y se leyó de vuelta con `mammoth` (npm, instalado fuera
+  del proyecto en `X:/Backup/codea_tools/node`)
+- **Supuestos que debe confirmar el usuario**: fecha de entrega 9/10/2026; nombre del Producto 2
+  ("Informe técnico de implementación, integración de recursos inmersivos y pruebas funcionales
+  del módulo en Unity"); participantes de las pruebas ("Equipo de desarrollo" / "Equipo del
+  proyecto", sección 3.2)
 
 **Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
 `docker-compose.yml`. Asumido: servidor privado y temporal.
@@ -1168,11 +1471,12 @@ sirve para controles, retroalimentación y salas. Plan técnico, ya estudiado:
 |---|---|
 | `Docs/VARIABLES_TELEMETRIA.md` | Equipo evaluador. Qué mide cada variable, en lenguaje llano |
 | `Docs/ejemplo_run_telemetria.json` | Run completa de ejemplo, con el formato exacto que emite `JsonUtility`. Para el equipo evaluador y para validar el parser de análisis |
-| `Docs/JSON Samples/` | Dos runs reales del APK del 30/09/2026 (básica), **convertidas el 06/10/2026 al formato nuevo** y renombradas (`0101_5_00000.json`, `0102_6_00000.json`). Secuencias, tiempos y fechas son los reales; `durationSeconds` de selecciones y colocaciones y el `totalSeconds` de la raíz salen de las fechas. **Estimados, porque el APK de entonces no los registraba:** `deviceId` (`00000`), `blocksConnected` (el mínimo posible: 8 en el esc. 1, 2 en el esc. 3) y `blockResets` (0). No sirven para validar esos tres campos |
+| `Docs/JSON Samples/` | Dos runs reales del APK del 30/09/2026 (básica), **convertidas el 06/10/2026 al formato nuevo** y renombradas (`0101_5_00000.json`, `0102_6_00000.json`). Secuencias, tiempos y fechas son los reales; `durationSeconds` de selecciones y colocaciones y el `totalSeconds` de la raíz salen de las fechas. **Estimados, porque el APK de entonces no los registraba:** `deviceId` (`00000`), `blocksConnected` (el mínimo posible: 8 en el esc. 1, 2 en el esc. 3) y `blockResets` (0). No sirven para validar esos tres campos. Son anteriores al 22/10: sin `solutionPercent` ni `attempts`/`failedAttempts` del esc. 2 (el validador los marca como formato anterior) |
 | `Docs/Pruebas/` | Plan de prueba guionizado de la telemetría (`PLAN_PRUEBA_TELEMETRIA.md`) y el JSON exacto que debe producir (`esperado_prueba_basico.json`). Rehacerlo si cambia el código de telemetría o algún nivel |
 | `Docs/Herramientas/` | Scripts de Node: `resolver_nivel.js` (caminos y bloques de un nivel del Escenario 1) `validar_json_telemetria.js` (comprueba un JSON contra `TelemetryData.cs`), `generar_gdd.js` (regenera el GDD), `recursos_escena.js` (qué recursos usa de verdad una escena) y `esqueleto_docx.js` (estructura de un `.docx`, para usar un informe como plantilla). Uso en su `LEEME.md` |
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
+| `Docs/Informe-Mes2.docx` | Informe técnico del mes 2 (Producto 2: 2.1, 2.2, 2.3). Se genera con `Docs/Herramientas/generar_informe_mes2.js`; las figuras están en `Docs/Entregable-Mes2/capturas/` |
 | `Docs/Entregable-Mes2/Recopilacion_Producto2.md` | Material reunido el 09/10/2026 para el informe del mes 2 (2.1 funcionalidades, 2.2 recursos 3D e interacciones, 2.3 pruebas). Marca con ⟨pendiente⟩ lo que debe aportar el equipo |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
 | `Docs/Investigaciones/` | Respaldo académico: *worked examples*, manipulativos físico-digitales |
@@ -1194,11 +1498,16 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 4 | Básica → EMPEZAR | Fundido y carga de `Juego`; en logcat, `[Dificultad] Escena en básica` | Build Settings, `DifficultyApplier` |
 | 5 | Tutorial | Al pulsar el botón de inicio suena la frase `0` con su texto; tras pulsar los dos botones y encajar el bloque y la ficha, se pasa al Escenario 1 | Paso "Iniciar tutorial" del Director, `TutorialController` |
 | 5b | Introducción | Frases 1–3 con voz y texto completo a la vez; el reloj arranca con «Iniciar» | Listas del Narrator |
+| 5c | Esc. 1: intentar agarrar un bloque durante la narración | No se puede; al arrancar el reloj, sí | `lockBlocksUntilStart` |
+| 5d | Girar la cabeza a un lado justo antes de un teletransporte | Tras el salto se sigue mirando a ese lado; al volver al frente, de cara al destino | `Teleporter` |
 | 6 | Esc. 1: fallar a propósito | Choca, frase de error, el nivel se rearma solo | `OnAttemptFailed` |
 | 7 | Esc. 1: resolver | Frase 7, puerta abierta, traslado | Director |
-| 8 | Esc. 2: opción incorrecta | Frase de error; el botón se suelta solo en menos de un segundo | `OnWrongOption`, `wrongOptionSeconds` |
-| 9 | Esc. 2: resolver los 3 módulos | Luces verdes, frase 10 | `ModuleData` |
+| 8 | Esc. 2: marcar una incorrecta y pulsar Probar | Frase de error; los cuatro botones se desmarcan en menos de un segundo | `OnWrongOption`, `resetAfterErrorSeconds`, `Try` |
+| 9 | Esc. 2: resolver los 3 módulos | Sonido de completar en cada uno, luces verdes, frase 10 | `ModuleData` |
 | 10 | Esc. 3: ejecutar sin ficha | No se mueve nada | `preconditions` |
+| 10b | Esc. 3 intermedia: quitar un bloque de la fila y ejecutar | Frase de error, no se mueve nada | `requireFullRow` |
+| 10c | Esc. 3: agarrar un bloque y volver a encajarlo | Mantiene su tamaño en la mano y en la fila | `BlockNode.homeParent` |
+| 10d | Esc. 3: intentar sacar un bloque o la ficha con el brazo en marcha | No se puede; al terminar, sí | `lockRowWhileRunning` |
 | 11 | Esc. 3: poner ficha | Contador a 0; ejecutar con 0 no hace nada | `ArmTypeSocket` |
 | 12 | Esc. 3: resolver en dos pasadas | Cada tipo a su lado, frase 15 | `SortingGoal` |
 | 13 | Esc. 4: ficha incorrecta | Sale disparada con sonido de desconexión | `rejectSpeed`, `rejectLocalDirection` |
@@ -1207,7 +1516,11 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 16 | Esc. 4: completar | Motores, frase 18, frase 19 | `completedSound`, Director |
 | 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |
 | 18 | Segunda partida seguida (otro PIN) | Todo igual que la primera | `TelemetryManager` por escena |
-| 19 | Tercera partida: dejar que se acabe el tiempo | Frase 20 y vuelta a `Setup` | `TimeUpSequence` |
+| 18b | Mirar los relojes durante una partida | Marcan 15:00 al cargar; bajan solo durante los retos y se quedan quietos en narraciones y traslados | `ScenarioTimeLimit → Session Seconds` |
+| 19 | Tercera partida: no resolver la sala 1 en 5 minutos | Con el reloj en 10:00, pasa a la sala 2 (si el robot estaba ejecutando, termina antes); en el JSON, `escenario1.timedOut: true` | `ScenarioTimeLimit` |
+| 19b | No resolver las salas 1, 2 y 3 (o dejar que el reloj llegue a 00:00 en cualquier sala) | Frase 20 y vuelta a `Setup`, sin pasar a la sala siguiente; en el JSON, la sala en curso con `timedOut: true` y las siguientes sin empezar | `TimeUpSequence`, `Session Seconds` |
+| 19c | Agarrar un bloque y soltarlo sobre un hueco **sin apartar la mano** | Encaja en el momento de soltar. Lo mismo con una ficha del Esc. 4, que además se queda en el hueco | `VRGrabEvents` |
+| 19d | Jugar una partida sin red (o cerrar la app a mitad), volver a abrir con red | En `Setup`, la etiqueta pasa de "N sesiones por subir" a "todo subido" sola; con el botón **Subir datos**, igual. En logcat, `[Upload] OK` por archivo | `JSONUploader.uploadPendingOnStart`, `subidos.txt` |
 | 20 | Sacar los JSON del visor | Un archivo por partida, `{pin}_{sessionId}_{deviceId}.json`, con el mismo `deviceId` en todos, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
 | 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
 | 22 | `Setup` → **Intermedia** → EMPEZAR | Carga `Juego`; en logcat, `[Dificultad] Escena en intermedia`; en el JSON, `difficulty: 2` | `DifficultyApplier` |
@@ -1221,35 +1534,16 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 
 ### Compilar sin abrir Unity
 
-`Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de
-editor comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno
-a uno; un script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto"
-sin haberlo compilado. A 09/10/2026 faltan `Session/TimeUpSequence.cs`, `Story/TutorialController.cs`
-y los siete de `Difficulty/` (en el de runtime, que además lista `Session/DifficultyScene.cs`,
-ya movido), y `CodeaSceneTools.cs`, `CodeaSceneCheck.cs` y `CodeaPlayCheck.cs` (en el de editor): Unity sí los compila, pero el
-`.csproj` no se regeneró. Hasta que lo haga (en Unity: *Edit → Preferences → External Tools → Regenerate
-project files*), hay que añadirlos a mano a una copia, compilar y restaurar:
-
 ```powershell
-$r = "X:\Projects\Unity\Codea-2"
-Copy-Item "$r\Assembly-CSharp.csproj" "$env:TEMP\ac.bak"; Copy-Item "$r\Assembly-CSharp-Editor.csproj" "$env:TEMP\ace.bak"
-try {
-  $s = [IO.File]::ReadAllText("$r\Assembly-CSharp.csproj")
-  $a = '<Compile Include="Assets\_Main\Scripts\Session\SceneLoader.cs" />'
-  if (-not $s.Contains('TimeUpSequence.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Session\TimeUpSequence.cs" />') }
-  if (-not $s.Contains('TutorialController.cs')) { $s = $s.Replace($a, $a + '<Compile Include="Assets\_Main\Scripts\Story\TutorialController.cs" />') }
-  $s = $s.Replace('<Compile Include="Assets\_Main\Scripts\Session\DifficultyScene.cs" />', '')
-  foreach ($f in Get-ChildItem "$r\Assets\_Main\Scripts\Difficulty\*.cs") { if (-not $s.Contains($f.Name)) { $s = $s.Replace($a, $a + "<Compile Include=`"Assets\_Main\Scripts\Difficulty\$($f.Name)`" />") } }
-  [IO.File]::WriteAllText("$r\Assembly-CSharp.csproj", $s)
-  $e = [IO.File]::ReadAllText("$r\Assembly-CSharp-Editor.csproj")
-  $b = '<Compile Include="Assets\_Main\Editor\LevelEditorWindow.cs" />'
-  foreach ($f in Get-ChildItem "$r\Assets\_Main\Editor\*.cs") { if (-not $e.Contains($f.Name)) { $e = $e.Replace($b, $b + "<Compile Include=`"Assets\_Main\Editor\$($f.Name)`" />") } }
-  [IO.File]::WriteAllText("$r\Assembly-CSharp-Editor.csproj", $e)
-  dotnet build "$r\Assembly-CSharp-Editor.csproj" -v:q --nologo | Select-String "error|Compilaci"
-} finally {
-  Copy-Item "$env:TEMP\ac.bak" "$r\Assembly-CSharp.csproj" -Force; Copy-Item "$env:TEMP\ace.bak" "$r\Assembly-CSharp-Editor.csproj" -Force
-}
+powershell -ExecutionPolicy Bypass -File Docs/Herramientas/compilar.ps1
 ```
+
+`Assembly-CSharp-Editor.csproj` depende de `Assembly-CSharp.csproj`, así que compilar el de editor
+comprueba los dos. **Trampa:** los `.csproj` los genera Unity y listan los archivos uno a uno; un
+script creado fuera de Unity **no está** en ellos y `dotnet build` dice "correcto" sin haberlo
+compilado. El script añade a una copia todo lo que haya en `Assets/_Main/Scripts` y
+`Assets/_Main/Editor` (y quita lo que ya no existe), compila y deja los `.csproj` como estaban.
+Muestra solo los errores y el resumen: los avisos de API obsoleta del SDK son muchos y conocidos.
 
 Cualquier script nuevo creado fuera de Unity necesita además su `.meta` (dos líneas:
 `fileFormatVersion: 2` y `guid:` con 32 hexadecimales nuevos), para que su identificador sea el
@@ -1278,7 +1572,7 @@ grep -n "m_MethodName: X\|value: X" Assets/Scenes/Juego.unity
 ```
 
 **Probar sin visor:** casi todo tiene `[ContextMenu]`. `ModuleOptionButton → Press`,
-`RoboticArm → Probar/Ciclo completo`, `VRInteractEvents → Invoke Full Press`,
+`RoboticArm → Probar/Ciclo completo`, `InteractableUnityEventWrapper → Pulsación completa`,
 `TelemetryManager → Test/Simular y subir`, y el teclado W/A/D/Espacio del `Bot` en editor.
 
 Los cuatro escenarios avisan al completarse:

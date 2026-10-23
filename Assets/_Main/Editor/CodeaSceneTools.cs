@@ -18,9 +18,12 @@ using UnityEngine.SceneManagement;
 ///     building blocks de interacción, y monta la pantalla del supervisor con su teclado.
 /// 2 - Preparar escena de juego abierta: añade lo que falta para el ciclo de sesión
 ///     (aplicador de dificultad, tiempo agotado, vuelta a Setup).
-/// 3 - Unificar dificultades: trae a la escena abierta lo que tenía Intermedio y la deja
-///     como única escena de juego, Juego.unity. Se pasa una vez.
+/// 3 - Poner al día Setup y Juego: lo que una escena ya montada necesita para seguir al
+///     código. En Setup, el botón de subir datos; en Juego, cada reto abierto una sola vez,
+///     fuera los ajustes de prefab que ya no se aplican y el nivel de la básica por defecto.
 /// 4 - Montar piezas del tutorial: las cuatro interacciones y su TutorialController.
+/// Asignar la voz del narrador: pone en el Narrator los audios de la carpeta de voz, cada
+///     uno en la frase que se llama como él.
 /// Ver como básica / intermedia / todo: oculta en la vista de escena las piezas de la otra
 ///     dificultad, sin tocar la escena.
 ///
@@ -32,9 +35,6 @@ public static class CodeaSceneTools
     private const string GameSceneName = "Juego";
     private const string SetupScene = "Assets/Scenes/Setup.unity";
 
-    // Las dos escenas de antes de unificar. Solo las usa la herramienta 3.
-    private const string BasicScene = "Assets/Scenes/Basico.unity";
-    private const string IntermediateScene = "Assets/Scenes/Intermedio.unity";
     private const string ButtonPrefab = "Assets/_Main/Prefabs/Buttons/TextButton.prefab";
 
     private const float KeySpacing = 0.12f;
@@ -201,9 +201,11 @@ public static class CodeaSceneTools
         AddAction(panel.transform, buttonPrefab, "Intermedia", new Vector3(2f * KeySpacing, 0.12f - KeySpacing, 0f), setup.SelectIntermediate);
         AddAction(panel.transform, buttonPrefab, "EMPEZAR", new Vector3(2f * KeySpacing, 0.12f - 3f * KeySpacing, 0f), setup.StartSession);
 
-        Selection.activeGameObject = panel;
-
         log.AppendLine("  pantalla del supervisor montada: 12 teclas + Básica, Intermedia, EMPEZAR");
+
+        EnsureUploadButton(panel.transform, log);
+
+        Selection.activeGameObject = panel;
     }
 
     private static void AddAction(Transform parent, GameObject prefab, string label, Vector3 position, UnityAction action)
@@ -261,10 +263,9 @@ public static class CodeaSceneTools
             new EditorBuildSettingsScene(GameScene, true),
         };
 
-        // Las escenas de antes de unificar no se vuelven a añadir aunque sigan en disco.
+        // Las demás se conservan, salvo las que ya no existen en disco.
         foreach (EditorBuildSettingsScene existing in EditorBuildSettings.scenes)
-            if (scenes.All(s => s.path != existing.path) &&
-                existing.path != BasicScene && existing.path != IntermediateScene)
+            if (scenes.All(s => s.path != existing.path) && File.Exists(existing.path))
                 scenes.Add(existing);
 
         EditorBuildSettings.scenes = scenes.ToArray();
@@ -281,13 +282,17 @@ public static class CodeaSceneTools
 
         if (!EditorUtility.DisplayDialog("Preparar escena de juego",
                 $"Escena '{scene.name}'.\n\n" +
-                "Se añaden DifficultyApplier, SceneLoader y TimeUpSequence, y se cablean el " +
-                "tiempo agotado y la vuelta a Setup.",
+                "Se añaden DifficultyApplier, SceneLoader, TimeUpSequence y ScenarioTimeLimit " +
+                "(15 minutos de sesión, 5 por sala), y se cablean el tiempo agotado y la vuelta a Setup.",
                 "Preparar", "Cancelar"))
             return;
 
         PrepareGameScene(scene);
     }
+
+    /// <summary>Sin abrir Unity: -executeMethod CodeaSceneTools.PrepareGameSceneBatch</summary>
+    public static void PrepareGameSceneBatch() =>
+        PrepareGameScene(EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single));
 
     private static void PrepareGameScene(Scene scene)
     {
@@ -316,8 +321,27 @@ public static class CodeaSceneTools
         SetField(timeUp, "uploader", uploader);
         SetField(timeUp, "sceneLoader", loader);
 
-        if (timer != null && AddOnce(timer, timer.OnTimeUp, timeUp, nameof(TimeUpSequence.Begin), timeUp.Begin))
-            log.AppendLine("  Timer.OnTimeUp → TimeUpSequence.Begin");
+        // Tiempo límite por sala (09/10/2026). El reloj ya no cierra la sesión directamente: lo
+        // decide ScenarioTimeLimit, que pasa a la sala siguiente y solo en la última llama a
+        // TimeUpSequence. Si quedara el cable antiguo, la primera sala agotada cerraría la sesión.
+        ScenarioTimeLimit limit = GetOrAdd<ScenarioTimeLimit>(session, log);
+        SetField(limit, "timer", timer);
+        SetField(limit, "narrator", narrator);
+        SetField(limit, "sessionTimeUp", timeUp);
+
+        // Frase 21 del CSV ("¡Se acabó el tiempo en esta sala!"). Sin clip solo se escribe en
+        // pantalla; el audio se asigna a mano cuando esté grabado. No pisa una frase ya puesta.
+        SerializedObject limitSo = new SerializedObject(limit);
+        SerializedProperty lineText = limitSo.FindProperty("timeUpLine.textId");
+        if (string.IsNullOrEmpty(lineText.stringValue))
+        {
+            lineText.stringValue = "21";
+            limitSo.ApplyModifiedProperties();
+            log.AppendLine("  ScenarioTimeLimit: frase de tiempo agotado por sala = textId 21 (sin audio todavía)");
+        }
+
+        if (timer != null && RemoveListener(timer, timer.OnTimeUp, timeUp, nameof(TimeUpSequence.Begin)))
+            log.AppendLine("  quitado Timer.OnTimeUp → TimeUpSequence.Begin (ahora lo decide ScenarioTimeLimit)");
 
         if (director != null && timer != null)
             AddReturnStep(director, timer, loader, log);
@@ -439,8 +463,11 @@ public static class CodeaSceneTools
     /// narración. El niño ya manipula mientras escucha, y con el reto abierto al acabar la
     /// narración (como estaba) lo que hacía antes se perdía o se atribuía a la sala anterior:
     /// en las pruebas del 30/09 un intento del esc. 3 quedó antes del inicio del escenario y
-    /// un agarre del esc. 4 se contó en el 3. La llamada de después no hace nada:
-    /// StartChallenge es idempotente. El 1 no se toca: arranca con el temporizador.
+    /// un agarre del esc. 4 se contó en el 3. El 1 no se toca: arranca con el temporizador.
+    ///
+    /// Es la ÚNICA apertura: las llamadas a StartScenario que hubiera en pasos posteriores se
+    /// quitan. Eran inofensivas mientras StartChallenge fuera idempotente, pero dejaban el
+    /// inicio del reto dependiendo de eso.
     /// </summary>
     private static void StartChallengesOnArrival(Director director, StringBuilder log)
     {
@@ -475,378 +502,669 @@ public static class CodeaSceneTools
 
             if (action != null && AddOnce(director, first.instantEvents, controller, "StartScenario", action))
                 log.AppendLine($"  {scenarioName}: el reto se abre al llegar, en '{first.message}'");
+
+            foreach (Scenario other in director.scenarios)
+            {
+                foreach (Step step in other.steps)
+                {
+                    if (step == first || step.instantEvents == null) continue;
+
+                    while (RemoveListener(director, step.instantEvents, controller, "StartScenario"))
+                        log.AppendLine($"  {scenarioName}: quitada la segunda apertura del reto, en '{step.message}'");
+                }
+            }
         }
     }
 
-    // --- 3. Unificar dificultades ---
+    // --- 3. Poner al día las escenas ---
+
+    private const string UploadKeyLabel = "Subir datos";
+    private const string UploadStatusName = "EstadoSubida";
+    private const string UpdateReport = "Logs/Codea_PuestaAlDia.txt";
 
     /// <summary>
-    /// Deja la escena abierta (Basico) como la única escena de juego, con las dos dificultades.
-    /// Lee de Intermedio lo que allí era distinto y lo declara en la propia escena:
+    /// Lleva las dos escenas del build a lo que el código espera hoy, sin rehacerlas: lo que
+    /// ya está puesto se respeta. Repetible; pasarla tras actualizar el proyecto.
     ///
-    ///   · Narración: NarrationDifficulty con la lista de cada dificultad, y la frase 0 del
-    ///     tutorial también al principio de la lista intermedia
-    ///   · Esc. 1: Scenario1Difficulty (nivel y huecos), y los bloques de la paleta que solo
-    ///     están en una de las dos con DifficultyOnly, en la posición que tenían en su escena
-    ///   · Esc. 2: Scenario2Difficulty con los ModuleData de cada dificultad
-    ///   · Esc. 3: Scenario3Difficulty (fila editable y bloques iniciales), y los giros
-    ///     literales de intermedia como bloques propios con DifficultyOnly
-    ///   · Esc. 4: solo compara las figuras; si difieren, avisa
-    ///
-    /// Después pasa la herramienta 2, renombra la escena a Juego y deja Build Settings con
-    /// Setup y Juego. Intermedio.unity no se borra: se borra a mano tras comprobar el resultado.
-    /// Repetible: lo que ya está unificado no se duplica.
+    ///   · Setup: el JSONUploader que sube solo las sesiones pendientes al abrir la pantalla,
+    ///     su botón "Subir datos" y la etiqueta que dice cuántas faltan
+    ///   · Juego: cada reto se abre una sola vez (al llegar a su sala), fuera los ajustes de
+    ///     instancia de prefab que ya no corresponden a nada, y el LevelLoader apuntando por
+    ///     defecto al nivel de la básica
     /// </summary>
-    [MenuItem("Tools/Codea/3 - Unificar dificultades en esta escena")]
-    private static void UnifyDifficultiesMenu()
+    [MenuItem("Tools/Codea/3 - Poner al día Setup y Juego")]
+    private static void UpdateScenesMenu()
     {
-        Scene scene = SceneManager.GetActiveScene();
-
-        if (scene.path != BasicScene && scene.path != GameScene)
-        {
-            EditorUtility.DisplayDialog("Unificar dificultades",
-                $"La escena abierta es '{scene.name}'. Abre {BasicScene} (o {GameScene}) y vuelve " +
-                "a pasar la herramienta.", "Vale");
-            return;
-        }
-
-        if (!File.Exists(IntermediateScene))
-        {
-            EditorUtility.DisplayDialog("Unificar dificultades",
-                $"No existe {IntermediateScene}: no hay de dónde leer la intermedia.", "Vale");
-            return;
-        }
-
-        if (!EditorUtility.DisplayDialog("Unificar dificultades",
-                $"'{scene.name}' pasa a tener las dos dificultades, leyendo de Intermedio lo que " +
-                "allí era distinto, y se renombra a Juego.\n\nIntermedio no se toca ni se borra.",
-                "Unificar", "Cancelar"))
+        if (!EditorUtility.DisplayDialog("Poner al día las escenas",
+                "Se abren Setup y Juego, se les añade o corrige lo que falte y se guardan.\n\n" +
+                "Setup: botón de subir datos. Juego: una sola apertura por reto y limpieza de " +
+                "ajustes de prefab sin uso.", "Poner al día", "Cancelar"))
             return;
 
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
-        UnifyDifficulties(scene);
+        string opened = SceneManager.GetActiveScene().path;
+
+        UpdateScenes();
+
+        if (!string.IsNullOrEmpty(opened) && File.Exists(opened))
+            EditorSceneManager.OpenScene(opened, OpenSceneMode.Single);
     }
 
-    /// <summary>
-    /// La misma herramienta sin abrir Unity:
-    /// Unity.exe -batchmode -quit -projectPath . -executeMethod CodeaSceneTools.UnifyDifficultiesBatch
-    /// </summary>
-    public static void UnifyDifficultiesBatch()
+    /// <summary>Sin abrir Unity: -executeMethod CodeaSceneTools.UpdateScenesBatch</summary>
+    public static void UpdateScenesBatch() => UpdateScenes();
+
+    private static void UpdateScenes()
     {
-        string path = File.Exists(GameScene) ? GameScene : BasicScene;
-        UnifyDifficulties(EditorSceneManager.OpenScene(path, OpenSceneMode.Single));
-    }
+        StringBuilder log = new StringBuilder("[Codea] Puesta al día de las escenas:\n");
 
-    private static void UnifyDifficulties(Scene scene)
-    {
-        StringBuilder log = new StringBuilder($"[Codea] Unificando dificultades en '{scene.name}':\n");
+        // El servidor y la clave se leen del uploader de Juego, que es el que se prueba: el de
+        // Setup se quedó con los de un servidor antiguo y las sesiones pendientes no subían.
+        gameUploader = ReadGameUploader();
 
-        Scene intermediate = EditorSceneManager.OpenScene(IntermediateScene, OpenSceneMode.Additive);
-        SceneManager.SetActiveScene(scene);
-
-        try
+        if (File.Exists(SetupScene))
         {
-            UnifyNarration(scene, intermediate, log);
-            UnifyScenario1(scene, intermediate, log);
-            UnifyScenario2(scene, intermediate, log);
-            UnifyScenario3(scene, intermediate, log);
-            CompareScenario4(scene, intermediate, log);
+            Scene setup = EditorSceneManager.OpenScene(SetupScene, OpenSceneMode.Single);
+            log.AppendLine($" {setup.name}");
+            UpdateSetupScene(log);
+            EditorSceneManager.MarkSceneDirty(setup);
+            EditorSceneManager.SaveScene(setup);
         }
-        finally
+        else
         {
-            // Antes de la herramienta 2: sus búsquedas recorren todas las escenas abiertas.
-            EditorSceneManager.CloseScene(intermediate, true);
+            log.AppendLine($"  ⚠ No existe {SetupScene}: créala con Tools → Codea → 1");
         }
 
-        EditorSceneManager.MarkSceneDirty(scene);
-        EditorSceneManager.SaveScene(scene);
-        Debug.Log(log.ToString());
-
-        PrepareGameScene(scene);
-
-        log = new StringBuilder("[Codea] Unificación, cierre:\n");
-
-        if (scene.path == BasicScene)
-        {
-            string error = AssetDatabase.RenameAsset(BasicScene, GameSceneName);
-            log.AppendLine(string.IsNullOrEmpty(error)
-                ? $"  {BasicScene} renombrada a {GameScene}"
-                : $"  ⚠ No se pudo renombrar la escena: {error}");
-        }
+        Scene game = EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
+        log.AppendLine($" {game.name}");
+        UpdateGameScene(game, log);
+        EditorSceneManager.MarkSceneDirty(game);
+        EditorSceneManager.SaveScene(game);
 
         SetBuildScenes(log);
         AssetDatabase.SaveAssets();
 
-        log.AppendLine("  ⚠ Falta: comprobar con Tools → Codea → Ver como básica / intermedia, probar " +
-                       "las dos en Play (DifficultyApplier → Editor Difficulty) y borrar Intermedio.unity.");
+        Directory.CreateDirectory(Path.GetDirectoryName(UpdateReport));
+        File.WriteAllText(UpdateReport, log.ToString());
+
         Debug.Log(log.ToString());
     }
 
-    private static void UnifyNarration(Scene scene, Scene intermediate, StringBuilder log)
-    {
-        Narrator narrator = InScene<Narrator>(scene).FirstOrDefault();
-        Narrator other = InScene<Narrator>(intermediate).FirstOrDefault();
+    private static (string url, string key, int timeout)? gameUploader;
 
-        if (narrator == null)
+    private static (string url, string key, int timeout)? ReadGameUploader()
+    {
+        EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
+
+        JSONUploader uploader = Object.FindAnyObjectByType<JSONUploader>(FindObjectsInactive.Include);
+        if (uploader == null) return null;
+
+        SerializedObject so = new SerializedObject(uploader);
+        return (so.FindProperty("serverUrl").stringValue, so.FindProperty("apiKey").stringValue,
+                so.FindProperty("timeoutSeconds").intValue);
+    }
+
+    private static void UpdateSetupScene(StringBuilder log)
+    {
+        SessionSetup setup = Object.FindAnyObjectByType<SessionSetup>(FindObjectsInactive.Include);
+
+        if (setup == null)
         {
-            log.AppendLine("  ⚠ Narración: no hay Narrator en la escena");
+            log.AppendLine("  ⚠ No hay SessionSetup: no sé dónde poner el botón de subir datos");
             return;
         }
 
-        int basicIndex = new SerializedObject(narrator).FindProperty("listIndex").intValue;
-        int intermediateIndex = other != null ? new SerializedObject(other).FindProperty("listIndex").intValue : 2;
+        EnsureUploadButton(setup.transform, log);
+    }
 
-        NarrationDifficulty variant = GetOrAddOn<NarrationDifficulty>(narrator.gameObject, log);
-        Undo.RecordObject(variant, "Narración");
-        variant.SetNarrator(narrator);
-        variant.SetSettings(new NarrationDifficulty.Settings { listIndex = basicIndex },
-                            new NarrationDifficulty.Settings { listIndex = intermediateIndex });
-        EditorUtility.SetDirty(variant);
-        log.AppendLine($"  Narración: lista {basicIndex} en básica, {intermediateIndex} en intermedia");
+    /// <summary>
+    /// El uploader de la pantalla del supervisor, su botón y su etiqueta de estado. El botón
+    /// va en el hueco libre de la columna de la derecha, encima de EMPEZAR.
+    /// </summary>
+    private static void EnsureUploadButton(Transform panel, StringBuilder log)
+    {
+        JSONUploader uploader = Object.FindAnyObjectByType<JSONUploader>(FindObjectsInactive.Include);
 
-        // El Director espera al Narrator una vez por entrada: la lista intermedia tiene que
-        // empezar también por la frase del tutorial, o todo lo demás sale desplazado.
+        if (uploader == null)
+        {
+            uploader = Undo.AddComponent<JSONUploader>(panel.gameObject);
+            log.AppendLine($"  añadido JSONUploader en '{panel.name}'");
+        }
+
+        SetBool(uploader, "uploadPendingOnStart", true);
+
+        if (gameUploader is (string serverUrl, string serverKey, int serverTimeout) && !string.IsNullOrEmpty(serverUrl))
+        {
+            SerializedObject so = new SerializedObject(uploader);
+            bool changed = so.FindProperty("serverUrl").stringValue != serverUrl ||
+                           so.FindProperty("apiKey").stringValue != serverKey;
+
+            so.FindProperty("serverUrl").stringValue = serverUrl;
+            so.FindProperty("apiKey").stringValue = serverKey;
+            so.FindProperty("timeoutSeconds").intValue = serverTimeout;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // La clave no va al log: el informe se guarda en Logs/.
+            log.AppendLine(changed
+                ? $"  JSONUploader: servidor y clave copiados de Juego ({serverUrl}); antes eran otros"
+                : $"  JSONUploader: mismo servidor y clave que Juego ({serverUrl})");
+        }
+        else
+        {
+            log.AppendLine("  ⚠ Juego no tiene JSONUploader: el de Setup conserva su servidor y su clave");
+        }
+
+        Transform startKey = panel.Find("Tecla EMPEZAR");
+        Transform key = panel.Find($"Tecla {UploadKeyLabel}");
+        InteractableUnityEventWrapper wrapper;
+
+        if (key == null)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButtonPrefab);
+            if (prefab == null)
+            {
+                log.AppendLine($"  ⚠ No encuentro {ButtonPrefab}: falta el botón '{UploadKeyLabel}'");
+                return;
+            }
+
+            Vector3 position = startKey != null
+                ? startKey.localPosition + Vector3.up * KeySpacing
+                : new Vector3(2f * KeySpacing, 0.12f - 2f * KeySpacing, 0f);
+
+            wrapper = CreateButton(panel, prefab, UploadKeyLabel, position);
+            if (wrapper == null) return;
+
+            key = panel.Find($"Tecla {UploadKeyLabel}");
+
+            if (startKey != null)
+            {
+                key.localRotation = startKey.localRotation;
+                key.localScale = startKey.localScale;
+            }
+
+            log.AppendLine($"  creado el botón '{UploadKeyLabel}' en {position}");
+        }
+        else
+        {
+            wrapper = key.GetComponentInChildren<InteractableUnityEventWrapper>(true);
+            if (wrapper == null)
+            {
+                log.AppendLine($"  ⚠ 'Tecla {UploadKeyLabel}' no tiene InteractableUnityEventWrapper");
+                return;
+            }
+        }
+
+        if (AddOnce(wrapper, wrapper.WhenSelect, uploader, nameof(JSONUploader.UploadPending), uploader.UploadPending))
+        {
+            PrefabUtility.RecordPrefabInstancePropertyModifications(wrapper);
+            log.AppendLine($"  '{UploadKeyLabel}' → JSONUploader.UploadPending");
+        }
+
+        Transform status = panel.Find(UploadStatusName);
+        TextMeshPro label = status != null ? status.GetComponent<TextMeshPro>() : null;
+
+        if (label == null)
+        {
+            // Debajo de todas las teclas, centrada como la etiqueta de estado de la sesión.
+            float lowest = 0f;
+            foreach (Transform child in panel)
+                if (child.name.StartsWith("Tecla ")) lowest = Mathf.Min(lowest, child.localPosition.y);
+
+            Transform sessionStatus = panel.Find("Estado");
+            float x = sessionStatus != null ? sessionStatus.localPosition.x : 0f;
+
+            label = CreateLabel(panel, UploadStatusName, new Vector3(x, lowest - KeySpacing, 0f), 0.35f, "");
+            Undo.RegisterCreatedObjectUndo(label.gameObject, UploadStatusName);
+
+            if (sessionStatus != null)
+            {
+                label.transform.localRotation = sessionStatus.localRotation;
+                label.transform.localScale = sessionStatus.localScale;
+            }
+
+            log.AppendLine($"  creada la etiqueta '{UploadStatusName}' en {label.transform.localPosition}");
+        }
+
+        SetField(uploader, "statusTextTmp", label);
+    }
+
+    private static void UpdateGameScene(Scene scene, StringBuilder log)
+    {
+        Director director = Find<Director>(log);
+        if (director != null) StartChallengesOnArrival(director, log);
+
+        RemoveUnusedPrefabOverrides(scene, log);
+        PointLevelLoaderAtBasicLevel(log);
+        SplitScenario3Panel(log);
+        AddEarthApproach(scene, log);
+        CodeaSolutions.Apply(log);
+    }
+
+    private const string EarthView = "Pos_earth";
+    private const string EarthName = "Earth";
+
+    /// <summary>
+    /// El acercamiento de la Tierra al completar la misión: EarthApproach en la vista exterior
+    /// de la Tierra (Pos_earth), apuntando a su Tierra. Arranca solo desde código al terminar el
+    /// último escenario, así que no hay nada que cablear en el Director.
+    /// </summary>
+    private static void AddEarthApproach(Scene scene, StringBuilder log)
+    {
+        // Pos_earth está apagado al cargar: GameObject.Find no lo vería.
+        GameObject view = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Transform>(true))
+                               .Select(t => t.gameObject).FirstOrDefault(g => g.name == EarthView);
+
+        if (view == null)
+        {
+            log.AppendLine($"  ⚠ No hay '{EarthView}' en la escena: no se monta el acercamiento de la Tierra");
+            return;
+        }
+
+        Transform earth = view.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t != view.transform && t.name == EarthName);
+
+        if (earth == null)
+        {
+            log.AppendLine($"  ⚠ '{EarthView}' no tiene ningún hijo llamado '{EarthName}'");
+            return;
+        }
+
+        if (!view.TryGetComponent(out EarthApproach approach))
+        {
+            approach = Undo.AddComponent<EarthApproach>(view);
+            log.AppendLine($"  añadido EarthApproach en '{EarthView}': la Tierra se acerca al completar la misión");
+        }
+
+        SetField(approach, "body", earth);
+    }
+
+    private const string BasicBackground = "Fondo (Basica)";
+    private const string IntermediateBackground = "Fondo (Intermedia)";
+
+    /// <summary>
+    /// El panel del Escenario 3 con un fondo por dificultad. En intermedia el fondo oscuro
+    /// cubre el contador de repeticiones y la columna de instrucciones; en básica la fila no
+    /// se ve, y ese mismo fondo dejaba un rectángulo vacío debajo del contador. Ahora cada
+    /// dificultad tiene el suyo (DifficultyOnly) y el de básica acaba donde empezaban las
+    /// instrucciones.
+    ///
+    /// Los rótulos y el número de repeticiones siguen siendo únicos y comunes a las dos: la
+    /// fila escribe en una sola etiqueta. Lo ya partido no se toca.
+    /// </summary>
+    private static void SplitScenario3Panel(StringBuilder log)
+    {
+        Scenario3Controller controller = Object.FindAnyObjectByType<Scenario3Controller>(FindObjectsInactive.Include);
+        Transform found = controller != null ? controller.transform.Find("Canvas/Panel") : null;
+
+        if (!(found is RectTransform panel) || !panel.TryGetComponent(out UnityEngine.UI.Image background))
+        {
+            log.AppendLine("  ⚠ Esc. 3: no encuentro 'Canvas/Panel' con su imagen de fondo: el panel no se parte");
+            return;
+        }
+
+        if (panel.Find(BasicBackground) != null || panel.Find(IntermediateBackground) != null)
+        {
+            log.AppendLine("  Esc. 3: el panel ya tiene un fondo por dificultad");
+            return;
+        }
+
+        // Dónde empieza la columna de instrucciones: el borde de arriba de la pieza de
+        // intermedia que quede más alta (su fondo o su rótulo), medido desde lo alto del panel.
+        float instructionsTop = float.MaxValue;
+
+        foreach (RectTransform child in panel)
+        {
+            if (!child.TryGetComponent(out DifficultyOnly only) || only.Difficulty != Difficulty.Intermedia) continue;
+
+            Vector3[] corners = new Vector3[4];
+            child.GetLocalCorners(corners);
+
+            // corners[1] es la esquina de arriba a la izquierda, en ejes del hijo.
+            float top = panel.InverseTransformPoint(child.TransformPoint(corners[1])).y;
+            instructionsTop = Mathf.Min(instructionsTop, panel.rect.yMax - top);
+        }
+
+        if (instructionsTop == float.MaxValue || instructionsTop <= 0f || instructionsTop >= panel.rect.height)
+        {
+            log.AppendLine("  ⚠ Esc. 3: el panel no tiene piezas de solo intermedia de las que sacar dónde " +
+                           "empiezan las instrucciones: no se parte");
+            return;
+        }
+
+        RectTransform intermediate = CreateBackground(panel, IntermediateBackground, background, Difficulty.Intermedia);
+        intermediate.anchorMin = Vector2.zero;
+        intermediate.anchorMax = Vector2.one;
+        intermediate.offsetMin = Vector2.zero;
+        intermediate.offsetMax = Vector2.zero;
+
+        RectTransform basic = CreateBackground(panel, BasicBackground, background, Difficulty.Basica);
+        basic.anchorMin = new Vector2(0f, 1f);
+        basic.anchorMax = new Vector2(1f, 1f);
+        basic.pivot = new Vector2(0.5f, 1f);
+        basic.anchoredPosition = Vector2.zero;
+        basic.sizeDelta = new Vector2(0f, instructionsTop);
+
+        // Detrás de los rótulos: los primeros hijos se pintan primero.
+        basic.SetAsFirstSibling();
+        intermediate.SetAsFirstSibling();
+
+        Undo.RecordObject(background, "Fondo del panel");
+        background.enabled = false;
+        EditorUtility.SetDirty(background);
+
+        log.AppendLine($"  Esc. 3: panel con un fondo por dificultad. El de básica mide {instructionsTop:0} de " +
+                       $"alto (el de intermedia, {panel.rect.height:0})");
+    }
+
+    private static RectTransform CreateBackground(RectTransform panel, string name, UnityEngine.UI.Image source, Difficulty difficulty)
+    {
+        GameObject go = new GameObject(name, typeof(RectTransform));
+        Undo.RegisterCreatedObjectUndo(go, name);
+        go.layer = panel.gameObject.layer;
+
+        RectTransform rect = (RectTransform)go.transform;
+        rect.SetParent(panel, false);
+
+        UnityEngine.UI.Image image = go.AddComponent<UnityEngine.UI.Image>();
+        image.sprite = source.sprite;
+        image.type = source.type;
+        image.material = source.material;
+        image.color = source.color;
+        image.raycastTarget = false;
+
+        go.AddComponent<DifficultyOnly>().Difficulty = difficulty;
+
+        return rect;
+    }
+
+    /// <summary>
+    /// Quita de las instancias de prefab los ajustes que ya no se aplican a nada: campos que
+    /// el script dejó de tener, o llamadas de UnityEvent en un hueco de la lista que el prefab
+    /// no tiene. Unity los ignora, pero se quedan en la escena y reviven si el prefab vuelve a
+    /// tener ese hueco: así, los bloques arrastraban llamadas viejas a RegisterBlockGrabbed
+    /// que habrían contado cada agarre dos veces.
+    /// </summary>
+    private static void RemoveUnusedPrefabOverrides(Scene scene, StringBuilder log)
+    {
+        GameObject[] instances = scene.GetRootGameObjects()
+            .SelectMany(r => r.GetComponentsInChildren<Transform>(true))
+            .Select(t => t.gameObject)
+            .Where(PrefabUtility.IsOutermostPrefabInstanceRoot)
+            .ToArray();
+
+        int Count() => instances.Sum(i => PrefabUtility.GetPropertyModifications(i)?.Length ?? 0);
+
+        int before = Count();
+        PrefabUtility.RemoveUnusedOverrides(instances, InteractionMode.AutomatedAction);
+        int after = Count();
+
+        log.AppendLine($"  {instances.Length} instancias de prefab: {before - after} ajuste(s) sin uso quitados " +
+                       $"(quedan {after})");
+    }
+
+    /// <summary>
+    /// El nivel que el LevelLoader tiene guardado es solo el de reserva: al cargar manda
+    /// Scenario1Difficulty. Se deja apuntando al de la básica para que no dependa de un
+    /// archivo que ya no esté.
+    /// </summary>
+    private static void PointLevelLoaderAtBasicLevel(StringBuilder log)
+    {
+        Scenario1Difficulty variant = Object.FindAnyObjectByType<Scenario1Difficulty>(FindObjectsInactive.Include);
+        LevelLoader loader = Object.FindAnyObjectByType<LevelLoader>(FindObjectsInactive.Include);
+
+        if (variant == null || loader == null || variant.Basica.level == null)
+        {
+            log.AppendLine("  ⚠ Esc. 1: falta Scenario1Difficulty, el LevelLoader o el nivel de la básica");
+            return;
+        }
+
+        if (loader.levelJson == variant.Basica.level) return;
+
+        Undo.RecordObject(loader, "Nivel por defecto");
+        loader.levelJson = variant.Basica.level;
+        PrefabUtility.RecordPrefabInstancePropertyModifications(loader);
+        EditorUtility.SetDirty(loader);
+
+        log.AppendLine($"  Esc. 1: LevelLoader apunta por defecto a '{variant.Basica.level.name}'");
+    }
+
+    // --- Voz del narrador ---
+
+    private const string VoiceFolder = "Assets/_Main/Sounds/VoiceLines/Camila";
+    private const string VoiceErrorFolder = VoiceFolder + "/Error";
+    private const string VoiceReport = "Logs/Codea_Voz.txt";
+
+    /// <summary>
+    /// Pone en la escena de juego la voz de la carpeta VoiceFolder. Cada audio se llama como
+    /// el ID_Texto de su frase en el CSV ("9.1.wav"), así que no hay nada que arrastrar:
+    ///
+    ///   · Listas del Narrator: a cada entrada, el audio que se llama como su textId. Solo se
+    ///     quedan las dos listas que usa NarrationDifficulty (básica e intermedia); las demás
+    ///     se quitan
+    ///   · Frases de error: Error/e1.wav, e2.wav..., una entrada por archivo
+    ///   · Las dos frases de tiempo agotado (ScenarioTimeLimit y TimeUpSequence), por su textId
+    ///
+    /// Repetible: pasarla cada vez que se regraben o se añadan audios a la carpeta.
+    /// </summary>
+    [MenuItem("Tools/Codea/Asignar la voz del narrador")]
+    private static void AssignVoiceMenu()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+
+        if (scene.path != GameScene)
+        {
+            EditorUtility.DisplayDialog("Voz del narrador", $"Abre {GameScene} y vuelve a pasar la herramienta.", "Vale");
+            return;
+        }
+
+        AssignVoice(scene);
+    }
+
+    /// <summary>Sin abrir Unity: -executeMethod CodeaSceneTools.AssignVoiceBatch</summary>
+    public static void AssignVoiceBatch()
+    {
+        AssetDatabase.Refresh();
+        AssignVoice(EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single));
+    }
+
+    private static void AssignVoice(Scene scene)
+    {
+        string voice = Path.GetFileName(VoiceFolder);
+        StringBuilder log = new StringBuilder($"[Codea] Voz del narrador: '{voice}' ({VoiceFolder})\n");
+
+        Narrator narrator = Find<Narrator>(log);
+        NarrationDifficulty variant = Find<NarrationDifficulty>(log);
+
+        if (narrator != null && variant != null)
+        {
+            AssignNarratorLists(narrator, variant, voice, log);
+            AssignErrorLines(narrator, log);
+        }
+
+        AssignLine(Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include), "tiempo agotado en una sala", log);
+        AssignLine(Object.FindAnyObjectByType<TimeUpSequence>(FindObjectsInactive.Include), "tiempo agotado de la sesión", log);
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(VoiceReport));
+        File.WriteAllText(VoiceReport, log.ToString());
+
+        Debug.Log(log.ToString());
+    }
+
+    private static AudioClip VoiceClip(string folder, string name) =>
+        string.IsNullOrWhiteSpace(name) ? null : AssetDatabase.LoadAssetAtPath<AudioClip>($"{folder}/{name.Trim()}.wav");
+
+    private static void AssignNarratorLists(Narrator narrator, NarrationDifficulty variant, string voice, StringBuilder log)
+    {
         SerializedObject so = new SerializedObject(narrator);
         SerializedProperty lists = so.FindProperty("lists");
-        if (basicIndex >= lists.arraySize || intermediateIndex >= lists.arraySize) return;
 
-        SerializedProperty basic = lists.GetArrayElementAtIndex(basicIndex).FindPropertyRelative("entries");
-        SerializedProperty inter = lists.GetArrayElementAtIndex(intermediateIndex).FindPropertyRelative("entries");
+        int basic = variant.Basica.listIndex, intermediate = variant.Intermedia.listIndex;
 
-        bool StartsWithTutorial(SerializedProperty entries) =>
-            entries.arraySize > 0 && entries.GetArrayElementAtIndex(0).FindPropertyRelative("textId").stringValue == "0";
-
-        if (StartsWithTutorial(basic) && !StartsWithTutorial(inter))
+        if (basic < 0 || basic >= lists.arraySize || intermediate < 0 || intermediate >= lists.arraySize || basic == intermediate)
         {
-            SerializedProperty source = basic.GetArrayElementAtIndex(0);
-            inter.InsertArrayElementAtIndex(0);
-            SerializedProperty added = inter.GetArrayElementAtIndex(0);
-            added.FindPropertyRelative("clip").objectReferenceValue = source.FindPropertyRelative("clip").objectReferenceValue;
-            added.FindPropertyRelative("textId").stringValue = "0";
-            so.ApplyModifiedProperties();
-            log.AppendLine("  Narración: frase 0 del tutorial añadida al principio de la lista intermedia");
-        }
-
-        log.AppendLine(basic.arraySize == inter.arraySize
-            ? $"  Narración: las dos listas tienen {basic.arraySize} entradas"
-            : $"  ⚠ Narración: la lista básica tiene {basic.arraySize} entradas y la intermedia " +
-              $"{inter.arraySize}. Tienen que coincidir");
-    }
-
-    private static void UnifyScenario1(Scene scene, Scene intermediate, StringBuilder log)
-    {
-        ProgramTrigger trigger = TriggerIn(scene, TelemetryManager.Scenario1Id);
-        ProgramTrigger otherTrigger = TriggerIn(intermediate, TelemetryManager.Scenario1Id);
-        LevelLoader loader = InScene<LevelLoader>(scene).FirstOrDefault();
-        LevelLoader otherLoader = InScene<LevelLoader>(intermediate).FirstOrDefault();
-
-        if (trigger == null || trigger.socketRow == null || loader == null ||
-            otherTrigger == null || otherTrigger.socketRow == null || otherLoader == null)
-        {
-            log.AppendLine("  ⚠ Esc. 1: falta el ProgramTrigger, su fila o el LevelLoader en alguna escena");
+            log.AppendLine($"  ⚠ NarrationDifficulty apunta a las listas {basic} y {intermediate}, y el Narrator tiene " +
+                           $"{lists.arraySize}: no se toca nada");
             return;
         }
 
-        Scenario1Controller controller = InScene<Scenario1Controller>(scene).FirstOrDefault();
-        GameObject host = controller != null ? controller.gameObject : trigger.gameObject;
+        // De atrás hacia delante, para que borrar no descoloque los índices pendientes.
+        for (int i = lists.arraySize - 1; i >= 0; i--)
+        {
+            if (i == basic || i == intermediate) continue;
 
-        Scenario1Difficulty variant = GetOrAddOn<Scenario1Difficulty>(host, log);
-        Undo.RecordObject(variant, "Escenario 1");
-        variant.SetTargets(loader, trigger.socketRow);
-        variant.SetSettings(
-            new Scenario1Difficulty.Settings { level = loader.levelJson, sockets = trigger.socketRow.SocketsQuantity },
-            new Scenario1Difficulty.Settings { level = otherLoader.levelJson, sockets = otherTrigger.socketRow.SocketsQuantity });
+            log.AppendLine($"  quitada la lista {i} '{lists.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue}': " +
+                           "no la usa ninguna dificultad");
+            lists.DeleteArrayElementAtIndex(i);
+
+            if (i < basic) basic--;
+            if (i < intermediate) intermediate--;
+        }
+
+        AssignList(lists.GetArrayElementAtIndex(basic), $"{voice} (Basica)", basic, log);
+        AssignList(lists.GetArrayElementAtIndex(intermediate), $"{voice} (Intermedia)", intermediate, log);
+
+        // La lista que el Narrator tiene guardada es solo la de reserva: al cargar manda la dificultad.
+        so.FindProperty("listIndex").intValue = basic;
+        so.ApplyModifiedProperties();
+
+        Undo.RecordObject(variant, "Voz del narrador");
+        variant.SetSettings(new NarrationDifficulty.Settings { listIndex = basic },
+                            new NarrationDifficulty.Settings { listIndex = intermediate });
         EditorUtility.SetDirty(variant);
 
-        log.AppendLine($"  Esc. 1: básica '{Name(loader.levelJson)}' con {trigger.socketRow.SocketsQuantity} huecos, " +
-                       $"intermedia '{Name(otherLoader.levelJson)}' con {otherTrigger.socketRow.SocketsQuantity}");
-
-        // Paleta. Un bloque que está en las dos escenas con la misma acción y en el mismo sitio
-        // es común; uno que solo está en Intermedio se crea aquí, copiando uno de la misma
-        // acción, y uno que solo está en Basico pasa a ser de básica.
-        List<GridBlock> blocks = InScene<GridBlock>(scene).Where(b => !InTutorial(b)).ToList();
-        List<GridBlock> others = InScene<GridBlock>(intermediate).Where(b => !InTutorial(b)).ToList();
-        HashSet<GridBlock> used = new HashSet<GridBlock>();
-        int shared = 0, created = 0;
-
-        foreach (GridBlock wanted in others)
-        {
-            GridBlock same = blocks.FirstOrDefault(b => !used.Contains(b) && b.action == wanted.action &&
-                                                        OnlyIn(b) != Difficulty.Basica &&
-                                                        Vector3.Distance(b.transform.position, wanted.transform.position) < 0.01f);
-            if (same != null)
-            {
-                used.Add(same);
-                if (OnlyIn(same) == null) shared++;
-                continue;
-            }
-
-            GridBlock source = blocks.FirstOrDefault(b => b.action == wanted.action);
-            GameObject copy = source != null ? DuplicateAnywhere(source.gameObject) : null;
-            if (copy == null)
-            {
-                log.AppendLine($"  ⚠ Esc. 1: no se pudo crear el bloque '{wanted.name}' ({wanted.action})");
-                continue;
-            }
-
-            copy.name = wanted.name;
-            copy.transform.SetPositionAndRotation(wanted.transform.position, wanted.transform.rotation);
-            MarkOnly(copy, Difficulty.Avanzada);
-
-            GridBlock block = copy.GetComponent<GridBlock>();
-            used.Add(block);
-            blocks.Add(block);
-            created++;
-        }
-
-        int basicOnly = 0;
-        foreach (GridBlock block in blocks)
-        {
-            if (used.Contains(block) || OnlyIn(block) != null) continue;
-
-            MarkOnly(block.gameObject, Difficulty.Basica);
-            basicOnly++;
-        }
-
-        log.AppendLine($"  Esc. 1: paleta con {shared} bloques comunes, {created} nuevos de intermedia y " +
-                       $"{basicOnly} pasados a solo básica " +
-                       $"(básica {blocks.Count(b => OnlyIn(b) != Difficulty.Avanzada)}, " +
-                       $"intermedia {blocks.Count(b => OnlyIn(b) != Difficulty.Basica)})");
+        log.AppendLine($"  NarrationDifficulty: básica = lista {basic}, intermedia = lista {intermediate}");
     }
 
-    private static void UnifyScenario2(Scene scene, Scene intermediate, StringBuilder log)
+    private static void AssignList(SerializedProperty list, string name, int index, StringBuilder log)
     {
-        Scenario2Controller controller = InScene<Scenario2Controller>(scene).FirstOrDefault();
-        if (controller == null)
+        list.FindPropertyRelative("name").stringValue = name;
+
+        SerializedProperty entries = list.FindPropertyRelative("entries");
+        List<string> missing = new List<string>();
+        int assigned = 0;
+
+        for (int i = 0; i < entries.arraySize; i++)
         {
-            log.AppendLine("  ⚠ Esc. 2: no hay Scenario2Controller");
+            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            string id = entry.FindPropertyRelative("textId").stringValue;
+            AudioClip clip = VoiceClip(VoiceFolder, id);
+
+            // Sin audio nuevo se vacía: dejar el de la voz anterior mezclaría dos voces.
+            entry.FindPropertyRelative("clip").objectReferenceValue = clip;
+
+            if (clip != null) assigned++;
+            else missing.Add(string.IsNullOrEmpty(id) ? $"(entrada {i} sin textId)" : id);
+        }
+
+        log.AppendLine($"  lista {index} '{name}': {assigned} de {entries.arraySize} frases con audio" +
+                       (missing.Count > 0 ? $" · ⚠ sin audio: {string.Join(", ", missing)}" : ""));
+    }
+
+    private static void AssignErrorLines(Narrator narrator, StringBuilder log)
+    {
+        List<AudioClip> clips = new List<AudioClip>();
+
+        for (int i = 1; VoiceClip(VoiceErrorFolder, $"e{i}") is AudioClip clip; i++)
+            clips.Add(clip);
+
+        if (clips.Count == 0)
+        {
+            log.AppendLine($"  ⚠ No hay e1.wav, e2.wav... en {VoiceErrorFolder}: las frases de error se quedan como están");
             return;
         }
 
-        List<SystemModule> modules = controller.GetComponentsInChildren<SystemModule>(true).ToList();
-        List<SystemModule> others = InScene<SystemModule>(intermediate);
+        SerializedObject so = new SerializedObject(narrator);
+        SerializedProperty entries = so.FindProperty("errorLines.entries");
 
-        Scenario2Difficulty.Settings basic = new Scenario2Difficulty.Settings();
-        Scenario2Difficulty.Settings inter = new Scenario2Difficulty.Settings();
+        entries.arraySize = clips.Count;
 
-        foreach (SystemModule module in modules)
-        {
-            ModuleData data = module.Data;
-            ModuleData other = others.Where(m => m.Data != null && data != null && m.Data.moduleId == data.moduleId)
-                                     .Select(m => m.Data).FirstOrDefault();
+        for (int i = 0; i < clips.Count; i++)
+            entries.GetArrayElementAtIndex(i).FindPropertyRelative("clip").objectReferenceValue = clips[i];
 
-            if (other == null && data != null)
-                other = AssetDatabase.LoadAssetAtPath<ModuleData>(AssetDatabase.GetAssetPath(data).Replace("_Basica", "_Intermedia"));
+        so.ApplyModifiedProperties();
 
-            basic.modules.Add(data);
-            inter.modules.Add(other);
-            log.AppendLine(other != null
-                ? $"  Esc. 2: {module.name} → {Name(data)} / {Name(other)}"
-                : $"  ⚠ Esc. 2: {module.name} sin datos de intermedia");
-        }
-
-        Scenario2Difficulty variant = GetOrAddOn<Scenario2Difficulty>(controller.gameObject, log);
-        Undo.RecordObject(variant, "Escenario 2");
-        variant.SetModules(modules);
-        variant.SetSettings(basic, inter);
-        EditorUtility.SetDirty(variant);
+        log.AppendLine($"  frases de error: {clips.Count} ({string.Join(", ", clips.Select(c => c.name))})");
     }
 
-    private static void UnifyScenario3(Scene scene, Scene intermediate, StringBuilder log)
+    /// <summary>La frase 'timeUpLine' de un componente, por su textId.</summary>
+    private static void AssignLine(Object owner, string what, StringBuilder log)
     {
-        ProgramTrigger trigger = TriggerIn(scene, TelemetryManager.Scenario3Id);
-        ProgramTrigger otherTrigger = TriggerIn(intermediate, TelemetryManager.Scenario3Id);
+        if (owner == null) return;
 
-        if (trigger == null || trigger.socketRow == null || otherTrigger == null || otherTrigger.socketRow == null)
+        SerializedObject so = new SerializedObject(owner);
+        string id = so.FindProperty("timeUpLine.textId").stringValue;
+        AudioClip clip = VoiceClip(VoiceFolder, id);
+
+        so.FindProperty("timeUpLine.clip").objectReferenceValue = clip;
+        so.ApplyModifiedProperties();
+
+        log.AppendLine(clip != null
+            ? $"  {what}: frase {id} con audio ({owner.GetType().Name})"
+            : $"  ⚠ {what}: no hay audio para la frase '{id}' ({owner.GetType().Name})");
+    }
+
+    // --- Sonidos del brazo robótico ---
+
+    private const string ArmRotateSound = "Assets/_Main/Sounds/Robot/RobotMovement MON01_87_2.mp3";
+    private const string ArmPickSound = "Assets/_Main/Sounds/Effects/PlugInOut/in.mp3";
+    private const string ArmDropSound = "Assets/_Main/Sounds/Effects/PlugInOut/out.mp3";
+
+    /// <summary>
+    /// Pone al brazo del Escenario 3 sus tres sonidos (girar, recoger, soltar) y le apaga el
+    /// Play On Awake del AudioSource. No guarda la escena.
+    /// </summary>
+    [MenuItem("Tools/Codea/Asignar sonidos del brazo robótico")]
+    private static void AssignArmSoundsMenu()
+    {
+        AssignArmSounds();
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+    }
+
+    /// <summary>Sin abrir Unity: -executeMethod CodeaSceneTools.AssignArmSoundsBatch. Guarda la escena.</summary>
+    public static void AssignArmSoundsBatch()
+    {
+        Scene scene = EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
+        AssignArmSounds();
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+    }
+
+    private static void AssignArmSounds()
+    {
+        StringBuilder log = new StringBuilder("[Codea] Sonidos del brazo robótico:\n");
+        RoboticArm arm = Find<RoboticArm>(log);
+
+        if (arm != null)
         {
-            log.AppendLine("  ⚠ Esc. 3: falta el ProgramTrigger o su fila en alguna escena");
-            return;
-        }
-
-        SocketRow row = trigger.socketRow;
-        List<ArmBlock> blocks = InScene<ArmBlock>(scene).Where(b => !InTutorial(b)).ToList();
-
-        Scenario3Difficulty.Settings basic = new Scenario3Difficulty.Settings
-        {
-            editable = row.IsEditable,
-            initialBlocks = row.InitialBlocks
-                               .Select(i => new SocketRow.InitialBlock { block = i?.block, fixedInPlace = i != null && i.fixedInPlace })
-                               .ToList(),
-        };
-
-        // Cada bloque de la fila intermedia se busca aquí por su acción. Los giros literales no
-        // existen en Basico: se crean copiando el bloque del que salieron en Intermedio (mismo
-        // nombre, porque Intermedio es un duplicado de Basico), que pasa a ser de básica.
-        Scenario3Difficulty.Settings inter = new Scenario3Difficulty.Settings { editable = otherTrigger.socketRow.IsEditable };
-
-        foreach (SocketRow.InitialBlock wanted in otherTrigger.socketRow.InitialBlocks)
-        {
-            ArmBlock wantedBlock = wanted?.block as ArmBlock;
-            ArmBlock block = null;
-
-            if (wantedBlock != null)
+            foreach ((string field, string path) in new[]
+                     {
+                         ("rotateSound", ArmRotateSound), ("pickSound", ArmPickSound), ("dropSound", ArmDropSound),
+                     })
             {
-                block = blocks.FirstOrDefault(b => b.action == wantedBlock.action && OnlyIn(b) != Difficulty.Basica);
+                AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
 
-                if (block == null)
+                if (clip == null)
                 {
-                    ArmBlock source = blocks.FirstOrDefault(b => b.name == wantedBlock.name) ??
-                                      blocks.FirstOrDefault(b => b.action == wantedBlock.action);
-                    GameObject copy = source != null ? DuplicateAnywhere(source.gameObject) : null;
-
-                    if (copy == null)
-                    {
-                        log.AppendLine($"  ⚠ Esc. 3: no se pudo crear el bloque '{wantedBlock.InstructionLabel}'");
-                    }
-                    else
-                    {
-                        block = copy.GetComponent<ArmBlock>();
-                        SetArmAction(block, wantedBlock.action);
-                        copy.name = $"{source.name} ({block.InstructionLabel})";
-                        MarkOnly(copy, Difficulty.Avanzada);
-                        blocks.Add(block);
-
-                        if (OnlyIn(source) == null) MarkOnly(source.gameObject, Difficulty.Basica);
-                        log.AppendLine($"  Esc. 3: creado '{block.InstructionLabel}' para intermedia; " +
-                                       $"'{source.InstructionLabel}' pasa a solo básica");
-                    }
+                    log.AppendLine($"  ⚠ No encuentro {path}: '{field}' se queda como está");
+                    continue;
                 }
+
+                SetField(arm, field, clip);
+                log.AppendLine($"  {field} = {clip.name}");
             }
 
-            inter.initialBlocks.Add(new SocketRow.InitialBlock { block = block, fixedInPlace = wanted != null && wanted.fixedInPlace });
+            if (arm.TryGetComponent(out AudioSource source) && source.playOnAwake)
+            {
+                Undo.RecordObject(source, "Play On Awake");
+                source.playOnAwake = false;
+                EditorUtility.SetDirty(source);
+                log.AppendLine("  AudioSource: Play On Awake apagado");
+            }
         }
 
-        Scenario3Controller controller = InScene<Scenario3Controller>(scene).FirstOrDefault();
-        Scenario3Difficulty variant = GetOrAddOn<Scenario3Difficulty>(controller != null ? controller.gameObject : trigger.gameObject, log);
-        Undo.RecordObject(variant, "Escenario 3");
-        variant.SetRow(row);
-        variant.SetSettings(basic, inter);
-        EditorUtility.SetDirty(variant);
-
-        string Row(Scenario3Difficulty.Settings s) =>
-            string.Join(" · ", s.initialBlocks.Select(i => i.block is ArmBlock a ? a.InstructionLabel : "(vacío)")) +
-            (s.editable ? ", editable" : ", bloqueada");
-
-        log.AppendLine($"  Esc. 3: básica {Row(basic)}");
-        log.AppendLine($"  Esc. 3: intermedia {Row(inter)}");
-    }
-
-    private static void CompareScenario4(Scene scene, Scene intermediate, StringBuilder log)
-    {
-        string Shapes(Scene s) => string.Join(", ", InScene<ShapeSocket>(s)
-            .Where(x => !InTutorial(x))
-            .Select(x => new SerializedObject(x).FindProperty("expectedShape").objectReferenceValue)
-            .Select(o => o != null ? o.name : "(sin figura)")
-            .OrderBy(n => n));
-
-        string basic = Shapes(scene), inter = Shapes(intermediate);
-
-        log.AppendLine(basic == inter
-            ? $"  Esc. 4: mismas figuras en las dos ({basic}). Para la intermedia propia (pedido 11), " +
-              "marca sus huecos y fichas con DifficultyOnly"
-            : $"  ⚠ Esc. 4: las figuras difieren. Básica: {basic}. Intermedia: {inter}. Monta las de " +
-              "intermedia aquí y márcalas con DifficultyOnly");
+        Debug.Log(log.ToString(), arm);
     }
 
     // --- Vista previa por dificultad ---
@@ -855,7 +1173,7 @@ public static class CodeaSceneTools
     private static void ShowBasic() => ShowDifficulty(Difficulty.Basica);
 
     [MenuItem("Tools/Codea/Ver como intermedia")]
-    private static void ShowIntermediate() => ShowDifficulty(Difficulty.Avanzada);
+    private static void ShowIntermediate() => ShowDifficulty(Difficulty.Intermedia);
 
     [MenuItem("Tools/Codea/Ver todas las piezas")]
     private static void ShowAllPieces() => ShowDifficulty(null);
@@ -868,6 +1186,11 @@ public static class CodeaSceneTools
     {
         SceneVisibilityManager visibility = SceneVisibilityManager.instance;
         int shown = 0, hidden = 0;
+
+        // Las filas que se ven, ANTES que las piezas sueltas: mostrar la fila enciende también
+        // a sus hijos, y entre ellos están los bloques de la otra dificultad, que se ocultan
+        // justo después.
+        string rows = ShowRowsFor(difficulty, visibility, hiding: false);
 
         foreach (DifficultyOnly only in Object.FindObjectsByType<DifficultyOnly>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
@@ -883,93 +1206,57 @@ public static class CodeaSceneTools
             }
         }
 
+        // Las filas que NO se ven, DESPUÉS: el bucle de arriba acaba de mostrar las piezas de
+        // esta dificultad, y entre ellas están los bloques propios de la fila (en básica,
+        // "Girar al destino" y "Volver"), que tienen que quedar ocultos con ella.
+        rows += ShowRowsFor(difficulty, visibility, hiding: true);
+
         Debug.Log(difficulty == null
             ? $"[Codea] Vista: todas las piezas ({shown} de una sola dificultad)"
             : $"[Codea] Vista: {DifficultyApplier.Label(difficulty.Value)} · {shown} piezas propias visibles, " +
-              $"{hidden} de la otra ocultas. Para probarla en Play: DifficultyApplier → Editor Difficulty");
-    }
-
-    // --- Utilidades de la unificación ---
-
-    private static List<T> InScene<T>(Scene scene) where T : Component =>
-        scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<T>(true)).ToList();
-
-    private static ProgramTrigger TriggerIn(Scene scene, string challengeId) =>
-        InScene<ProgramTrigger>(scene).FirstOrDefault(t => t.ChallengeId == challengeId);
-
-    private static bool InTutorial(Component component) =>
-        component.GetComponentInParent<TutorialController>(true) != null ||
-        TutorialRoomNames.Contains(component.transform.root.name);
-
-    private static Difficulty? OnlyIn(Component component) =>
-        component.TryGetComponent(out DifficultyOnly only) ? only.Difficulty : (Difficulty?)null;
-
-    private static void MarkOnly(GameObject target, Difficulty difficulty)
-    {
-        if (!target.TryGetComponent(out DifficultyOnly only)) only = Undo.AddComponent<DifficultyOnly>(target);
-
-        Undo.RecordObject(only, "Dificultad");
-        only.Difficulty = difficulty;
-        EditorUtility.SetDirty(only);
-    }
-
-    /// <summary>GetOrAdd en un objeto concreto, sin buscar en las demás escenas abiertas.</summary>
-    private static T GetOrAddOn<T>(GameObject host, StringBuilder log) where T : Component
-    {
-        if (host.TryGetComponent(out T existing)) return existing;
-
-        log.AppendLine($"  añadido {typeof(T).Name} en '{host.name}'");
-        return Undo.AddComponent<T>(host);
+              $"{hidden} de la otra ocultas{rows}. Para probarla en Play: DifficultyApplier → Editor Difficulty");
     }
 
     /// <summary>
-    /// Duplica conservando el enlace al prefab. El portapapeles del editor no siempre está en
-    /// modo batch: entonces se instancia el mismo prefab con los mismos ajustes, o se clona.
+    /// La fila de instrucciones del Escenario 3 con sus bloques, que en básica no se enseña
+    /// (Scenario3Difficulty → Show Row). En Play la oculta la propia fila; aquí se oculta en la
+    /// vista de escena, para ver el panel como lo verá el niño.
     /// </summary>
-    private static GameObject DuplicateAnywhere(GameObject source)
+    /// <param name="hiding">
+    /// Qué filas se tratan en esta pasada: las que se ocultan o las que se muestran. Van en
+    /// pasadas distintas porque unas tienen que ir después de las piezas sueltas y otras antes.
+    /// </param>
+    private static string ShowRowsFor(Difficulty? difficulty, SceneVisibilityManager visibility, bool hiding)
     {
-        GameObject copy = Application.isBatchMode ? null : Duplicate(source);
-        if (copy != null) return copy;
+        string summary = "";
 
-        if (PrefabUtility.IsOutermostPrefabInstanceRoot(source))
+        foreach (Scenario3Difficulty variant in Object.FindObjectsByType<Scenario3Difficulty>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
-            GameObject prefab = PrefabUtility.GetCorrespondingObjectFromSource(source);
-            copy = (GameObject)PrefabUtility.InstantiatePrefab(prefab, source.transform.parent);
-            PrefabUtility.SetPropertyModifications(copy, PrefabUtility.GetPropertyModifications(source));
-        }
-        else
-        {
-            copy = Object.Instantiate(source, source.transform.parent);
-        }
+            if (!(new SerializedObject(variant).FindProperty("row").objectReferenceValue is SocketRow row)) continue;
 
-        copy.transform.SetSiblingIndex(source.transform.GetSiblingIndex() + 1);
-        Undo.RegisterCreatedObjectUndo(copy, "Duplicar");
-        return copy;
-    }
+            Scenario3Difficulty.Settings settings = difficulty == Difficulty.Basica ? variant.Basica : variant.Intermedia;
+            bool show = difficulty == null || settings.showRow;
 
-    private static string Name(Object asset) => asset != null ? asset.name : "(nada)";
+            if (show == hiding) continue;
 
-    private static void SetArmAction(ArmBlock block, ArmActionType action)
-    {
-        SerializedObject so = new SerializedObject(block);
-        so.FindProperty("action").enumValueIndex = (int)action;
-        so.ApplyModifiedProperties();
+            // La fila y todo lo que cuelga de ella, y además los bloques con los que arranca
+            // en cualquiera de las dos dificultades, por si alguno no es hijo suyo.
+            List<GameObject> pieces = new List<GameObject> { row.gameObject };
 
-        string label = block.InstructionLabel;
+            foreach (SocketRow.InitialBlock initial in variant.Basica.initialBlocks.Concat(variant.Intermedia.initialBlocks))
+                if (initial != null && initial.block != null) pieces.Add(initial.block.gameObject);
 
-        foreach (TMP_Text text in block.GetComponentsInChildren<TMP_Text>(true))
-        {
-            Undo.RecordObject(text, "Rótulo");
-            text.text = label;
-            PrefabUtility.RecordPrefabInstancePropertyModifications(text);
+            foreach (GameObject piece in pieces.Distinct())
+            {
+                if (show) visibility.Show(piece, true);
+                else visibility.Hide(piece, true);
+            }
+
+            if (difficulty != null)
+                summary += show ? " · fila de instrucciones del Esc. 3 a la vista" : " · fila de instrucciones del Esc. 3 y sus bloques ocultos";
         }
 
-        foreach (UnityEngine.UI.Text text in block.GetComponentsInChildren<UnityEngine.UI.Text>(true))
-        {
-            Undo.RecordObject(text, "Rótulo");
-            text.text = label;
-            PrefabUtility.RecordPrefabInstancePropertyModifications(text);
-        }
+        return summary;
     }
 
     // --- 4. Tutorial ---

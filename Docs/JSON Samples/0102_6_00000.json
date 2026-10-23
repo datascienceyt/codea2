@@ -9,6 +9,7 @@
     "escenario1": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 19.133148193359375,
         "startedUtc": "2026-09-30T15:21:53.9084760Z",
         "endedUtc": "2026-09-30T15:22:13.0479750Z",
@@ -39,6 +40,7 @@
     "escenario2": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 35.303749084472656,
         "startedUtc": "2026-09-30T15:22:20.3168540Z",
         "endedUtc": "2026-09-30T15:22:55.6206020Z",
@@ -69,6 +71,7 @@
     "escenario3": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 61.88273239135742,
         "startedUtc": "2026-09-30T15:23:04.1052910Z",
         "endedUtc": "2026-09-30T15:24:05.9880220Z",
@@ -108,6 +111,7 @@
     "escenario4": {
         "started": true,
         "completed": true,
+        "timedOut": false,
         "totalSeconds": 45.456417083740234,
         "startedUtc": "2026-09-30T15:24:14.2617380Z",
         "endedUtc": "2026-09-30T15:24:59.7181540Z",

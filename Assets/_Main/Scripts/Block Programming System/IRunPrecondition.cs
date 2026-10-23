@@ -10,6 +10,18 @@
 /// avisar, registrar el error y decir con qué valor se corrió, sin repartir esa información
 /// entre varios scripts.
 /// </summary>
+/// <summary>
+/// Un reto que sabe cuántos objetos quedan por resolver de un tipo. ProgramTrigger lo pregunta
+/// al pulsar Ejecutar para la telemetría (`remaining` del Escenario 3).
+/// </summary>
+public interface IRemainingCounter
+{
+    string ChallengeId { get; }
+
+    /// <summary>Cuántos quedan de ese argumento; -1 si no lo sabe.</summary>
+    int Remaining(string argument);
+}
+
 public interface IRunPrecondition
 {
     /// <summary>False para impedir la ejecución. Quien implementa avisa y registra el error.</summary>

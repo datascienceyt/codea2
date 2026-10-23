@@ -96,7 +96,7 @@ public class DifficultyApplier : MonoBehaviour
     {
         if (Application.isEditor && editorDifficulty != EditorDifficulty.DeLaPantallaDeSetup)
         {
-            Difficulty forced = editorDifficulty == EditorDifficulty.Basica ? Difficulty.Basica : Difficulty.Avanzada;
+            Difficulty forced = editorDifficulty == EditorDifficulty.Basica ? Difficulty.Basica : Difficulty.Intermedia;
             Debug.LogWarning($"[Dificultad] Forzada a {Label(forced)} desde el inspector (solo en el editor).", this);
             return forced;
         }

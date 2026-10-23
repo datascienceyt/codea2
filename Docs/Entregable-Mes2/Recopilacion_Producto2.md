@@ -1,5 +1,10 @@
 # Producto 2 — Recopilación de información (2.1, 2.2, 2.3)
 
+> **Superado por `Docs/Informe-Mes2.docx`** (09/10/2026). Este borrador conserva el material reunido, pero el informe
+> corrigió dos cosas: el registro de pruebas usa solo las sesiones verificables, 0105 (Gabriela Cajamarca, 30/09) y
+> 1101 (ingeniero de realidad virtual de ESPOL, 02/10), cuyos JSON están en `Docs/JSON Samples/originales/`; y el tiempo
+> pasó a 5 minutos por sala.
+
 Material de base para redactar el informe del mes 2 con el formato de `Docs/Informe-Mes1.docx`.
 Recopilado el **09/10/2026** del código, la escena `Juego`, el historial del repositorio, `Context.md`,
 el GDD (`Docs/Codea2_GDD.docx`), la guía de telemetría y las pruebas realizadas.

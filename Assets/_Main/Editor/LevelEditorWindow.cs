@@ -115,7 +115,7 @@ public class LevelEditorWindow : EditorWindow
 
     void ImportLevel()
     {
-        string path = EditorUtility.OpenFilePanel("Load Level", "Assets/Levels", "json");
+        string path = EditorUtility.OpenFilePanel("Load Level", "Assets/_Main/Levels", "json");
         if (string.IsNullOrEmpty(path)) return;
 
         string json = System.IO.File.ReadAllText(path);
@@ -137,10 +137,8 @@ public class LevelEditorWindow : EditorWindow
         TileType.Wall => Color.gray,
         TileType.Spawn => new Color(0.2f, 0.6f, 1f),
         TileType.Danger => Color.red,
-        TileType.Point => Color.yellow,
         TileType.Exit => Color.green,
         TileType.Void => Color.black,
-        TileType.Interactable => Color.magenta,
         _ => Color.white
     };
 
@@ -171,7 +169,7 @@ public class LevelEditorWindow : EditorWindow
     void ExportLevel()
     {
         string json = JsonUtility.ToJson(levelData, true);
-        string path = EditorUtility.SaveFilePanel("Save Level", "Assets/Levels", levelData.name, "json");
+        string path = EditorUtility.SaveFilePanel("Save Level", "Assets/_Main/Levels", levelData.name, "json");
         if (!string.IsNullOrEmpty(path))
             System.IO.File.WriteAllText(path, json);
         AssetDatabase.Refresh();

@@ -23,6 +23,12 @@ public class AttemptRecord
     public bool solved;
 
     /// <summary>
+    /// Cuánto se parece la secuencia a la solución correcta, de 0 a 100: número de
+    /// instrucciones y orden (ver SolutionScore). -1 si el nivel no tiene solución cargada.
+    /// </summary>
+    public int solutionPercent = -1;
+
+    /// <summary>
     /// Segundos que el jugador tardó en preparar este intento: desde que empezó el escenario
     /// (o desde el último reinicio) hasta que pulsó Ejecutar.
     ///
@@ -47,7 +53,14 @@ public class ScenarioRecord
     public bool started;
     public bool completed;
 
-    /// <summary>Segundos desde StartChallenge hasta CompleteChallenge.</summary>
+    /// <summary>
+    /// Se agotaron los minutos de la sala sin resolverla y la historia pasó a la siguiente.
+    /// Distingue "se acabó el tiempo" (true, con endedUtc) de "la sesión se cortó" (false, sin
+    /// endedUtc). Nunca a la vez que completed.
+    /// </summary>
+    public bool timedOut;
+
+    /// <summary>Segundos desde StartChallenge hasta CompleteChallenge o hasta agotarse el tiempo.</summary>
     public float totalSeconds;
 
     public string startedUtc;
@@ -107,8 +120,8 @@ public class SelectionRecord
     public string option;
 
     // No hay campo 'selected': solo se registran las veces que el niño MARCA una acción. Las
-    // deselecciones no van al JSON, ni la automática de una incorrecta ni la manual de una
-    // correcta, así que el campo valdría siempre true.
+    // deselecciones no van al JSON (pedido del 06/10/2026), así que el campo valdría siempre
+    // true. Lo que tenía marcado al probar está en attempts[].selection.
 
     /// <summary>Si esa acción formaba parte de la solución.</summary>
     public bool correct;
@@ -123,13 +136,52 @@ public class SelectionRecord
 }
 
 /// <summary>
+/// Una pulsación del botón Probar de un módulo: lo que había marcado y si lo reparó.
+/// </summary>
+[Serializable]
+public class ModuleAttemptRecord
+{
+    /// <summary>Id del módulo: "motores", "generadores", "enfriamiento".</summary>
+    public string module;
+
+    /// <summary>Acciones marcadas al pulsar Probar, en el orden de los botones.</summary>
+    public List<string> selection = new List<string>();
+
+    /// <summary>Cuántas de las marcadas eran correctas.</summary>
+    public int correctSelected;
+
+    /// <summary>Cuántas de las marcadas eran incorrectas.</summary>
+    public int wrongSelected;
+
+    public bool solved;
+
+    /// <summary>
+    /// Acertadas entre todas las que intervienen (marcadas o correctas), de 0 a 100. Marcar de
+    /// más resta igual que dejarse una (ver SolutionScore.SelectionPercent).
+    /// </summary>
+    public int solutionPercent;
+
+    /// <summary>Segundos desde el Probar anterior del escenario, o desde su inicio.</summary>
+    public float durationSeconds;
+
+    public string timestamp;
+}
+
+/// <summary>
 /// Escenario 2 — Condicionales. Paneles con problema y opciones; no hay cadena de bloques,
 /// así que no comparte métricas con el escenario 1.
 /// </summary>
 [Serializable]
 public class Scenario2Record : ScenarioRecord
 {
+    /// <summary>Pulsaciones de Probar que no repararon el módulo. Tras cada una se reinician sus botones.</summary>
+    public int failedAttempts;
+
+    /// <summary>Cada vez que el niño marca una acción. Las que eran incorrectas, con correct = false.</summary>
     public List<SelectionRecord> selections = new List<SelectionRecord>();
+
+    /// <summary>Cada pulsación de Probar.</summary>
+    public List<ModuleAttemptRecord> attempts = new List<ModuleAttemptRecord>();
 }
 
 /// <summary>
@@ -157,7 +209,21 @@ public class LoopAttemptRecord
     /// </summary>
     public string itemType;
 
+    /// <summary>
+    /// Objetos de ese tipo (`itemType`) que faltaban por clasificar al pulsar Ejecutar. Junto a
+    /// `repetitions` dice si el niño ajustó el bucle a lo que quedaba: iguales es la elección
+    /// exacta. -1 si no se pudo contar (sin ficha de tipo).
+    /// </summary>
+    public int remaining = -1;
+
     public bool solved;
+
+    /// <summary>
+    /// Cuánto se parece la secuencia a la solución correcta, de 0 a 100: número de
+    /// instrucciones y orden, frente a la solución de ese tipo (ver SolutionScore). No mide
+    /// las repeticiones, que van aparte. -1 si no hay solución cargada.
+    /// </summary>
+    public int solutionPercent = -1;
 
     /// <summary>Mismo criterio que AttemptRecord.durationSeconds: tiempo de preparación.</summary>
     public float durationSeconds;
@@ -182,8 +248,9 @@ public class Scenario3Record : ScenarioRecord
     public int blocksConnected;
 
     /// <summary>
-    /// Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha
-    /// o con 0 repeticiones.
+    /// Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha,
+    /// con 0 repeticiones o con algún hueco de la fila vacío. Los tres últimos no llegan a
+    /// ejecutarse ni cuentan como intento.
     /// </summary>
     public int errorInvalidCommand;
 
