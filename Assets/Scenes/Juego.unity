@@ -4890,7 +4890,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Scenario1Difficulty
   basica:
-    level: {fileID: 4900000, guid: a53c69550b51a2a4ab193407469ce441, type: 3}
+    level: {fileID: 4900000, guid: 0157fca87f696f24482e1b767fc85067, type: 3}
     sockets: 8
     solutions:
     - argument: 
@@ -24328,7 +24328,7 @@ PrefabInstance:
     - target: {fileID: 6290649247251177694, guid: d2f12a69d5b7a7c45a226014dfab823c, type: 3}
       propertyPath: levelJson
       value: 
-      objectReference: {fileID: 4900000, guid: a53c69550b51a2a4ab193407469ce441, type: 3}
+      objectReference: {fileID: 4900000, guid: 0157fca87f696f24482e1b767fc85067, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

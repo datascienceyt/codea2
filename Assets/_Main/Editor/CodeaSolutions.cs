@@ -20,7 +20,7 @@ using UnityEngine;
 /// </summary>
 public static class CodeaSolutions
 {
-    // Comprobados con el resolvedor sobre reto.json y escenario1_intermedio.json (27/10/2026: nivel
+    // Comprobados con el resolvedor sobre reto-espejo.json y escenario1_intermedio.json (27/10/2026: nivel
     // en espejo, el robot empieza mirando arriba y la salida sigue frente al botón).
     internal static readonly string[] Scenario1Basic =
     {

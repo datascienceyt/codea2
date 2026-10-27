@@ -446,7 +446,7 @@ Lo que no lleva nada es común a las dos.
 | Reto | Básica | Intermedia |
 |---|---|---|
 | Narración (`NarrationDifficulty`) | lista 1 | lista 2 (frases 9.2 y 14.2) |
-| Esc. 1 (`Scenario1Difficulty`) | `reto.json`, 8 huecos, paleta de 8 | `escenario1_intermedio.json`, 11 huecos, paleta de 13 en otra colocación |
+| Esc. 1 (`Scenario1Difficulty`) | `reto-espejo.json`, 8 huecos, paleta de 8 | `escenario1_intermedio.json`, 11 huecos, paleta de 13 en otra colocación |
 | Esc. 2 (`Scenario2Difficulty`) | `*_Basica` | `*_Intermedia` |
 | Esc. 3 (`Scenario3Difficulty`) | Fila **oculta** y bloqueada: Recoger · Girar al destino · Soltar · Volver. Funciona sola: el niño solo pone la ficha y las repeticiones | Visible, editable y desordenada: Soltar · Girar Der · Recoger · Girar Izq |
 | Esc. 4 | Las 4 figuras actuales | **Las mismas** hasta el pedido 11 |
@@ -528,7 +528,7 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 
 | | Archivo | Solución | Paleta · huecos |
 |---|---|---|---|
-| Básica | `reto.json` (6×5) | Un camino de 8 bloques (`resolver_nivel.js`, 27/10/2026): Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar · Usar. Hasta el 26/10 eran dos caminos (con el robot mirando abajo) | 8 · 8, sin sobrantes: Girar Izq ×2, Girar Der ×1, Avanzar 2 ×2, Avanzar ×2, Usar |
+| Básica | `reto-espejo.json` (6×5; desde el 27/10/2026, hecho por el usuario con el Level Editor. `reto.json` queda sin uso) | Un camino de 8 bloques (`resolver_nivel.js`, 27/10/2026): Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar · Usar. Hasta el 26/10 eran dos caminos (con el robot mirando abajo) | 8 · 8, sin sobrantes: Girar Izq ×2, Girar Der ×1, Avanzar 2 ×2, Avanzar ×2, Usar |
 | Intermedia | `escenario1_intermedio.json` (6×5) | Un camino de 11 y un distractor de 14; ver abajo | 13 · 11 |
 
 **Los dos niveles comparten la geometría de la sala**: 6×5, Salida en **(0,1)**, que es donde
@@ -555,7 +555,7 @@ Feedback 27-10`).
 0    ! · · · !
 1  S · · ! · ·
 2    · · ! R ·
-3    · · · · ·
+3    · · █ · ·
 4    ! · █ █ █
 ```
 
