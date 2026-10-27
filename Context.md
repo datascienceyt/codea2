@@ -199,14 +199,23 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
   - Pendiente del feedback (lo hace el usuario): alturas, distancias, panel del tutorial, botón de
     reiniciar del Esc. 4, feedback visual del Esc. 2. Descartado: altura automática de los paneles
 
-**Por dónde seguir, en este orden** (fijado el 23/10/2026 para la sesión siguiente):
+**Informe del mes 3 (27/10/2026):** `Docs/Informe-Mes3.docx`, Producto 3 ("Informe técnico de
+optimización, validación funcional y entrega final del módulo inmersivo"; 3.1, 3.2 y 3.3). Se genera
+con `node Docs/Herramientas/generar_informe_mes3.js` y es **el único documento de informe que queda
+abierto**: los de los meses 1 y 2 ya no se tocan. Fecha provisional 24/11/2026, subrayada en rojo.
+**El texto entre ⟨ ⟩ del script sale en rojo y entre corchetes: son los datos que faltan** (fecha y
+participantes de la revisión de la 0.9.0, prueba final en el visor, medición de FPS y carga, fecha de
+grabación de las locuciones, compilación de la 1.0.0, keystore, alturas y distancias, sesión de
+transferencia). Figuras en `Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` con esa carpeta y
+`CodeaCaptures.RunBatch`). El proyecto pasa a la **versión 1.0.0** (código 2) en `ProjectSettings`.
 
-1. **Recompilar el APK** (mismo keystore) con las correcciones del 23/10/2026: el de `Build/app.apk`
-   es la 0.9.0 del 22/10 y no las lleva
-2. **Probar en el visor** (lo hace el usuario): las correcciones del 23/10 (Probar vacío, colocación
-   duplicada, Ejecutar tras el reinicio, `solutionPercent` con decimales) y lo que nunca se vio en el
-   visor: cierre por los 15 minutos de sesión, acople al soltar y regreso a la Tierra. Tabla de la
-   sección 14 y plan de `Docs/Pruebas/`
+**Por dónde seguir, en este orden** (fijado el 27/10/2026):
+
+1. **Terminar en el editor** (lo hace el usuario): alturas y distancias de mesas y paneles, panel del
+   tutorial, botón de reiniciar del Esc. 4 y feedback visual del Esc. 2
+2. **Compilar la 1.0.0** (mismo keystore; ver la recomendación de keystore propio en el informe 3) y
+   **probar en el visor** con la tabla de la sección 14 (16b–16d nuevas) y el plan de `Docs/Pruebas/`;
+   medir FPS (OVR Metrics Tool) y tiempo de carga para RNF-01 y RNF-02
 3. **Grabar las frases nuevas** del 27/10/2026 (0, 1, 3, 4, 6, 7 y 12; la 2 y la 5 ya no van), dejarlas en
    `Sounds/VoiceLines/Camila/` con su ID y pasar `Tools → Codea → Asignar la voz del narrador` (sección 6)
 4. **Feedback de las sesiones y de los responsables**, uno a uno con plan corto antes (es la Tabla 19
@@ -218,9 +227,10 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
      a la sala, antes de la narración: el desbloqueo tiene que colgarse de otro paso del Director
    - **Sala 1 intermedia:** separar los bloques de la paleta que se superponen
    - **Sala 2:** enunciados más simples y paneles más pequeños
-   - **Sala 3:** repeticiones a cero tras cada ejecución y retirar los intentos fallidos del registro
-     (pedidos 7, 8 y 10 de la sección 11)
-   - **Sala 4:** completar el regreso con Ecuador y Yachay Tech (la aproximación a la Tierra ya está)
+   - **Sala 3:** retirar los intentos fallidos del registro (pedidos 8 y 10 de la sección 11). Las
+     repeticiones ya llegan a 0 tras cada pasada (27/10/2026)
+   - ~~Sala 4: regreso con Ecuador y Yachay Tech~~: descartado el 27/10/2026 por exagerado; la Tierra
+     se acerca sin parar
    - **General:** perfil de render para Quest, validar las manos en el visor, depurar logs del Esc. 1
 5. **En el editor** (lo hace el usuario): en `Setup`, recolocar si hace falta **Subir datos** y
    `EstadoSubida`; en `Juego`, revisar la paleta del Esc. 1 con `Ver como básica / intermedia`
@@ -265,6 +275,7 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Jugar las dos dificultades sin visor y recorrer el Director entero | `Tools → Codea → Probar las dos dificultades en Play` (`Editor/CodeaPlayCheck.cs`). Se para antes de subir el JSON; restaura las PlayerPrefs y borra sus JSON. Informe en `Logs/Codea_PruebaPlay.txt` |
 | Capturas de cada sala, en básica e intermedia, para informes | `Tools → Codea → Capturas para informes` (`Editor/CodeaCaptures.cs`). JPG 1600×900 en `Docs/Entregable-Mes2/capturas`. Sin abrir Unity: `-executeMethod CodeaCaptures.RunBatch`, **con gráficos** (sin `-nographics`) y sin `-quit` |
 | Generar el informe del mes 2 | `node Docs/Herramientas/generar_informe_mes2.js` (texto y datos de portada dentro del script) |
+| Generar el informe del mes 3 | `node Docs/Herramientas/generar_informe_mes3.js`. Lo pendiente va entre ⟨ ⟩ y sale en rojo |
 | Las dos anteriores sin abrir Unity | `Unity.exe -batchmode -quit -nographics -projectPath . -executeMethod CodeaSceneCheck.CheckBatch` · la de Play igual pero **sin `-quit`** y con `CodeaPlayCheck.RunBatch` (sale sola; tarda ~5 min) |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
@@ -1568,6 +1579,7 @@ mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.
 | `Docs/Codea2_GDD.docx` | Game Design Document, reescrito el 30/09/2026 en español con el diseño y el guion vigentes. Se genera con un script de Node (docx); si cambia el diseño, editar el documento directamente |
 | `Docs/Informe-Mes1.docx` / `.pdf` | Informe técnico entregado, con el SRS (IEEE 830) |
 | `Docs/Informe-Mes2.docx` | Informe técnico del mes 2 (Producto 2: 2.1, 2.2, 2.3). Se genera con `Docs/Herramientas/generar_informe_mes2.js`; las figuras están en `Docs/Entregable-Mes2/capturas/` |
+| `Docs/Informe-Mes3.docx` | Informe técnico del mes 3 (Producto 3: 3.1, 3.2, 3.3): optimización, validación final, entrega e instrucciones de instalación. Se genera con `Docs/Herramientas/generar_informe_mes3.js`; figuras en `Docs/Entregable-Mes3/capturas/` |
 | `Docs/Entregable-Mes2/Recopilacion_Producto2.md` | Material reunido el 09/10/2026 para el informe del mes 2 (2.1 funcionalidades, 2.2 recursos 3D e interacciones, 2.3 pruebas). Marca con ⟨pendiente⟩ lo que debe aportar el equipo |
 | `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
 | `Docs/Investigaciones/` | Respaldo académico: *worked examples*, manipulativos físico-digitales |

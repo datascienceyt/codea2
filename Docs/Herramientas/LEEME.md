@@ -25,7 +25,9 @@ node Docs/Herramientas/resolver_nivel.js Assets/_Main/Levels/reto.json 10 1 2 2 
 
 Reglas que aplica:
 
-- El robot sale de la casilla Spawn (2) **mirando abajo**, como el prefab.
+- El robot sale de la casilla Spawn (2) mirando hacia `spawnDirection` del JSON (0 arriba, 1
+  derecha, 2 abajo, 3 izquierda); sin el campo, **abajo**, como el prefab. Los dos niveles del
+  juego llevan 0 desde el 27/10/2026.
 - Solo Path (0) es transitable. "Avanzar 2" son dos pasos y cada uno se valida.
 - **La Salida (5) solo se usa de frente: desde la casilla de su derecha, mirando a la
   izquierda.** El código del juego aceptaría usarla desde arriba o abajo, pero el botón físico
@@ -85,6 +87,18 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 ```
 ```bash
 node Docs/Herramientas/esqueleto_docx.js "$TEMP/informe/word/document.xml" 0 80
+```
+
+## `generar_informe_mes3.js` — el informe del mes 3
+
+Igual que el del mes 2 (abajo), con el Producto 3. Escribe `Docs/Informe-Mes3.docx`; figuras en
+`Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` con esa carpeta antes de `CodeaCaptures.RunBatch`).
+**Lo que va entre ⟨ ⟩ en el texto está pendiente de confirmar**: sale en rojo y entre corchetes en
+el documento. Antes de entregar, buscar `⟨` en el script, rellenarlo todo y poner
+`FECHA_PROVISIONAL = false`.
+
+```bash
+node Docs/Herramientas/generar_informe_mes3.js
 ```
 
 ## `generar_informe_mes2.js` — el informe del mes 2
