@@ -787,7 +787,7 @@ GameObject:
   - component: {fileID: 3103553970850966766}
   - component: {fileID: 2701230114727404212}
   m_Layer: 4
-  m_Name: Surface
+  m_Name: Surface (recorrido 0,4)
   m_TagString: Untagged
   m_Icon: {fileID: 7250588514170254948, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -802,7 +802,7 @@ Transform:
   m_GameObject: {fileID: 4523273937139226375}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.06}
+  m_LocalPosition: {x: 0, y: 0.000000007450581, z: -0.08160002}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

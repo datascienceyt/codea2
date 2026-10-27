@@ -189,11 +189,24 @@ public class SocketRow : MonoBehaviour
 
     // --- Repeticiones. Cablear a los PokeInteractable de + y - ---
 
+    /// <summary>
+    /// Con el programa en marcha, + y - no hacen nada: el contador lo va descontando la
+    /// propia ejecución (Escenario 3) y una pulsación a medias lo dejaría en un valor sin
+    /// sentido. Lo pone ProgramTrigger mientras ejecuta.
+    /// </summary>
+    public bool RepetitionButtonsLocked { get; set; }
+
     [ContextMenu("Repeticiones +1")]
-    public void IncreaseRepetitions() => SetRepetitions(repetitions + 1);
+    public void IncreaseRepetitions()
+    {
+        if (!RepetitionButtonsLocked) SetRepetitions(repetitions + 1);
+    }
 
     [ContextMenu("Repeticiones -1")]
-    public void DecreaseRepetitions() => SetRepetitions(repetitions - 1);
+    public void DecreaseRepetitions()
+    {
+        if (!RepetitionButtonsLocked) SetRepetitions(repetitions - 1);
+    }
 
     public void SetRepetitions(int value)
     {

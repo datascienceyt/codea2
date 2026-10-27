@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ModuleData
   moduleId: motores
   moduleName: Sistema de motores
-  problem: Los motores hacen ruido pero no arrancan. Las piezas rechinan cuando se
-    mueven.
+  problem: Los motores no arrancan. Las piezas rechinan cuando se mueven.
   options:
   - label: Agregar combustible
     isCorrect: 1

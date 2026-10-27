@@ -11,6 +11,10 @@ public class LevelData
     public int width;
     public int height;
     public int[] tiles;
+
+    // Hacia dónde mira el robot al empezar (Direction: 0 arriba, 1 derecha, 2 abajo, 3 izquierda).
+    // Sin el campo en el JSON vale -1 y se queda la del prefab, que es abajo.
+    public int spawnDirection = -1;
 }
 
 [RequireComponent(typeof(LevelManager))]
@@ -90,6 +94,13 @@ public class LevelLoader : MonoBehaviour
 
                         bot = Instantiate(botPrefab, transform).GetComponent<Bot>();
                         bot.transform.localPosition = pos;
+                        if (data.spawnDirection >= 0)
+                        {
+                            // Girado ya al aparecer: el RotateTo de Bot.Start lo animaría, y se
+                            // vería al robot dar media vuelta en cada reintento.
+                            bot.direction = (Direction)(data.spawnDirection % 4);
+                            bot.transform.localRotation = Quaternion.Euler(0, (int)bot.direction * 90f, 0);
+                        }
 
                         grid[y][x] = (int)TileType.Path;
                         tilePrefab = pathPrefab;

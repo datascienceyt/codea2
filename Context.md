@@ -75,7 +75,7 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
 - **22/10/2026, tras la reunión del 20/10** (sin commit; compila, SceneCheck y PlayCheck con 0 fallos;
   👓 sin probar en el visor):
   - **Esc. 2 con botón Probar:** marcar ya no comprueba nada. Cada módulo lleva el botón azul del
-    Esc. 1 (`StartButton` con `Blue.mat`), rotulado "Probar", bajo la cuadrícula; lo montó
+    Esc. 1 (`StartButton` con `Blue.mat`), bajo la cuadrícula y centrado (el rótulo "Probar" aparte se quitó el 27/10/2026: salía repetido); lo montó
     `Tools → Codea → Escenario 2: botón Probar` en los tres prefabs. Si falla: frase de error y,
     a los 0,8 s, se desmarcan los cuatro botones. Telemetría: `failedAttempts` y `attempts[]`
   - **Porcentaje de solución** (`solutionPercent`) en cada intento de los escenarios 1, 2 y 3
@@ -154,6 +154,51 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
     sesión se fija al cargar `Juego` (tras el PIN) y es reloj real; documentado en
     `Docs/VARIABLES_TELEMETRIA.md`
 
+- **27/10/2026, feedback de pruebas (primera tanda, solo código; compila, 👓 sin probar en Play
+  ni en el visor; Unity estaba abierto, así que no se tocó ninguna escena ni prefab):**
+  - **Esc. 3:** el contador de repeticiones resta 1 por vuelta terminada y llega a 0; ya no se
+    pone a 0 al cambiar de ficha (sección 5, Escenario 3)
+  - **Huecos verdes:** todo `Socket` se tiñe de verde mientras tiene bloque (`tintWhenOccupied`,
+    `occupiedColor`, por `MaterialPropertyBlock`). Los de figuras del Esc. 4 no
+  - **Tutorial:** la ficha con gravedad que se caía se quedaba en el suelo: cuelga de
+    `Interactables` y el `BlockResetter` de la raíz solo guarda a sus hijos directos. `ShapeChip`
+    vuelve ahora sola a su pose de origen si su resetter no la tiene
+  - **Esc. 2:** cada problema termina con una línea "¿Qué hacemos?" (`SystemModule.problemQuestion`)
+    y su letra crece hasta 40 (era 30) con ajuste automático para caber (`problemFontSize`)
+  - **Segunda tanda (27/10/2026, compila; 👓 sin probar en Play ni en el visor):**
+    - **Narración más corta** (tutorial y Esc. 1) y frase 12 con los lados; 2 y 5 retiradas
+      (sección 6). Los audios viejos de 0–7 y 12 se apartaron a
+      `Sounds/VoiceLines/Camila/Anteriores (27-10)/`: **hay que pasar `Tools → Codea → Asignar la voz
+      del narrador`** para que esas frases queden solo con texto hasta grabar las nuevas
+    - **Esc. 2:** Probar sin el rótulo repetido y centrado (hay que volver a pasar `Tools → Codea →
+      Escenario 2: botón Probar`); Motores dice "Los motores no arrancan."; color de selección verde
+      (`ButtonSelected.mat`, solo lo usan los módulos)
+    - **Esc. 3:** + y − en gris con el mismo material (`RepetitionButton.mat`)
+    - **Esc. 1 en espejo**, robot mirando arriba, salida en su sitio (sección 5). Pide un Girar Izq
+      más y un Girar Der menos en la paleta básica
+    - Lo de escena va en **`Tools → Codea → Feedback 27-10`** (`Editor/CodeaFeedback.cs`): botones de
+      repetir en gris y el giro de la paleta básica
+  - **Tercera tanda (27/10/2026, con Unity cerrado; compila, SceneCheck 0 fallos; 👓 sin probar en el
+    visor):**
+    - **Botones de empezar → "Probar" en celeste:** el Ejecutar del Esc. 3 y el INICIAR del tutorial
+      (el del Esc. 1 ya era un icono "PROBAR"). `Blue.mat`, como el Probar del Esc. 1. El EMPEZAR de
+      `Setup` se deja: es la pantalla del supervisor
+    - **Recorrido de los botones a 0,4**: en los cuatro prefabs con `PokeInteractableVisual`
+      (`StartButton`, `TextButton`, `RestartButton`, `Scenario2/Button`) la superficie que dispara la
+      pulsación (`_buttonBaseTransform`) se acercó a la cara del botón: 18 → 7,2 mm y 34,8 → 13,9 mm
+      a escala de prefab. La superficie lleva " (recorrido 0,4)" en el nombre para no acortarlo dos veces
+    - **Regreso a la Tierra sin fin:** `EarthApproach` ya no para a los 25 s; cada `halfLifeSeconds`
+      (6 s) recorre la mitad de lo que le falta hasta el tope (`approachFraction` 0,36; con 0,4 la
+      cámara entra en la atmósfera). Sigue creciendo hasta que se cierra la escena
+    - **Mando entero para interactuar** (`Story/Tools/ControllerReach.cs`, se monta solo en `Juego`,
+      sin tocar el rig): el punto de pulsación de los mandos pasa del pico (esfera blanca de 0,5 cm)
+      al centro del modelo del mando, con radio de 2 a 5 cm; la esfera de agarre se centra ahí y
+      crece hasta cubrirlo (máx. 8 cm); la bolita blanca se oculta. Lo dice en logcat como
+      `[Mando] Left/Right: …`. Las manos no cambian, y en `Setup` tampoco (teclas juntas)
+    - Todo lo de escena, en `Tools → Codea → Feedback 27-10` (repetible; se pasó en batch)
+  - Pendiente del feedback (lo hace el usuario): alturas, distancias, panel del tutorial, botón de
+    reiniciar del Esc. 4, feedback visual del Esc. 2. Descartado: altura automática de los paneles
+
 **Por dónde seguir, en este orden** (fijado el 23/10/2026 para la sesión siguiente):
 
 1. **Recompilar el APK** (mismo keystore) con las correcciones del 23/10/2026: el de `Build/app.apk`
@@ -162,8 +207,8 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
    duplicada, Ejecutar tras el reinicio, `solutionPercent` con decimales) y lo que nunca se vio en el
    visor: cierre por los 15 minutos de sesión, acople al soltar y regreso a la Tierra. Tabla de la
    sección 14 y plan de `Docs/Pruebas/`
-3. **Escuchar las locuciones** contra el CSV (`Tools → Codea → Asignar la voz del narrador`, sección
-   6), en especial la frase 3: dice "cinco minutos para reparar cada sistema" y el reloj marca 15
+3. **Grabar las frases nuevas** del 27/10/2026 (0, 1, 3, 4, 6, 7 y 12; la 2 y la 5 ya no van), dejarlas en
+   `Sounds/VoiceLines/Camila/` con su ID y pasar `Tools → Codea → Asignar la voz del narrador` (sección 6)
 4. **Feedback de las sesiones y de los responsables**, uno a uno con plan corto antes (es la Tabla 19
    del informe del mes 2):
    - **Sala 1:** indicaciones visuales de dónde van los bloques y de que el objetivo es abrir la
@@ -226,6 +271,7 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Comprobar que un JSON de telemetría tiene el formato del código | `node Docs/Herramientas/validar_json_telemetria.js [archivo]` (sin archivo, los de la documentación) |
 | Comprobar la telemetría de punta a punta | `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md` |
 | Asignar los `textId` de la narración | Menú contextual del Narrator: "Asignar textId por nombre del clip" |
+| Cambios de escena del feedback del 27/10 (botones de repetir del Esc. 3 en gris, giro de la paleta básica del Esc. 1, botones de empezar a "Probar" en celeste, recorrido de botones a 0,4) | `Tools → Codea → Feedback 27-10` (`Editor/CodeaFeedback.cs`). Repetible |
 
 ---
 
@@ -325,6 +371,7 @@ dependencia:
 | `TutorialController.cs` | Cuarto del tutorial: vigila cuatro interacciones (dos botones, un bloque, una ficha) y termina cuando están todas. `IStepAction`, sin telemetría |
 | `Narrator.cs` | Voz **y** texto en pantalla, emparejados por ID contra un CSV |
 | `VRGrabEvents.cs` | Envuelve el agarre de Meta en UnityEvents. Un `onGrabbed` por agarre y un `onReleased` por suelta, que sale **al salir de `Select`** (no al llegar a `Normal`) y en el `LateUpdate` de ese frame, cuando el `Grabbable` ya terminó de soltar |
+| `Tools/ControllerReach.cs` | En `Juego`, que el mando entero toque y agarre: pulsación y agarre en el centro del modelo del mando y con más radio, sin la bolita blanca. Se monta solo al cargar la escena |
 | `Tools/Fader.cs` | Fundido mediante esfera en la cámara |
 | `Tools/Timer.cs` | Cuenta atrás con avisos por umbral y `OnTimeUp` (RF-06). Reparte la hora entre N pantallas |
 | `Tools/TimerDisplay.cs` | Una pantalla donde el Timer escribe. Se registra sola al activarse |
@@ -346,7 +393,7 @@ dependencia:
 | `Telemetry/JSONUploader.cs` | Sube por POST multipart, con reintentos: la sesión que acaba de terminar (`UploadTelemetry`) o todas las que faltan (`UploadPending`) |
 | `Telemetry/TelemetryOutbox.cs` | Estático. Qué JSON del visor no están aún en el servidor: apunta cada subida (nombre + huella del contenido) en `subidos.txt`. No mueve ni borra ningún JSON |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
-| `Map/EarthApproach.cs` | El regreso: al completar el último escenario, acerca la Tierra de `Pos_earth` hacia el jugador. Lo añade `Tools → Codea → 3` |
+| `Map/EarthApproach.cs` | El regreso: al completar el último escenario, acerca la Tierra de `Pos_earth` hacia el jugador, sin parar hasta que se cierra la escena (cada vez más despacio, sin entrar en la atmósfera). Lo añade `Tools → Codea → 3` |
 | `SceneController.cs` | Vista exterior de la nave: `ChangeScenario(0)` enciende `Pos_earth` y apaga `Pos_sun`. El Director lo llama al terminar los escenarios 3 y 4 |
 | `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` · `Editor/CodeaCaptures.cs` | Comprobación de la escena, prueba en Play de las dos dificultades y capturas de cada sala para informes (tabla de herramientas, sección 0) |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
@@ -457,8 +504,7 @@ cuarta sala. Funcionamiento:
   `ScenarioTimeLimit` desde código, que es quien deja terminar el intento y cierra la telemetría.
   Lo comprueba `Tools → Codea → Comprobar escena de juego`, y la herramienta 2 lo quita
 
-**Ojo con el guion:** la frase 3 dice "Tienes cinco minutos para reparar cada sistema", y el reloj
-que el niño ve marca 15. Decidir el texto antes de grabar `3.wav`.
+**Guion:** desde el 27/10/2026 la frase 3 dice "Tienes quince minutos para repararla", como el reloj.
 
 Para probar sin esperar: `ScenarioTimeLimit` → menú contextual "Agotar el tiempo de la sala
 actual" (cierra la sala, no la sesión).
@@ -482,12 +528,13 @@ Solo `Path` es transitable. `Spawn` y `Point` se convierten a `Path` al cargar.
 
 | | Archivo | Solución | Paleta · huecos |
 |---|---|---|---|
-| Básica | `reto.json` (6×5) | Dos caminos de 8 bloques (`resolver_nivel.js`): Avanzar · Girar Der · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Avanzar · Usar, y Avanzar · Girar Der · Avanzar · Avanzar 2 · Girar Der · Avanzar 2 · Girar Izq · Usar. El porcentaje de solución usa el más cercano | 8 · 8, sin sobrantes |
+| Básica | `reto.json` (6×5) | Un camino de 8 bloques (`resolver_nivel.js`, 27/10/2026): Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar · Usar. Hasta el 26/10 eran dos caminos (con el robot mirando abajo) | 8 · 8, sin sobrantes: Girar Izq ×2, Girar Der ×1, Avanzar 2 ×2, Avanzar ×2, Usar |
 | Intermedia | `escenario1_intermedio.json` (6×5) | Un camino de 11 y un distractor de 14; ver abajo | 13 · 11 |
 
 **Los dos niveles comparten la geometría de la sala**: 6×5, Salida en **(0,1)**, que es donde
 está el botón verde físico (la casilla Salida solo es lógica; el botón es decorado), y robot en
-**(4,2) mirando abajo** (`direction: 2` del prefab; la frase 5 dice que se ve a la derecha).
+**(4,2) mirando arriba** (desde el 27/10/2026: `"spawnDirection": 0` en el JSON del nivel, que
+`LevelLoader` aplica al crear el robot; sin el campo se queda la del prefab, abajo).
 Un nivel con otra geometría deja la meta lógica lejos del botón. Pasó con la primera versión
 del intermedio.
 
@@ -495,8 +542,25 @@ del intermedio.
 así que llegar a (0,0) o (0,2) y girarse hacia la Salida no vale aunque el código lo aceptara.
 Los dos niveles terminan siempre con el robot en (1,1).
 
+**Espejo del 27/10/2026** (feedback: el robot empieza mirando arriba y el recorrido da la vuelta).
+La salida no se movió, porque el botón es físico. La intermedia es simétrica, así que basta con
+girar el robot. En la básica se intercambiaron las filas 0 y 4 (las 1 y 3 no, para que la salida
+siga en su sitio y el recorrido no se quede en 5 bloques); el camino sube, va a la izquierda por
+arriba y baja hasta el botón. **Con el robot mirando arriba hacen falta más giros a la izquierda
+que a la derecha**: la paleta básica pasó de 1 Izq + 2 Der a 2 Izq + 1 Der (`Tools → Codea →
+Feedback 27-10`).
+
 ```
-   0 1 2 3 4 5        Intermedia (diseño del 30/09/2026). S = salida · R = robot · ! = peligro
+   0 1 2 3 4 5        Básica (27/10/2026). R mira arriba
+0    ! · · · !
+1  S · · ! · ·
+2    · · ! R ·
+3    · · · · ·
+4    ! · █ █ █
+```
+
+```
+   0 1 2 3 4 5        Intermedia (diseño del 30/09/2026; R mira arriba desde el 27/10). S = salida · R = robot · ! = peligro
 0    ! ! · · ·
 1  S · · · █ ·        (1,1) = la casilla de enfrente del botón
 2    · █ █ R ·
@@ -506,11 +570,11 @@ Los dos niveles terminan siempre con el robot en (1,1).
 
 Simétrico arriba y abajo, verificado por búsqueda exhaustiva:
 
-- **Por arriba (la solución, 11 bloques):** Girar Izq · Avanzar · Girar Izq · Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar 2 · Usar
+- **Por arriba (la solución, 11 bloques):** Girar Der · Avanzar · Girar Izq · Avanzar 2 · Girar Izq · Avanzar 2 · Girar Izq · Avanzar · Girar Der · Avanzar 2 · Usar
 - **Por abajo (el distractor, 14 bloques):** llega también a (1,1), pero no cabe en los **11 huecos** de la fila
 
 Paleta de 13 (Girar Izq ×4, Girar Der ×2, Avanzar 2 ×4, Avanzar ×2, Usar ×1): los 11 de la
-solución más un Girar Derecha y un Avanzar 2 de sobra. Nivel y huecos están en
+solución (Girar Izq ×3, Girar Der ×2, Avanzar 2 ×3) más un Girar Izquierda y un Avanzar 2 de sobra. Nivel y huecos están en
 `Scenario1Difficulty`; los bloques de cada paleta llevan `DifficultyOnly`.
 
 ### Escenario 2 — Condicionales *(montado, sin probar en visor)*
@@ -541,8 +605,9 @@ además el **título del sistema**, que sale de `ModuleData.moduleName`.
 
 **El enunciado describe síntomas, no la causa.** Antes decía `<síntoma>: <causa>` —*"los motores
 no encienden: el tanque de combustible está vacío"*—, y la parte tras los dos puntos daba la
-respuesta literal. Ahora dice *"los motores hacen ruido pero no arrancan. Su tanque está
-vacío"*: hay que deducir qué falta. Tres reglas al escribirlos:
+respuesta literal. Ahora dice *"Los motores no arrancan."* (27/10/2026; antes *"hacen ruido pero no arrancan"*):
+hay que deducir qué falta. Todos los problemas terminan además con una línea *"¿Qué hacemos?"*,
+que añade `SystemModule` (`problemQuestion`). Tres reglas al escribirlos:
 
 - Ninguna palabra de la solución aparece en el enunciado. Si está, el niño empareja texto en
   vez de razonar
@@ -607,7 +672,12 @@ huecos en medio de una secuencia ya montada.
 la que salió y se registra un error de lógica. Dejarlo caer obligaría a rescatarlo, y ese
 rescate no es el ejercicio.
 
-**Al poner la ficha de tipo, las repeticiones vuelven a 0**, y con 0 tampoco se ejecuta: cambiar de tipo es preparar otra pasada. La fila del esc. 3 tiene `minRepetitions: 0`.
+**El contador de repeticiones cuenta hacia atrás** (desde el 27/10/2026): cada vuelta terminada
+resta 1 (`ProgramRunner.OnIterationFinished` → `ArmTypeSocket.countDownEachIteration`), así que
+al acabar la pasada queda en 0, y con 0 no se ejecuta. Poner la ficha de tipo **ya no** lo pone a
+0 (`resetRepetitionsOnType`, apagado). Mientras corre el programa, + y − no hacen nada
+(`SocketRow.RepetitionButtonsLocked`). La telemetría registra las repeticiones del momento de
+pulsar Ejecutar. La fila del esc. 3 tiene `minRepetitions: 0`.
 
 **El socket se registra solo en su botón** (`ProgramTrigger.AddPrecondition`), buscando el que
 tiene `challengeId: escenario3`, y de ahí toma la fila. No depende de la lista `preconditions`
@@ -699,7 +769,7 @@ y los cuatro `ScenarioNController`.
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
 (`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 22 IDs (el `0` es la frase del tutorial) más 2 variantes
-por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el cierre de sesión por tiempo (agotados los 15 minutos, o la última sala) y el `21`, el tiempo agotado en las demás ("Tiempo de sesión y de sala", sección 5). Ni el 20 ni el 21 están en las listas: los dicen `TimeUpSequence` y `ScenarioTimeLimit`. La frase 3 cambió el 09/10/2026 a "Tienes cinco minutos para reparar cada sistema. Si se acaba el tiempo, pasaremos al siguiente. ¡Adelante, astronauta!"
+por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el cierre de sesión por tiempo (agotados los 15 minutos, o la última sala) y el `21`, el tiempo agotado en las demás ("Tiempo de sesión y de sala", sección 5). Ni el 20 ni el 21 están en las listas: los dicen `TimeUpSequence` y `ScenarioTimeLimit`. El 27/10/2026 se acortaron las frases 0, 1, 3, 4, 6 y 7, se reescribió la 12 (dónde va cada tipo: barriles a la izquierda, cajas a la derecha) y se **retiraron la 2 y la 5** (texto vacío en el CSV y sin audio: `Narrator.PlayEntry` las omite sin mostrar nada, y las listas conservan su entrada). La frase 3 dice ahora "Tienes quince minutos para repararla. ¡Adelante!"
 
 **`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
 existía y la línea se saltaba en silencio. Los audios se nombran con su ID
@@ -1529,12 +1599,17 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 10b | Esc. 3 intermedia: quitar un bloque de la fila y ejecutar | Frase de error, no se mueve nada | `requireFullRow` |
 | 10c | Esc. 3: agarrar un bloque y volver a encajarlo | Mantiene su tamaño en la mano y en la fila | `BlockNode.homeParent` |
 | 10d | Esc. 3: intentar sacar un bloque o la ficha con el brazo en marcha | No se puede; al terminar, sí | `lockRowWhileRunning` |
-| 11 | Esc. 3: poner ficha | Contador a 0; ejecutar con 0 no hace nada | `ArmTypeSocket` |
+| 11 | Esc. 3: poner ficha, 3 repeticiones, Ejecutar | El contador baja 3 → 2 → 1 → 0 con cada vuelta; + y − no responden mientras tanto; ejecutar con 0 no hace nada | `ArmTypeSocket.countDownEachIteration` |
+| 11b | Cualquier hueco de bloque (tutorial, Esc. 1, Esc. 3) | Se pone verde al encajar un bloque y vuelve a gris al sacarlo | `Socket.tintWhenOccupied` |
+| 11c | Tutorial: tirar la ficha al suelo | Vuelve sola a su sitio a los 4 s | `ShapeChip` (vuelta propia) |
 | 12 | Esc. 3: resolver en dos pasadas | Cada tipo a su lado, frase 15 | `SortingGoal` |
 | 13 | Esc. 4: ficha incorrecta | Sale disparada con sonido de desconexión | `rejectSpeed`, `rejectLocalDirection` |
 | 14 | Esc. 4: tirar una ficha al suelo | Vuelve sola a los 4 s | `fallenBelow`, collider del suelo |
 | 15 | Esc. 4: 2 aciertos + Reiniciar | Las acertadas no se mueven ni se agarran | `IsInteractable` |
 | 16 | Esc. 4: completar | Motores, frase 18, frase 19 | `completedSound`, Director |
+| 16b | Esc. 4 completado: mirar por la ventana hasta que vuelva a `Setup` | La Tierra se acerca sin pararse, cada vez más despacio, sin que la cámara entre en la atmósfera | `EarthApproach` |
+| 16c | Con el mando: tocar un botón y agarrar un bloque con el cuerpo del mando, no con la punta | Funcionan; no se ve la bolita blanca. En logcat, `[Mando] Left` y `Right` con 1 interactor y 1 esfera | `ControllerReach` |
+| 16d | Pulsar cualquier botón | Se dispara con un recorrido corto (0,4 del anterior) | Superficies " (recorrido 0,4)" |
 | 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |
 | 18 | Segunda partida seguida (otro PIN) | Todo igual que la primera | `TelemetryManager` por escena |
 | 18b | Mirar los relojes durante una partida | Marcan 15:00 al cargar; bajan solo durante los retos y se quedan quietos en narraciones y traslados | `ScenarioTimeLimit → Session Seconds` |

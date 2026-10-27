@@ -132,9 +132,11 @@ public class ProgramTrigger : MonoBehaviour
     private IEnumerator RunLocked()
     {
         if (lockRowWhileRunning) Freeze();
+        socketRow.RepetitionButtonsLocked = true;
 
         yield return runner.Run(socketRow.FirstSocket, socketRow.Repetitions);
 
+        socketRow.RepetitionButtonsLocked = false;
         Unfreeze();
     }
 
@@ -181,7 +183,11 @@ public class ProgramTrigger : MonoBehaviour
     /// Si la estación se apaga a mitad de ejecución (el reto se completó dentro de ella y el
     /// Director avanza), la corrutina muere sin llegar a desbloquear.
     /// </summary>
-    private void OnDisable() => Unfreeze();
+    private void OnDisable()
+    {
+        if (socketRow != null) socketRow.RepetitionButtonsLocked = false;
+        Unfreeze();
+    }
 
     public string ChallengeId => challengeId;
     public bool RequireFullRow => requireFullRow;

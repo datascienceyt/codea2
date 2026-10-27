@@ -35,6 +35,13 @@ public class SystemModule : MonoBehaviour, IStepAction
     [Tooltip("Mensaje que sustituye al problema cuando el módulo queda reparado.")]
     [SerializeField] private string repairedMessage = "Sistema restablecido";
 
+    [Tooltip("Pregunta que se añade, en otra línea, a todos los problemas (feedback del 27/10/2026).")]
+    [SerializeField] private string problemQuestion = "¿Qué hacemos?";
+
+    [Tooltip("Tamaño máximo de letra del problema (antes, 30 fijo). Se ajusta solo para caber en " +
+             "la pantalla sin bajar del tamaño que tenga el Text. 0 = el del Text, sin ajuste.")]
+    [SerializeField] private int problemFontSize = 40;
+
     [Header("Estado visual")]
     [Tooltip("Icono de estado: es al que se le intercambia el sprite. Sustituye a las " +
              "etiquetas de texto AVERIADO / REPARADO.")]
@@ -136,7 +143,16 @@ public class SystemModule : MonoBehaviour, IStepAction
         // El título NO cambia al repararse: es el nombre del sistema, no su estado.
         UiText.Set(titleText, titleTextTmp, data.moduleName);
 
-        if (problemText != null) problemText.text = IsSolved ? repairedMessage : data.problem;
+        if (problemText != null)
+        {
+            problemText.text = IsSolved ? repairedMessage : $"{data.problem}\n{problemQuestion}";
+            if (problemFontSize > problemText.fontSize)
+            {
+                problemText.resizeTextMinSize = problemText.fontSize;
+                problemText.resizeTextMaxSize = problemFontSize;
+                problemText.resizeTextForBestFit = true;
+            }
+        }
 
         RefreshStatus();
         RefreshButtons();

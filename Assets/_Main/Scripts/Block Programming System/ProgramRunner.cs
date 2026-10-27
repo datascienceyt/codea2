@@ -9,6 +9,12 @@ public class ProgramRunner : MonoBehaviour
              "si hubo éxito es el controlador del escenario, que es el que conoce la meta.")]
     public UnityEvent OnRunFinished;
 
+    /// <summary>
+    /// Al terminar cada vuelta de la cadena. El Escenario 3 lo usa para descontar una
+    /// repetición del contador por cada vuelta hecha (ArmTypeSocket).
+    /// </summary>
+    public event System.Action OnIterationFinished;
+
     public bool IsRunning { get; private set; }
     public bool HasRun { get; private set; }
 
@@ -24,7 +30,10 @@ public class ProgramRunner : MonoBehaviour
         IsRunning = true;
 
         for (int i = 0; i < Mathf.Max(1, repetitions); i++)
+        {
             yield return ExecuteChain(start);
+            OnIterationFinished?.Invoke();
+        }
 
         // El estado se deja consistente ANTES de avisar: quien escuche puede querer
         // consultar IsRunning o HasRun, o llamar a ResetRunner().

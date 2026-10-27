@@ -58,6 +58,14 @@ public class ShapeChip : BlockNode
     private Rigidbody body;
     private BlockResetter resetter;
     private float homeY;
+
+    // Pose de origen propia, para cuando la ficha no es hija directa de su BlockResetter (el
+    // resetter solo guarda a sus hijos directos). Pasaba en el tutorial: la ficha cuelga de
+    // 'Interactables' y, si se caía, se quedaba en el suelo.
+    private Transform startParent;
+    private Vector3 startLocalPosition;
+    private Quaternion startLocalRotation;
+    private bool startKinematic, startGravity;
     private Coroutine looseRoutine;
 
     protected override void Awake()
@@ -68,6 +76,10 @@ public class ShapeChip : BlockNode
         body = GetComponent<Rigidbody>();
         resetter = GetComponentInParent<BlockResetter>();
         homeY = transform.position.y;
+        startParent = transform.parent;
+        startLocalPosition = transform.localPosition;
+        startLocalRotation = transform.localRotation;
+        if (body != null) { startKinematic = body.isKinematic; startGravity = body.useGravity; }
 
         VRGrabEvents grab = GetComponent<VRGrabEvents>();
         grab.onGrabbed.AddListener(StopLoose);
@@ -164,11 +176,24 @@ public class ShapeChip : BlockNode
         if (IsAttached || IsGrabbed || body.isKinematic) yield break;
 
         if (resetter == null || !resetter.ReturnBlock(this))
-        {
-            Debug.LogWarning($"[Escenario4] '{name}' se cayó y no hay BlockResetter del que " +
-                             "cuelgue para devolverla.", this);
-            body.isKinematic = true;
-        }
+            ReturnHomeSelf();
+    }
+
+    /// <summary>Vuelve a su pose de origen sin BlockResetter, con la física con la que empezó.</summary>
+    private void ReturnHomeSelf()
+    {
+        body.linearVelocity = Vector3.zero;
+        body.angularVelocity = Vector3.zero;
+
+        transform.SetParent(startParent, false);
+        transform.localPosition = startLocalPosition;
+        transform.localRotation = startLocalRotation;
+
+        body.isKinematic = startKinematic;
+        body.useGravity = startGravity;
+
+        // Empezó dinámica: vigilar otra vez por si vuelve a caer de su sitio.
+        if (!startKinematic) looseRoutine = StartCoroutine(Loose());
     }
 
     /// <summary>

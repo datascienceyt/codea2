@@ -219,7 +219,7 @@ const salas = [
 
   h2("6.2 Sala 2 — Sala de control · Condicionales"),
   p("**Objetivo:** tres sistemas averiados —Motores, Energía y Enfriamiento— necesitan la acción adecuada para volver a funcionar."),
-  p("**Mecánica:** cada módulo muestra un título grande y describe **síntomas, no la causa**: «los motores hacen ruido pero no arrancan». El jugador marca y desmarca opciones, y el módulo se repara cuando lo marcado coincide exactamente con lo correcto."),
+  p("**Mecánica:** cada módulo muestra un título grande y describe **síntomas, no la causa**: «los motores no arrancan». El jugador marca y desmarca opciones, y el módulo se repara cuando lo marcado coincide exactamente con lo correcto."),
   p("**Diseño de distractores:** cada opción incorrecta es la acción correcta de otro módulo. No se puede acertar reconociendo palabras: hay que leer el síntoma y descartar."),
   table(["", "Básica", "Intermedia"], [
     ["Opciones por módulo", "4", "4"],

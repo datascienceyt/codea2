@@ -20,16 +20,16 @@ using UnityEngine;
 /// </summary>
 public static class CodeaSolutions
 {
-    // Comprobados con el resolvedor sobre reto.json y escenario1_intermedio.json (13/10/2026).
+    // Comprobados con el resolvedor sobre reto.json y escenario1_intermedio.json (27/10/2026: nivel
+    // en espejo, el robot empieza mirando arriba y la salida sigue frente al botón).
     internal static readonly string[] Scenario1Basic =
     {
-        "Avanzar, Girar Derecha, Avanzar, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Usar",
-        "Avanzar, Girar Derecha, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Avanzar, Usar",
+        "Avanzar 2, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar, Girar Derecha, Avanzar, Usar",
     };
 
     private static readonly string[] Scenario1Intermediate =
     {
-        "Girar Izquierda, Avanzar, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar, Girar Derecha, Avanzar 2, Usar",
+        "Girar Derecha, Avanzar, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar 2, Girar Izquierda, Avanzar, Girar Derecha, Avanzar 2, Usar",
     };
 
     // La básica no deja tocar la fila: viene montada y fija, igual para los dos tipos.

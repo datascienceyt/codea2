@@ -266,6 +266,10 @@ public class Narrator : MonoBehaviour, IStepAction
     {
         if (entry == null) yield break;
 
+        // Frase retirada: sin audio y con el texto vacío en el CSV. Se omite sin mostrar la
+        // pantalla, y la lista conserva su entrada para que las siguientes no se desplacen.
+        if (entry.clip == null && string.IsNullOrEmpty(FindText(entry.textId))) yield break;
+
         OnLineStarted?.Invoke();
 
         // Las dos mitades corren en paralelo y se espera a las DOS. Así el paso dura lo que

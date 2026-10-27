@@ -37,21 +37,13 @@ public static class CodeaScenario2
     };
 
     public const string TryButtonName = "Probar";
-    private const string LabelName = "Rótulo Probar";
-    private const string LabelText = "Probar";
 
     // El prefab del botón mide 0,11 m de diámetro a su escala 0,5: con 1,4 queda en unos 0,3 m,
     // del orden de los botones de opción (0,42 × 0,85 m).
     private const float ButtonScale = 1.8f;
 
-    // El rótulo copiado de una opción, algo más grande: "Probar" va solo, sin botón que lo enmarque.
-    private const float LabelScale = 1.5f;
-
     // Qué parte de la separación entre filas de opciones baja Probar bajo la última fila.
     private const float RowGapFraction = 0.85f;
-
-    // Separación entre el centro del botón y el del rótulo, a lo ancho del panel.
-    private const float LabelOffset = 0.42f;
 
     // --- Ambientación: que la sala no sean cajas lisas ---
 
@@ -229,21 +221,11 @@ public static class CodeaScenario2
             : -options[0].transform.up * 0.5f;
 
         Transform reference = options[0].transform;
-        Vector3 across = Vector3.ProjectOnPlane(reference.forward, Vector3.up).normalized;
-
-        // A lo ancho del panel: la dirección en que se reparten los botones de una fila.
-        List<ModuleOptionButton> wide = rows.OrderByDescending(r => r.Count).First();
-        if (wide.Count > 1)
-        {
-            Vector3 spread = wide.Last().transform.position - wide.First().transform.position;
-            across = spread.normalized;
-        }
-
         Vector3 groupCenter = lastRow + step * RowGapFraction;
 
         GameObject button = (GameObject)PrefabUtility.InstantiatePrefab(buttonPrefab, root.transform);
         button.name = TryButtonName;
-        button.transform.SetPositionAndRotation(groupCenter - across * (LabelOffset * 0.5f), reference.rotation);
+        button.transform.SetPositionAndRotation(groupCenter, reference.rotation);
         button.transform.localScale = Vector3.one * ButtonScale;
 
         InteractableUnityEventWrapper wrapper = button.GetComponentInChildren<InteractableUnityEventWrapper>(true);
@@ -270,7 +252,6 @@ public static class CodeaScenario2
 
         PaintBlue(button);
 
-        TMP_Text label = AddLabel(button.transform, options, groupCenter + across * (LabelOffset * 0.5f));
 
         SerializedObject so = new SerializedObject(module);
         so.FindProperty("tryButton").objectReferenceValue = button;
@@ -278,39 +259,15 @@ public static class CodeaScenario2
         so.ApplyModifiedPropertiesWithoutUndo();
 
         log.AppendLine($"  ✓ {root.name}: Probar en {Local(root, button.transform.position)} " +
-                       $"bajo {rows.Count} filas de opciones · cableado a SystemModule.Try" +
-                       (label != null ? " · con rótulo" : " · SIN rótulo (las opciones no tienen texto que copiar)"));
+                       $"bajo {rows.Count} filas de opciones · cableado a SystemModule.Try");
         return true;
-    }
-
-    /// <summary>
-    /// El rótulo es una copia del texto de un botón de opción: misma fuente, tamaño y
-    /// orientación que el resto del panel. Cuelga del botón para apagarse con él.
-    /// </summary>
-    private static TMP_Text AddLabel(Transform button, List<ModuleOptionButton> options, Vector3 position)
-    {
-        TMP_Text source = options
-            .Select(o => new SerializedObject(o).FindProperty("label").objectReferenceValue as TMP_Text)
-            .FirstOrDefault(t => t != null);
-
-        if (source == null) return null;
-
-        GameObject copy = Object.Instantiate(source.gameObject, button, true);
-        copy.name = LabelName;
-        copy.transform.position = position;
-
-        copy.transform.localScale *= LabelScale;
-
-        TMP_Text text = copy.GetComponent<TMP_Text>();
-        text.text = LabelText;
-        return text;
     }
 
     /// <summary>
     /// Como el del Escenario 1: material azul en la cara, y apagado el visual de depuración de
     /// Meta, que la tiñe con sus colores y taparía el azul.
     /// </summary>
-    private static void PaintBlue(GameObject button)
+    internal static void PaintBlue(GameObject button)
     {
         Material blue = AssetDatabase.LoadAssetAtPath<Material>(BlueMaterial);
 

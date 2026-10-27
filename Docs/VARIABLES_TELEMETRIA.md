@@ -143,7 +143,7 @@ ver cómo evoluciona la estrategia.
 **Pilares de diseño:** reconocimiento de patrones, diseño de algoritmos.
 
 Tres módulos averiados de la nave. Cada uno describe en texto **lo que se observa**, no la
-causa (*"Los motores hacen ruido pero no arrancan. Su tanque está vacío"*), y ofrece varias
+causa (*"Los motores no arrancan"*), y ofrece varias
 acciones: el niño tiene que deducir qué falta. Desde el 22/10/2026 el niño **marca y desmarca libremente** y
 pulsa el botón azul **Probar** del módulo. Si lo marcado es exactamente la solución, el módulo
 se repara; si no, suena la frase de error y **se desmarcan los cuatro botones** para empezar de

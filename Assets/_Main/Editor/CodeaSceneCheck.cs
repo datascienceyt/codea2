@@ -35,8 +35,8 @@ public static class CodeaSceneCheck
     // cambia aquí: el informe avisa si la paleta de la escena no es esta.
     private static readonly Dictionary<GridActionType, int> BasicPalette = new Dictionary<GridActionType, int>
     {
-        { GridActionType.MoveForward, 2 }, { GridActionType.RotateRight, 2 }, { GridActionType.MoveForwardTwice, 2 },
-        { GridActionType.RotateLeft, 1 }, { GridActionType.Use, 1 },
+        { GridActionType.MoveForward, 2 }, { GridActionType.RotateRight, 1 }, { GridActionType.MoveForwardTwice, 2 },
+        { GridActionType.RotateLeft, 2 }, { GridActionType.Use, 1 },
     };
 
     private static readonly Dictionary<GridActionType, int> IntermediatePalette = new Dictionary<GridActionType, int>
@@ -136,7 +136,14 @@ public static class CodeaSceneCheck
     {
         report.Title("Porcentaje de solución");
 
-        List<SolutionPath> basic = CodeaSolutions.Scenario1Basic.Select(s => new SolutionPath(null, s)).ToList();
+        // Los dos caminos de la básica anterior al 27/10/2026, fijos: estos casos comprueban la
+        // cuenta, no el nivel de hoy.
+        string[] oldBasic =
+        {
+            "Avanzar, Girar Derecha, Avanzar, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Usar",
+            "Avanzar, Girar Derecha, Avanzar 2, Girar Derecha, Avanzar 2, Girar Izquierda, Avanzar, Usar",
+        };
+        List<SolutionPath> basic = oldBasic.Select(s => new SolutionPath(null, s)).ToList();
 
         // 0103, intentos 5 y 7: contra el camino del Context dan 50 y 75; contra el otro, 62,5 y 87,5.
         (string attempt, IList<SolutionPath> solutions, float expected)[] cases =
@@ -145,7 +152,8 @@ public static class CodeaSceneCheck
             ("Avanzar, Avanzar, Avanzar 2, Girar Derecha, Girar Derecha, Avanzar 2, Girar Izquierda, Usar", basic, 87.5f),
             ("Avanzar, Avanzar, Avanzar 2, Avanzar 2, Usar, Girar Derecha, Girar Izquierda, Girar Derecha", basic.GetRange(1, 1), 50),
             ("Avanzar, Avanzar, Avanzar 2, Girar Derecha, Girar Derecha, Avanzar 2, Girar Izquierda, Usar", basic.GetRange(1, 1), 75),
-            (CodeaSolutions.Scenario1Basic[1], basic, 100),
+            (oldBasic[1], basic, 100),
+            (CodeaSolutions.Scenario1Basic[0], CodeaSolutions.Scenario1Basic.Select(s => new SolutionPath(null, s)).ToList(), 100),
             ("Avanzar", new[] { new SolutionPath(null, "Avanzar 2") }, 0),
         };
 

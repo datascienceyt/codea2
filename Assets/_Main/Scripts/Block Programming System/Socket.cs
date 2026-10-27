@@ -39,7 +39,54 @@ public class Socket : MonoBehaviour
 
     public void SetAcceptsBlocks(bool value) => AcceptsBlocks = value;
 
-    void Awake() => audioSource = GetComponent<AudioSource>();
+    [Header("Color al recibir un bloque")]
+    [Tooltip("El hueco se tiñe de este color mientras tiene un bloque (feedback del 27/10/2026). " +
+             "Los huecos de figuras del Escenario 4 no: allí el verde es solo para la ficha correcta, " +
+             "y lo pone ShapeSocket.")]
+    [SerializeField] private bool tintWhenOccupied = true;
+    [SerializeField] private Color occupiedColor = new Color(0.3f, 0.85f, 0.35f);
+
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int ColorId = Shader.PropertyToID("_Color");
+
+    // Los renderers propios del hueco, tomados en Awake: después el bloque encajado cuelga de
+    // este objeto y GetComponentsInChildren lo tiñería también.
+    Renderer[] tintRenderers;
+    MaterialPropertyBlock tintBlock;
+
+    void Awake()
+    {
+        audioSource = GetComponent<AudioSource>();
+
+        if (tintWhenOccupied && GetComponent<ShapeSocket>() == null)
+        {
+            tintRenderers = System.Array.FindAll(GetComponentsInChildren<Renderer>(true),
+                r => !(r is SpriteRenderer) && r.GetComponentInParent<BlockNode>() == null);
+            tintBlock = new MaterialPropertyBlock();
+        }
+    }
+
+    void SetTint(bool occupied)
+    {
+        if (tintRenderers == null) return;
+
+        foreach (Renderer r in tintRenderers)
+        {
+            if (r == null) continue;
+
+            if (!occupied)
+            {
+                r.SetPropertyBlock(null);
+                continue;
+            }
+
+            r.GetPropertyBlock(tintBlock);
+            tintBlock.SetColor(BaseColorId, occupiedColor);
+            tintBlock.SetColor(ColorId, occupiedColor);
+            r.SetPropertyBlock(tintBlock);
+            tintBlock.Clear();
+        }
+    }
 
     void OnEnable() => active.Add(this);
 
@@ -60,6 +107,7 @@ public class Socket : MonoBehaviour
     public void Occupy(BlockNode block, bool playSound = true)
     {
         CurrentBlock = block;
+        SetTint(true);
         if (playSound) PlayClip(clipIn);
 
         OnOccupied?.Invoke(block);
@@ -86,6 +134,7 @@ public class Socket : MonoBehaviour
 
         BlockNode block = CurrentBlock;
         CurrentBlock = null;
+        SetTint(false);
         block.ForgetSocket();
     }
 

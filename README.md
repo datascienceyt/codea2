@@ -32,7 +32,7 @@ El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta e
 | Escenario | Categoría | Pilar(es) de CT | Mecánica |
 |---|---|---|---|
 | 1 — Dormitorio | Secuencialidad | Diseño de algoritmos, Descomposición, Abstracción | Ordenar bloques de instrucciones para guiar a Roki por una cuadrícula hasta el botón verde que abre la puerta. En intermedia hay un camino tentador que no cabe en la fila de instrucciones |
-| 2 — Sala de control | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Cada módulo describe **síntomas** (*"los motores hacen ruido pero no arrancan"*) y el jugador deduce qué acciones lo reparan. Hay que marcar exactamente las correctas: ni de menos ni de más |
+| 2 — Sala de control | Condicionales | Reconocimiento de patrones, Diseño de algoritmos | Cada módulo describe **síntomas** (*"los motores no arrancan"*) y el jugador deduce qué acciones lo reparan. Hay que marcar exactamente las correctas: ni de menos ni de más |
 | 3 — Almacén | Bucles y parámetros | Reconocimiento de patrones, Abstracción | Programar un brazo robótico que **clasifica** la carga por color para despejar el paso. La fila de instrucciones es el bucle, y una ficha de color aparte decide qué tipo recoge. En intermedia, además, hay que ordenar la fila |
 | 4 — Panel final | Patrones | Reconocimiento de patrones, Abstracción | Encender la nave: encontrar, entre figuras abstractas muy parecidas, la ficha **idéntica** a la que muestra cada hueco. En intermedia los huecos son las seis letras de YACHAY en un alfabeto de glifos cuadrados. Las fichas incorrectas salen disparadas del panel |
 

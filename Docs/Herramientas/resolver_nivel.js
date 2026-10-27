@@ -26,7 +26,7 @@ function step(x, y, d, seq, cells) {
     if (walk(T(ux, uy))) step(ux, uy, d, [...seq, "A2"], [...cells, `${tx},${ty}`, `${ux},${uy}`]);
   }
 }
-step(sx, sy, 2, [], [`${sx},${sy}`]);
+step(sx, sy, level.spawnDirection >= 0 ? level.spawnDirection : 2, [], [`${sx},${sy}`]); // sin spawnDirection, abajo (el prefab)
 
 // Solo secuencias "limpias": sin girar y deshacer, sin cuatro giros seguidos, sin volver a una casilla
 const clean = results.filter(r => !/(L R|R L|L L L|R R R)/.test(r.seq.join(" ")) && new Set(r.cells).size === r.cells.length);

@@ -410,6 +410,7 @@ MonoBehaviour:
   blockSocket: {fileID: 847341908613567209}
   shapeSocket: {fileID: 4827875917516863329}
   startDirectorOnFinish: 1
+  doneColor: {r: 0.3, g: 1, b: 0.4, a: 1}
   OnProgramButtonPressed:
     m_PersistentCalls:
       m_Calls: []
@@ -1132,10 +1133,6 @@ PrefabInstance:
       propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
-    - target: {fileID: 7741400651598277529, guid: 965c32836376cf6489baf41e5256e9e9, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.0949
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1277,17 +1274,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
---- !u!114 &2511790463371834129 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3956719882825933974, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
-  m_PrefabInstance: {fileID: 1455432180425381767}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 925ef87c5bafc37469a2f7ec825dee4b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &2763677002295343184 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3632212799911342039, guid: ac8099e3cdefa28449e42989f5e77c03, type: 3}
@@ -1419,7 +1405,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3650085699923853614, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_text
-      value: INICIAR
+      value: Probar
       objectReference: {fileID: 0}
     - target: {fileID: 3650085699923853614, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_fontSize
@@ -1449,6 +1435,10 @@ PrefabInstance:
       propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 7943793634585056655, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: da3ee4b6a14c4b34f9dcd5b9a0d3d080, type: 2}
     - target: {fileID: 8892390783747919047, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.5

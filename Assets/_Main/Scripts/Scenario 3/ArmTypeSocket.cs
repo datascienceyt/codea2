@@ -9,18 +9,26 @@ using UnityEngine.Events;
 /// a las instrucciones; separándolo, el tipo se puede seguir cambiando entre ejecuciones
 /// aunque la secuencia esté fija, que es justo lo que pide la dificultad básica.
 ///
-/// Al poner una ficha, las repeticiones de la fila vuelven a 0: cambiar de tipo es preparar
-/// una pasada nueva, y arrastrar el número de la anterior dejaba ejecutar sin decidirlo.
+/// Cada vuelta terminada descuenta una repetición del contador, que acaba en 0 al terminar la
+/// pasada: el niño ve el bucle contando y, para la pasada siguiente, tiene que volver a decidir
+/// cuántas. Cambiar de ficha ya no lo pone a 0 (feedback del 27/10/2026).
 ///
 /// Implementa IRunPrecondition: sin ficha o con 0 repeticiones el programa no se ejecuta.
 /// </summary>
 [RequireComponent(typeof(Socket))]
 public class ArmTypeSocket : MonoBehaviour, IRunPrecondition
 {
-    [Tooltip("La fila de instrucciones cuyas repeticiones se ponen a 0 al colocar una ficha. " +
+    [Tooltip("La fila de instrucciones cuyas repeticiones se descuentan al ejecutar. " +
              "Si queda vacío se toma la del ProgramTrigger que tenga este socket en sus " +
              "preconditions. Su Min Repetitions debe ser 0, o el valor se quedará en el mínimo.")]
     [SerializeField] private SocketRow repetitionsRow;
+
+    [Tooltip("Descontar una repetición del contador por cada vuelta terminada.")]
+    [SerializeField] private bool countDownEachIteration = true;
+
+    [Tooltip("Poner el contador a 0 al colocar una ficha. Era el comportamiento hasta el " +
+             "27/10/2026; ahora el contador llega a 0 descontando las vueltas.")]
+    [SerializeField] private bool resetRepetitionsOnType;
 
     [Tooltip("Se dispara al intentar ejecutar sin ficha de tipo. Para el aviso visual o sonoro.")]
     public UnityEvent OnMissingType;
@@ -32,6 +40,7 @@ public class ArmTypeSocket : MonoBehaviour, IRunPrecondition
     public UnityEvent OnTypePlaced;
 
     private Socket socket;
+    private ProgramRunner runner;
 
     public bool HasType => Chip != null;
 
@@ -70,6 +79,12 @@ public class ArmTypeSocket : MonoBehaviour, IRunPrecondition
         trigger.AddPrecondition(this);
 
         if (repetitionsRow == null) repetitionsRow = trigger.socketRow;
+
+        if (countDownEachIteration && trigger.runner != null)
+        {
+            runner = trigger.runner;
+            runner.OnIterationFinished += HandleIterationFinished;
+        }
     }
 
     /// <summary>El botón que ya lo lista, o si no, el del reto del escenario 3.</summary>
@@ -89,15 +104,21 @@ public class ArmTypeSocket : MonoBehaviour, IRunPrecondition
     private void OnDestroy()
     {
         if (socket != null) socket.OnOccupied -= HandleOccupied;
+        if (runner != null) runner.OnIterationFinished -= HandleIterationFinished;
     }
 
     private void HandleOccupied(BlockNode block)
     {
         if (!(block is ArmTypeChip)) return;
 
-        if (repetitionsRow != null) repetitionsRow.SetRepetitions(0);
+        if (resetRepetitionsOnType && repetitionsRow != null) repetitionsRow.SetRepetitions(0);
 
         OnTypePlaced?.Invoke();
+    }
+
+    private void HandleIterationFinished()
+    {
+        if (repetitionsRow != null) repetitionsRow.SetRepetitions(repetitionsRow.Repetitions - 1);
     }
 
     /// <summary>
