@@ -40,6 +40,11 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
              "cuando arranca el reloj. Así nadie monta la secuencia durante la narración.")]
     [SerializeField] bool lockBlocksUntilStart = true;
 
+    [Tooltip("Indicaciones al empezar el reto: el hueco que toca se ilumina y una flecha con un " +
+             "rótulo señala el botón verde que abre la puerta (Scenario1Hints).")]
+    [SerializeField] bool showHints = true;
+
+    Scenario1Hints hints;
     bool levelFinished;
     bool timedOut;
 
@@ -90,9 +95,9 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     void Start()
     {
-        if (lockBlocksUntilStart && TelemetryManager.Instance != null)
+        if (TelemetryManager.Instance != null)
         {
-            SetPaletteInteractable(false);
+            if (lockBlocksUntilStart) SetPaletteInteractable(false);
             TelemetryManager.Instance.ChallengeStarted += HandleChallengeStarted;
         }
 
@@ -105,7 +110,11 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         if (id != challengeId) return;
 
         TelemetryManager.Instance.ChallengeStarted -= HandleChallengeStarted;
-        SetPaletteInteractable(true);
+
+        if (lockBlocksUntilStart) SetPaletteInteractable(true);
+
+        // Cuelga de esta sala: se apaga con ella. Se quita al resolver el nivel.
+        if (showHints) hints = gameObject.AddComponent<Scenario1Hints>();
     }
 
     /// <summary>
@@ -122,6 +131,8 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     void HandleLevelFinished()
     {
         levelFinished = true;
+
+        if (hints != null) Destroy(hints);
 
         // Desde código, como sus tres hermanos, y no solo cableado en el Director.
         //

@@ -202,14 +202,33 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
 **Informe del mes 3 (27/10/2026):** `Docs/Informe-Mes3.docx`, Producto 3 ("Informe técnico de
 optimización, validación funcional y entrega final del módulo inmersivo"; 3.1, 3.2 y 3.3). Se genera
 con `node Docs/Herramientas/generar_informe_mes3.js` y es **el único documento de informe que queda
-abierto**: los de los meses 1 y 2 ya no se tocan. Fecha provisional 24/11/2026, subrayada en rojo.
+abierto**: los de los meses 1 y 2 ya no se tocan. Fecha límite 15/11/2026, subrayada en rojo.
 **El texto entre ⟨ ⟩ del script sale en rojo y entre corchetes: son los datos que faltan** (fecha y
 participantes de la revisión de la 0.9.0, prueba final en el visor, medición de FPS y carga, fecha de
 grabación de las locuciones, compilación de la 1.0.0, keystore, alturas y distancias, sesión de
 transferencia). Figuras en `Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` con esa carpeta y
 `CodeaCaptures.RunBatch`). El proyecto pasa a la **versión 1.0.0** (código 2) en `ProjectSettings`.
 
-**Por dónde seguir, en este orden** (fijado el 27/10/2026):
+- **02/11/2026, feedback de las sesiones, solo código** (compila; 👓 sin probar en Play ni en el visor;
+  Unity estaba abierto, así que no se tocó ninguna escena):
+  - **Sala 1, indicaciones** (`Grid Level/Scenario1Hints.cs`, lo añade `Scenario1Controller` al empezar
+    el reto, `Show Hints`): el primer hueco libre se ilumina en ámbar, con un bloque en la mano todos
+    los libres; flecha y rótulo "OBJETIVO: ABRIR LA PUERTA" sobre la salida. Alturas en sus constantes
+    (`ArrowHeight`, `LabelHeight`): ajustarlas al verlas
+  - **Salas 3 y 4, sin agarrar hasta acabar la narración** (`BlockNode.SetPaused`, aparte de
+    `SetInteractable` para no abrir bloques fijos): se pausa en `Start` y se libera en `Execute()` del
+    controlador, que el Director lanza justo tras la narración. El reloj sigue arrancando al llegar
+  - **Sala 1 intermedia:** `Tools → Codea → Esc. 1: separar la paleta intermedia` (dos filas, 7 y 6).
+    Pasada el 02/11/2026: separación 0,127 m, bloque más ancho 0,119 m (informe en
+    `Logs/Codea_PaletaIntermedia.txt`)
+  - **Sala 2:** enunciados más simples en los assets. Los paneles no se reducen: el 27/10 se pidió
+    letra mayor y las dos cosas chocan. Se decide al verlos en el visor
+  - **Sala 3:** `failedAttempts` retirado de `Scenario3Record` (pedido 8; **el dashboard debe dejar de
+    leerlo**). El pedido 10 ya estaba: es `remaining`
+  - Informe 3: entrega 15/11/2026, la 0.9.0 la probaron los estudiantes del 22/10, fuera "Más niveles"
+  - **Decidido no tocar el perfil de render:** se mira solo si la medición de FPS no llega a RNF-01
+
+**Por dónde seguir, en este orden** (fijado el 27/10/2026; el punto 4 se hizo el 02/11 salvo lo dicho arriba):
 
 1. **Terminar en el editor** (lo hace el usuario): alturas y distancias de mesas y paneles, panel del
    tutorial, botón de reiniciar del Esc. 4 y feedback visual del Esc. 2
@@ -865,7 +884,7 @@ y `escenario1`…`escenario4`.
 | 1 | `failedAttempts`, `blocksGrabbed`, `blocksConnected`, `blockResets`, `errorCollisionBot`, `errorInvalidUse` | `attempts[]`: cada Ejecutar | `sequence`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
 | 2 | `failedAttempts` | `attempts[]`: cada Probar | `module`, `selection`, `correctSelected`, `wrongSelected`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
 | 2 | — | `selections[]`: cada marca (no las desmarcas) | `module`, `option`, `correct`, `durationSeconds`, `timestamp` |
-| 3 | `failedAttempts`, `blocksGrabbed`, `blocksConnected`, `errorInvalidCommand` | `attempts[]`: cada Ejecutar | `sequence`, `repetitions`, `itemType`, `remaining`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
+| 3 | `blocksGrabbed`, `blocksConnected`, `errorInvalidCommand` | `attempts[]`: cada Ejecutar | `sequence`, `repetitions`, `itemType`, `remaining`, `solved`, `solutionPercent`, `durationSeconds`, `timestamp` |
 | 4 | `chipsGrabbed` | `placements[]`: cada ficha encajada | `socket`, `chip`, `correct`, `durationSeconds`, `timestamp` |
 
 **Valores a tratar aparte:** `solutionPercent` y `remaining` valen **-1** cuando no se pudo
@@ -895,7 +914,7 @@ ScenarioRecord            started, completed, timedOut, totalSeconds, startedUtc
 ├── Scenario2Record       + failedAttempts, selections[] (cada una con durationSeconds),
 │                           attempts[]  (ModuleAttemptRecord: module, selection, correctSelected,
 │                                        wrongSelected, solved, solutionPercent)
-├── Scenario3Record       + failedAttempts, blocksGrabbed, blocksConnected,
+├── Scenario3Record       + blocksGrabbed, blocksConnected,
 │                           errorInvalidCommand, attempts[]  (LoopAttemptRecord: + repetitions, itemType,
 │                                                              remaining, solutionPercent)
 └── Scenario4Record       + chipsGrabbed, placements[]  (cada una con durationSeconds)
@@ -1439,9 +1458,9 @@ del Escenario 1 es simétrico: el camino de abajo es el distractor por longitud.
 | 5 | Esc. 2 · No contar deselecciones en telemetría | Código + formato | ✅ **Hecho el 06/10/2026**: `Scenario2Controller` solo registra lo que se marca y `SelectionRecord` ya no tiene `selected`. Sección 9 y `VARIABLES_TELEMETRIA.md` actualizadas. Falta verlo en el visor |
 | 6 | Esc. 2 · Reducir el tamaño de los paneles | Escena / prefabs | Hoy no se ve el estado corregido / sin corregir. Revisar en visor qué queda fuera de vista |
 | 7 | Esc. 3 · Repeticiones a 0 al terminar cada ejecución | Código | `Scenario3Controller.HandleRunFinished` → `SocketRow.SetRepetitions(0)` |
-| 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Desde el 06/10/2026 cada escenario tiene su clase: basta con quitarlo de `Scenario3Record` y de la rama del esc. 3 en `RegisterFailedAttempt`. Actualizar la guía de variables y el informe de integridad |
+| 8 | Esc. 3 · Quitar intentos fallidos de la telemetría | Código + formato | ✅ **Hecho el 02/11/2026.** `failedAttempts` del esc. 3 (y su registro en `HandleRunFinished`). Desde el 06/10/2026 cada escenario tiene su clase: basta con quitarlo de `Scenario3Record` y de la rama del esc. 3 en `RegisterFailedAttempt`. Actualizar la guía de variables y el informe de integridad |
 | 9 | Esc. 3 · `solved: true` al terminar barriles o cajas | Formato | ✅ Aclarado el 09/10/2026: se refería a que `solved` salía como 1/0. Todas las banderas son `true`/`false` desde el 06/10/2026 |
-| 10 | Esc. 3 · Cantidad disponible por intento | Código + formato | Campo nuevo en `LoopAttemptRecord`: objetos de ese tipo que quedaban por clasificar al ejecutar. Actualizar ejemplo y guía |
+| 10 | Esc. 3 · Cantidad disponible por intento | Código + formato | ✅ **Hecho el 22/10/2026** (`remaining`). Campo nuevo en `LoopAttemptRecord`: objetos de ese tipo que quedaban por clasificar al ejecutar. Actualizar ejemplo y guía |
 | 11 | Esc. 4 · Intermedia con el alfabeto Yachay en glifos cuadrados | Recursos + escena | ✅ **Hecho el 12/10/2026**, ver "Escenario 4 en intermedia" abajo. 👓 |
 | 12 | Tutorial · Botón, chip + socket | Diseño | 🟡 **En curso (06/10/2026)**, ver "Tutorial" abajo |
 

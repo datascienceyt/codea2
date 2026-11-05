@@ -238,9 +238,6 @@ public class LoopAttemptRecord
 [Serializable]
 public class Scenario3Record : ScenarioRecord
 {
-    /// <summary>Ejecuciones que no clasificaron ningún objeto.</summary>
-    public int failedAttempts;
-
     /// <summary>Veces que el jugador agarró un bloque o una ficha de tipo.</summary>
     public int blocksGrabbed;
 

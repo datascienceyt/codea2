@@ -225,7 +225,6 @@
         "totalSeconds": 147.7,
         "startedUtc": "2026-10-01T14:07:11.2260000Z",
         "endedUtc": "2026-10-01T14:09:38.9370000Z",
-        "failedAttempts": 1,
         "blocksGrabbed": 6,
         "blocksConnected": 5,
         "errorInvalidCommand": 7,

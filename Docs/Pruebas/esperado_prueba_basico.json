@@ -174,7 +174,6 @@
         "totalSeconds": "<VARIABLE: segundos>",
         "startedUtc": "<VARIABLE: fecha>",
         "endedUtc": "<VARIABLE: fecha>",
-        "failedAttempts": 1,
         "blocksGrabbed": 3,
         "blocksConnected": 2,
         "errorInvalidCommand": 6,

@@ -88,6 +88,33 @@ public class Socket : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Ilumina el hueco vacío para indicar dónde va el bloque. 0 lo deja como estaba. Con un
+    /// bloque dentro no hace nada: manda el verde de ocupado.
+    /// </summary>
+    public void SetHint(float amount, Color color)
+    {
+        if (tintRenderers == null || !IsEmpty) return;
+
+        foreach (Renderer r in tintRenderers)
+        {
+            if (r == null) continue;
+
+            if (amount <= 0f)
+            {
+                r.SetPropertyBlock(null);
+                continue;
+            }
+
+            Color tint = Color.Lerp(Color.white, color, amount);
+            r.GetPropertyBlock(tintBlock);
+            tintBlock.SetColor(BaseColorId, tint);
+            tintBlock.SetColor(ColorId, tint);
+            r.SetPropertyBlock(tintBlock);
+            tintBlock.Clear();
+        }
+    }
+
     void OnEnable() => active.Add(this);
 
     void OnDisable() => active.Remove(this);

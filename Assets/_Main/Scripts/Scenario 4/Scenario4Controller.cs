@@ -45,6 +45,10 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento.")]
     [SerializeField] private bool startChallengeOnStart = false;
 
+    [Header("Fichas")]
+    [Tooltip("Las fichas no se pueden agarrar hasta que termina la narración de la sala.")]
+    [SerializeField] private bool lockChipsDuringNarration = true;
+
     [Header("Al completar")]
     [Tooltip("Sonido al completar el panel: el encendido de los motores, que es lo que cuenta " +
              "la narración de este escenario.")]
@@ -114,6 +118,21 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     private void Start()
     {
         if (startChallengeOnStart) StartScenario();
+
+        SetChipsPaused(lockChipsDuringNarration);
+    }
+
+    /// <summary>
+    /// Las fichas de la sala. El panel del tutorial no lleva challengeId y no se bloquea: sus
+    /// fichas se usan mientras habla el narrador.
+    /// </summary>
+    private void SetChipsPaused(bool value)
+    {
+        if (string.IsNullOrEmpty(challengeId)) return;
+
+        foreach (ShapeChip chip in FindObjectsByType<ShapeChip>(FindObjectsInactive.Include))
+            if (chip.GetComponentInParent<TutorialController>(true) == null)
+                chip.SetPaused(value);
     }
 
     /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
@@ -220,6 +239,9 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     public IEnumerator Execute()
     {
+        // El Director llega aquí justo después de los pasos de narración de la sala.
+        SetChipsPaused(false);
+
         yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
 

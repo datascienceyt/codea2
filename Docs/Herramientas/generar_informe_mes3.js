@@ -15,8 +15,8 @@ const { paginasDelIndice } = require("./paginas_onlyoffice.js");
 
 // --- Datos de la portada. Cambiar aquí y volver a generar ---
 
-const FECHA_LARGA = "24 de noviembre de 2026";
-const FECHA_CORTA = "24/11/2026";
+const FECHA_LARGA = "15 de noviembre de 2026";
+const FECHA_CORTA = "15/11/2026";
 const PRODUCTO = "Informe técnico de optimización, validación funcional y entrega final del módulo inmersivo";
 const CABECERA = "Optimización, validación funcional y entrega del módulo inmersivo";
 
@@ -250,7 +250,7 @@ table([["Campo", 1], ["Valor", 2.6]], [
 ], { title: "Ficha técnica del módulo entregado" });
 
 heading(2, "Origen de los ajustes");
-para("Los ajustes de esta etapa, aplicados el 27 de octubre de 2026, responden a la retroalimentación del equipo del proyecto tras probar en el visor la versión 0.9.0 ⟨fecha y participantes de la sesión de revisión⟩, que se sumó a las observaciones de las sesiones con estudiantes del 22 de octubre de 2026 recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
+para("Los ajustes de esta etapa, aplicados el 27 de octubre de 2026, responden a la retroalimentación de las sesiones con estudiantes del 22 de octubre de 2026, realizadas con la versión 0.9.0 y recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
 table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["Tutorial", "Reducir y sintetizar el texto", "Frase del tutorial reducida a un tercio"],
   ["Tutorial", "La ficha con gravedad no vuelve si se cae", "Vuelve sola a su sitio a los 4 segundos, como en la sala 4"],
@@ -323,7 +323,7 @@ para("La Tabla {{Registro de pruebas finales}} recoge las pruebas de la etapa.")
 table([["Fecha", 0.9], ["Prueba", 1.6], ["Participantes", 1.3], ["Resultado", 2.4]], [
   ["27/10/2026", "Comprobación automática de la escena", "Equipo de desarrollo", `Sin fallos; ${CONEXIONES} conexiones de eventos revisadas en las dos escenas; porcentaje de solución correcto en todos los casos de prueba`],
   ["27/10/2026", "Prueba automática en Play de las dos dificultades", "Equipo de desarrollo", "Sin fallos ni excepciones: configuración de cada sala, nivel nuevo de la sala 1, botón Probar, bloqueo de la mesa hasta que arranca el reloj, ejecución de la sala 3, tiempo agotado en las salas 1 y 3 y secuencia completa"],
-  ["⟨fecha⟩", "Revisión de la versión 0.9.0 en el visor", "⟨participantes⟩", "Observaciones de la Tabla {{Observaciones recibidas y respuesta}}, atendidas en la versión de entrega"],
+  ["22/10/2026", "Sesiones con la versión 0.9.0 en el visor", "Tres estudiantes del Colegio Luis Felipe Borja (sesiones 0601, 0102 y 0103)", "Observaciones de la Tabla {{Observaciones recibidas y respuesta}}, atendidas en la versión de entrega"],
   ["⟨fecha⟩", "Prueba final en el visor, versión 1.0.0", "⟨participantes⟩", "⟨resultado de la lista de comprobación⟩"],
 ], { title: "Registro de pruebas finales" });
 
@@ -485,7 +485,6 @@ table([["Mejora", 3.2], ["Motivo", 2.6]], [
   ["Perfil de render específico para el visor", "El perfil de calidad de Android hereda la configuración de escritorio, más exigente"],
   ["Validación completa con seguimiento de manos", "Las manos están habilitadas pero no se validaron con estudiantes"],
   ["Indicador común de progreso de la misión", "Completar RI-02 con un estado «en proceso» visible en todas las salas"],
-  ["Más niveles por sala y selección aleatoria", "Evitar que estudiantes del mismo grupo se transmitan la solución"],
   ["Panel de resultados para el docente", "Aprovechar el registro de datos durante la sesión, no solo después"],
 ], { title: "Mejoras futuras propuestas" });
 

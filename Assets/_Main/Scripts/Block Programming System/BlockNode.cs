@@ -38,7 +38,7 @@ public abstract class BlockNode : MonoBehaviour
         homeParent = transform.parent;
 
         // Se pudo bloquear antes de despertar (su sala estaba apagada): se aplica ahora.
-        if (!IsInteractable) SetInteractable(false);
+        if (!IsInteractable || IsPaused) ApplyInteractable();
 
         grabEvents = GetComponent<VRGrabEvents>();
         grabEvents.onGrabbed.AddListener(OnGrabbed);
@@ -156,13 +156,31 @@ public abstract class BlockNode : MonoBehaviour
     public void SetInteractable(bool value)
     {
         IsInteractable = value;
+        ApplyInteractable();
+    }
 
+    /// <summary>True mientras la narración de instrucciones de su sala no ha terminado.</summary>
+    public bool IsPaused { get; private set; }
+
+    /// <summary>
+    /// Impide agarrar el bloque durante la narración, aparte de SetInteractable: la fila y la
+    /// ficha acertada bloquean y desbloquean por su cuenta, y al terminar la narración un bloque
+    /// fijo de la fila tiene que seguir fijo.
+    /// </summary>
+    public void SetPaused(bool value)
+    {
+        IsPaused = value;
+        ApplyInteractable();
+    }
+
+    void ApplyInteractable()
+    {
         // Se busca aquí y no solo en Awake: a un bloque de una sala apagada se le puede bloquear
         // antes de su Awake, y entonces aún no sabía qué apagar.
         if (interactionRoot == null) interactionRoot = FindInteractionRoot();
 
         if (interactionRoot != null)
-            interactionRoot.SetActive(value);
+            interactionRoot.SetActive(IsInteractable && !IsPaused);
     }
 
     /// <summary>

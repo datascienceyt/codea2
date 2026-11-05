@@ -91,7 +91,7 @@ Recoger · Girar al destino · Soltar · Volver. No se ve, pero se ejecuta y va 
 | 3.8 | Poner la ficha **Barril** en su hueco | +1 | +1 | El contador vuelve a 0 |
 | 3.9 | Pulsar **+** 3 veces y **Ejecutar** | — | — | Intento 4 (`Barril`, 3): mueve los 3 barriles. Escenario completado: el intento 4 pasa a `solved` = true |
 
-Totales: 4 intentos, `failedAttempts` 1, `blocksGrabbed` 3, `blocksConnected` 2,
+Totales: 4 intentos, `blocksGrabbed` 3, `blocksConnected` 2,
 `errorInvalidCommand` 6.
 
 > Si el contador **no** conserva el 3 entre el paso 3.4 y el 3.5, es que ya se aplicó el
@@ -140,7 +140,7 @@ lleva su `durationSeconds`, desde la anterior (la primera, desde que se abrió e
 | `attempts[].solutionPercent` | 1.2 (25), 1.5 (38), 1.8 (100) · 2.1–2.5 · 3.4–3.9 (100: en básica la fila es fija) |
 | Esc. 2 `attempts[]`, `failedAttempts`, `correctSelected`, `wrongSelected` | 2.1–2.5 (0 y 1 en los fallidos; 1 y 0 en los reparados) |
 | Esc. 3 `attempts[].remaining` | 3.4 (7), 3.5 (4), 3.6 (0), 3.9 (3) |
-| `failedAttempts` | 1.2, 1.5 (esc. 1) · 3.6 (esc. 3; 3.4 y 3.5 no cuentan porque avanzan) |
+| `failedAttempts` | 1.2, 1.5 (esc. 1); el esc. 3 no lo lleva desde el 02/11/2026 |
 | `errorCollisionBot` | 1.2 (salir del tablero) · 1.5 (chocar con un peligro) |
 | `errorInvalidUse` | 1.5 ("Usar" donde no hay nada) |
 | `errorInvalidCommand` | 3.1, 3.3 (vetos) · 3.5, 3.6 (brazo sin objeto) |

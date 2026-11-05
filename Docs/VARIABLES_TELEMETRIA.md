@@ -240,7 +240,6 @@ como error de lógica.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
-| `failedAttempts` | entero | Ejecuciones que **no clasificaron ningún objeto**. Una pasada que mueve algunos pero no todos no cuenta como fallida: es menos óptima, no errónea |
 | `blocksGrabbed` / `blocksConnected` | entero | Veces que agarró y veces que encajó en un hueco un bloque **o una ficha de tipo**. En básica, como la fila está bloqueada, son casi solo cambios de ficha |
 | `errorInvalidCommand` | entero | Recoger de una pila vacía, soltar en el lado equivocado, o intentar ejecutar sin ficha, con 0 repeticiones o **con algún hueco de la fila vacío**. Lo último desde el 22/10/2026: antes la fila corría hasta el primer hueco y, en intermedia, un programa sin su último giro parecía correcto. Al poner la ficha las repeticiones vuelven a 0, así que ejecutar sin elegirlas cuenta aquí y **no** como intento |
 
@@ -491,7 +490,6 @@ Conviene tenerlas presentes antes de diseñar el instrumento de evaluación:
         "completed": true,
         "timedOut": false,
         "totalSeconds": 121.7,
-        "failedAttempts": 1,
         "blocksGrabbed": 3,
         "blocksConnected": 2,
         "errorInvalidCommand": 3,

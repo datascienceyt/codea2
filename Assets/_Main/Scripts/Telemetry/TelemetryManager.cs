@@ -334,8 +334,7 @@ public class TelemetryManager : MonoBehaviour
         }
         else if (scenario is Scenario3Record s3)
         {
-            detalle = $"{s3.attempts.Count} intento(s), {s3.failedAttempts} fallido(s), " +
-                      $"{s3.blocksGrabbed} agarre(s)";
+            detalle = $"{s3.attempts.Count} intento(s), {s3.blocksGrabbed} agarre(s)";
 
             if (expectData && s3.attempts.Count == 0) warnings++;
 
@@ -620,15 +619,15 @@ public class TelemetryManager : MonoBehaviour
 
     /// <summary>
     /// Un intento que terminó sin resolver el escenario. Se cablea al evento de fallo del
-    /// controlador, que es quien dispara el reinicio automático.
+    /// controlador, que es quien dispara el reinicio automático. El Escenario 3 no los cuenta
+    /// (pedido del equipo): se leen en sus intentos. Solo abre el ciclo siguiente.
     /// </summary>
     public void RegisterFailedAttempt()
     {
         ScenarioRecord scenario = GetScenario(_currentChallengeId);
 
         if (scenario is Scenario1Record grid) grid.failedAttempts++;
-        else if (scenario is Scenario3Record loops) loops.failedAttempts++;
-        else return;
+        else if (!(scenario is Scenario3Record)) return;
 
         // El fallo abre un ciclo nuevo: a partir de aquí se cuenta lo que tarda en montar
         // el siguiente intento.

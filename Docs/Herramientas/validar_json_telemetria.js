@@ -46,6 +46,9 @@ const addedOn22Oct = new Set(['AttemptRecord.solutionPercent', 'LoopAttemptRecor
                               'Scenario2Record.failedAttempts', 'Scenario2Record.attempts',
                               'LoopAttemptRecord.remaining']);
 
+// Campo que se retiró el 02/11/2026 (pedido 8). Un archivo anterior lo trae, y no es un error.
+const removedOn2Nov = new Set(['Scenario3Record.failedAttempts']);
+
 function check(value, type, where, errors, older) {
     if (isPlaceholder(value)) return;
 
@@ -76,7 +79,11 @@ function check(value, type, where, errors, older) {
         if (addedOn22Oct.has(`${type}.${name}`)) older.add(name);
         else errors.push(`${where}: falta '${name}'`);
     }
-    for (const name of actual) if (!names.includes(name)) errors.push(`${where}: sobra '${name}'`);
+    for (const name of actual) {
+        if (names.includes(name)) continue;
+        if (removedOn2Nov.has(`${type}.${name}`)) older.add(name);
+        else errors.push(`${where}: sobra '${name}'`);
+    }
 
     const common = actual.filter(name => names.includes(name));
     const ordered = names.filter(name => actual.includes(name));
@@ -112,7 +119,7 @@ for (const file of files) {
     const name = path.relative(root, file);
 
     if (errors.length === 0) {
-        console.log(older.size === 0 ? `OK     ${name}` : `OK     ${name}  (formato anterior al 22/10/2026: sin ${[...older].join(', ')})`);
+        console.log(older.size === 0 ? `OK     ${name}` : `OK     ${name}  (formato anterior: difiere en ${[...older].join(', ')})`);
         continue;
     }
 

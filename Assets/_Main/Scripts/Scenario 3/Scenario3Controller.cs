@@ -60,6 +60,10 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
              "reinician el cronómetro del escenario.")]
     [SerializeField] private bool startChallengeOnStart = false;
 
+    [Header("Bloques")]
+    [Tooltip("Fichas y bloques no se pueden agarrar hasta que termina la narración de la sala.")]
+    [SerializeField] private bool lockPiecesDuringNarration = true;
+
     [Header("Acciones al finalizar")]
     public UnityEvent OnScenarioFinished;
 
@@ -104,8 +108,8 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         if (runner != null)
             runner.OnRunFinished.AddListener(HandleRunFinished);
         else
-            Debug.LogError($"[Escenario3] 'runner' sin asignar en '{name}': los intentos " +
-                           "fallidos no se registrarán y failedAttempts saldrá siempre a 0.", this);
+            Debug.LogError($"[Escenario3] 'runner' sin asignar en '{name}': tras un intento " +
+                           "fallido no se reiniciará nada.", this);
     }
 
     private void OnDestroy()
@@ -122,6 +126,8 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     private void Start()
     {
         if (startChallengeOnStart) StartScenario();
+
+        SetPiecesPaused(lockPiecesDuringNarration);
 
         // Cuántos hay de cada tipo en TODAS las posiciones del brazo, no solo en el montón de
         // origen: así da igual que el decorado reparta los barriles entre varios sitios, y el
@@ -171,10 +177,9 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         // El criterio de fallo NO puede ser "el escenario no está completo".
         //
         // Hacen falta al menos dos ejecuciones, una por tipo, así que la pasada de barriles
-        // perfecta terminaría con las cajas sin mover y se contaría como fallida: failedAttempts
-        // saldría inflado midiendo el diseño del reto en vez del error del niño. Falla la pasada
-        // que no clasificó NADA; la que avanzó y se quedó corta es simplemente menos óptima, y
-        // eso ya se lee en el número de intentos y sus repeticiones.
+        // perfecta terminaría con las cajas sin mover y se reiniciaría como fallida. Falla la
+        // pasada que no clasificó NADA; la que avanzó y se quedó corta es simplemente menos
+        // óptima, y eso ya se lee en el número de intentos y sus repeticiones.
         int delivered = DeliveredTotal();
         bool progressed = delivered > lastDeliveredTotal;
 
@@ -285,7 +290,22 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     /// </summary>
     public IEnumerator Execute()
     {
+        // El Director llega aquí justo después de los pasos de narración de la sala.
+        SetPiecesPaused(false);
+
         yield return new WaitUntil(() => scenarioFinished || timedOut);
+    }
+
+    /// <summary>Las fichas de tipo y los bloques del brazo, sin los del tutorial.</summary>
+    private void SetPiecesPaused(bool value)
+    {
+        foreach (ArmTypeChip chip in FindObjectsByType<ArmTypeChip>(FindObjectsInactive.Include))
+            if (chip.GetComponentInParent<TutorialController>(true) == null)
+                chip.SetPaused(value);
+
+        foreach (ArmBlock block in FindObjectsByType<ArmBlock>(FindObjectsInactive.Include))
+            if (block.GetComponentInParent<TutorialController>(true) == null)
+                block.SetPaused(value);
     }
 
     [ContextMenu("Reset Scenario")]
