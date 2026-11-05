@@ -94,7 +94,7 @@ Pipeline de persistencia local con exportación remota manual:
 1. **`TelemetryManager`** (uno por escena) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
 2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}_{deviceId}.json` (PIN, número de sesión y código del visor) en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
 3. El respaldo local está siempre disponible vía USB/ADB, independientemente del estado de la red.
-4. La exportación remota (HTTP POST al servidor Flask en `csv.penginexr.com`, vía Raspberry Pi + Cloudflare Tunnel) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local. Lo que se quede sin subir (sin red, o con la aplicación cerrada a mitad de partida) se sube solo la próxima vez que se abre la pantalla del supervisor, que además tiene un botón **Subir datos**; `TelemetryOutbox` lleva la cuenta de lo ya subido sin tocar los archivos.
+4. La exportación remota (POST multipart a `/upload` del servidor de datos, Codea2Server; la URL está en `Assets/_Main/Resources/ServidorDatos.asset`) se lanza sola al terminar la sesión o al agotarse el tiempo, y es **opcional**: sin red el archivo simplemente se queda en el visor. Si la conexión falla, reintenta y avisa sin bloquear la experiencia ni borrar el respaldo local. Lo que se quede sin subir (sin red, o con la aplicación cerrada a mitad de partida) se sube solo la próxima vez que se abre la pantalla del supervisor, que además tiene un botón **Subir datos**; `TelemetryOutbox` lleva la cuenta de lo ya subido sin tocar los archivos.
 5. Al cerrar la sesión se imprime un **informe de integridad** por escenario, que avisa de contadores sospechosamente a cero antes de dar los datos por buenos.
 
 Cada escenario tiene su **propia estructura de datos**, porque no miden lo mismo: el 1 registra la secuencia de bloques de cada intento; el 3 además las repeticiones y **con qué tipo** se ejecutó; el 2 cada opción pulsada y el tiempo entre una y otra; y el 4 qué figura se intentó encajar en qué hueco.
@@ -215,7 +215,7 @@ Docs/
 └── Investigaciones/
 ```
 
-> Servidor Flask de telemetría (`csv.penginexr.com`): no versionado, corre en contenedores Docker en el Raspberry Pi del homelab (`~/Services/JSONServer`).
+> Servidor de telemetría: repo aparte, **Codea2Server** (su README explica la instalación). Desde noviembre de 2026 corre con Docker en una laptop de Yachay publicada por el servidor de la universidad, sin Cloudflare; antes estaba en una Raspberry Pi tras Cloudflare Tunnel. La URL se cambia en un solo sitio, `Assets/_Main/Resources/ServidorDatos.asset` (`Tools → Codea → Servidor de datos`); si es `http://`, hay que poner *Allow downloads over HTTP* en *Always allowed* (Player → Android → Other Settings). Para probarla: `Tools → Codea → Probar el servidor`.
 
 ### Instalar en el visor
 

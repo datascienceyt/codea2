@@ -277,6 +277,8 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Generar el informe del mes 2 | `node Docs/Herramientas/generar_informe_mes2.js` (texto y datos de portada dentro del script) |
 | Generar el informe del mes 3 | `node Docs/Herramientas/generar_informe_mes3.js`. Lo pendiente va entre ⟨ ⟩ y sale en rojo |
 | Las dos anteriores sin abrir Unity | `Unity.exe -batchmode -quit -nographics -projectPath . -executeMethod CodeaSceneCheck.CheckBatch` · la de Play igual pero **sin `-quit`** y con `CodeaPlayCheck.RunBatch` (sale sola; tarda ~5 min) |
+| Cambiar el servidor de datos (la URL, para Juego y Setup a la vez) | `Tools → Codea → Servidor de datos` selecciona `Assets/_Main/Resources/ServidorDatos.asset`: se cambia `Upload Url` y se recompila el APK. Ver "Servidor" en la sección 9 |
+| Probar el servidor: Ping (GET `/health`) y JSON de prueba, en Play | `Tools → Codea → Probar el servidor (Ping y JSON de prueba)` (`Editor/CodeaServerCheck.cs`). Informe en `Logs/Codea_PruebaServidor.txt`. Sin abrir Unity: `-executeMethod CodeaServerCheck.RunBatch`, **con gráficos** (con `-nographics` OpenXR se cae al entrar en Play sin casco) y sin `-quit`; con `-servidor <url>` prueba otra URL sin tocar el asset |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
 | Comprobar que un JSON de telemetría tiene el formato del código | `node Docs/Herramientas/validar_json_telemetria.js [archivo]` (sin archivo, los de la documentación) |
@@ -844,7 +846,8 @@ variable en `Docs/VARIABLES_TELEMETRIA.md`; archivo completo de ejemplo en
 `Docs/ejemplo_run_telemetria.json`; modelo exacto en `Assets/_Main/Scripts/Telemetry/TelemetryData.cs`.
 
 **Un archivo = una sesión** (`{pin}_{sessionId}_{deviceId}.json`), subido por POST multipart
-(campo `file`, cabecera `X-API-Key`) a `https://codea2.penginexr.com/upload`.
+(campo `file`, cabecera `X-API-Key`) a la URL de `Assets/_Main/Resources/ServidorDatos.asset`
+(hoy `https://codea2.penginexr.com/upload`; ver "Servidor" más abajo).
 
 **Raíz:** `pin` (texto), `deviceId` (5 caracteres), `sessionId`, `difficulty` (1 básica, 2
 intermedia), `startedUtc`, `endedUtc`, `totalSeconds` (sesión entera, con narración y traslados),
@@ -1005,26 +1008,70 @@ antes de leer el archivo.
 
 ### Servidor
 
-Flask en Raspberry Pi vía Cloudflare Tunnel en `csv.penginexr.com` (el nombre es residuo: sube
-JSON). Acepta `.json` y `.csv`, y guarda con **el nombre que manda el visor**,
-`{pin}_{sessionId}_{deviceId}.json`, sin prefijo de fecha: el nombre ya es único.
+**Desde el 05/11/2026 el servidor deja la Raspberry Pi y Cloudflare.** Pasa a una laptop con
+Docker en Yachay, publicada por el servidor de la universidad con IP pública propia, **sin
+Cloudflare ni túnel**. Su código está en el repo **Codea2Server**, y su README explica la
+instalación nueva (no está en este repositorio). El contrato con la app no cambia:
 
-El stack vive en la Pi, en `~/Services/JSONServer` — contenedor `json-uploader`, imagen
-`jsonserver-json-uploader`, subidas en `./uploads`. **Ese código no está en este repositorio.**
+- `POST /upload`, multipart, campo `file`, cabecera `X-API-Key` → **200** guardado, **400** archivo
+  no válido, **401** clave mala. Guarda con **el nombre que manda el visor**,
+  `{pin}_{sessionId}_{deviceId}.json`, sin prefijo de fecha: el nombre ya es único
+- `GET /health` → `{"status":"alive"}`. Lo usa el ping
+- La clave es la misma de siempre, `UPLOAD_API_KEY` del servidor. Está en cada `JSONUploader`
+  (Juego y Setup; la herramienta 3 copia la de Juego a Setup)
 
-Tres cosas que pueden romperlo, todas vividas:
+**La URL está en un solo sitio:** `Assets/_Main/Resources/ServidorDatos.asset` (`UploadServerConfig`,
+`Tools → Codea → Servidor de datos`). La leen los dos `JSONUploader`; ya no hay URL en escenas,
+prefabs ni código. **Mientras TI no dé la definitiva sigue la de la Pi**,
+`https://codea2.penginexr.com/upload`. La nueva será `https://DOMINIO/upload` o, si no hay
+dominio, `http://IP-PÚBLICA:PUERTO/upload`. Para cambiarla:
 
-- El compose **tiene que publicar `8090:8080`**. Flask escucha en 8080 dentro del contenedor y
-  el túnel busca el 8090 del host. Sin la línea `ports`, Cloudflare devuelve **502** con Flask
-  perfectamente vivo
-- `UPLOAD_API_KEY` tiene que estar en el `environment`, o cae al valor por defecto y todo da 401
-- Si `raspberrypi` no se resuelve desde dentro del contenedor de `cloudflared`, otro 502. Se
-  fija con `extra_hosts: ["raspberrypi:host-gateway"]`
+1. Probarla antes, con Unity cerrado y sin tocar el asset:
+   `Unity.exe -batchmode -projectPath . -executeMethod CodeaServerCheck.RunBatch -servidor <url>`
+2. Ponerla en `Upload Url` del asset. El ping se deduce solo (`/upload` → `/health`)
+3. **Si es `http://`:** Project Settings → Player → Android → Other Settings → **Allow downloads
+   over HTTP = Always allowed**. Sin eso Android y el editor (salvo a `localhost`) cortan la
+   petición con "Insecure connection not allowed". Unity no lo da como error de conexión: **lanza
+   una excepción** en `SendWebRequest`, y `JSONUploader.TrySend` la captura para que el archivo quede
+   pendiente y la subida no se quede colgada (probado el 05/11/2026 en el editor con
+   `http://example.com`). El inspector del asset lo avisa y tiene un botón para ponerlo, y
+   `CodeaServerCheck` **para el build de Android** mientras falte. **Si es `https://`, no se toca.**
+   Con `http://` la clave y los JSON viajan sin cifrar
+4. `Tools → Codea → Probar el servidor`, recompilar el APK y probar en el visor (sección 14)
 
-Para diagnosticar sin adivinar: `JSONUploader` → **Ping al servidor** traduce el resultado a
-cuál de las cuatro capas falló (red del visor, DNS, túnel, Flask), y **Subir JSON de prueba**
-manda un archivo con el formato real por el mismo camino que una subida de verdad. Los dos
-necesitan Play Mode. En la Pi, el traceback está en `docker logs -f json-uploader`.
+**Sesiones ya subidas a la Pi:** `subidos.txt` (`TelemetryOutbox`) apunta nombre y huella, no el
+servidor, así que lo que ya llegó a la Pi **no se vuelve a subir** al nuevo: esas sesiones se
+migran con un ZIP desde el panel del servidor. Lo que siga pendiente en el visor sube al nuevo.
+
+**Diagnóstico por capas.** `JSONUploader` → **Ping al servidor** (Play Mode) hace GET a `/health`
+y traduce el resultado a la capa que falló (`JSONUploader.Diagnose`, que también pone la capa en
+el log de una subida fallida). De dentro afuera:
+
+| Resultado | Capa y causas típicas |
+|---|---|
+| `internetReachability` = sin red | **Red del visor**: wifi apagada o sin conectar |
+| "Cannot resolve destination host" | **DNS**: URL mal escrita, dominio sin dar de alta, wifi con portal sin aceptar |
+| "Cannot connect to destination host" | **Conexión**: nadie atiende en ese puerto. Docker o el contenedor parados, puerto mal publicado, redirección de Yachay a otra máquina o puerto |
+| "Request timeout" | **Conexión**: nadie contesta. Laptop apagada o dormida, puerto cerrado en el firewall de Yachay, o la red del visor lo bloquea |
+| "Unable to complete SSL connection" | **HTTPS**: certificado caducado, de otro dominio o autofirmado |
+| "Insecure connection not allowed" | **HTTP bloqueado** por Player Settings (punto 3) |
+| 200 sin `alive` | Contestó otra cosa: portal cautivo, página del proxy, URL de otro servicio |
+| 401 o 403 en `/health` | **Servidor intermedio**: proxy o firewall (`/health` no pide clave). En la subida, 401 es la clave |
+| 404 | La URL no apunta a Codea2Server, o el intermediario reenvía a otra ruta |
+| 413 | Límite de tamaño del proxy o de la aplicación |
+| 500 | **Aplicación**: `docker logs` en la laptop |
+| 502–504 | **Servidor intermedio o proxy** en pie, pero no alcanza la laptop o el contenedor |
+| 520–530 | Cloudflare (solo mientras la URL sea la de la Pi; 530 con error 1033 = túnel caído) |
+
+**502–504 y 520–530 cuentan como "sin conexión"**: el JSON queda pendiente, `Setup` muestra
+"Servidor fuera de servicio (código)" y reintenta cada 20 s. **Subir JSON de prueba** manda
+`9999_0_{deviceId}.json` por el mismo camino que una subida real (queda en el servidor). Las dos
+cosas juntas, sin visor: `Tools → Codea → Probar el servidor`.
+
+**Antes (hasta el 05/11/2026):** Flask en la Pi del homelab (`~/Services/JSONServer`, contenedor
+`json-uploader`) tras Cloudflare Tunnel, primero en `csv.penginexr.com` y luego en
+`codea2.penginexr.com`. Sus fallos vividos (puerto 8090 sin publicar o `raspberrypi` sin resolver
+desde `cloudflared` → 502; túnel caído → 530 con error 1033, el 22/10/2026) ya no aplican.
 
 ### Sesiones pendientes
 
@@ -1322,7 +1369,7 @@ Build Settings en ese orden. `Intermedio.unity` y los respaldos de `_Recovery/` 
 | Narrativa | ✅ CSV y voces nuevas, dos listas de 20 frases (la `0` del tutorial delante), 5 frases de error |
 | Telemetría | ✅ Un `TelemetryManager` por escena, PIN desde `Setup`, retos 2–4 abiertos al llegar |
 | Repositorio | ✅ De `Build/` solo se versiona `app.apk` (Git LFS, ~160 MB) |
-| Servidor | ✅ `~/Services/JSONServer` en la Pi |
+| Servidor | 🟡 Pasa de la Pi a una laptop con Docker en Yachay (repo Codea2Server), sin Cloudflare. URL en `ServidorDatos.asset`; sigue la de la Pi hasta tener la definitiva (sección 9, "Servidor") |
 | Temporizador | ✅ Tiempo agotado cableado. `alerts` vacíos (no hay frases de aviso grabadas) |
 | HUD diegético (RI-02), reinicio supervisado (RF-08) | ❌ Sin implementar |
 
@@ -1553,8 +1600,9 @@ mismo formato que `Docs/Informe-Mes1.docx`: portada con los entregables 2.1–2.
   del módulo en Unity"); participantes de las pruebas ("Equipo de desarrollo" / "Equipo del
   proyecto", sección 3.2)
 
-**Seguridad:** `UPLOAD_API_KEY` está en claro en `JSONUploader.cs` y el token del túnel en su
-`docker-compose.yml`. Asumido: servidor privado y temporal.
+**Seguridad:** `UPLOAD_API_KEY` está en claro en los `JSONUploader` de las escenas `Juego` y `Setup`, y
+con una URL `http://` (servidor por IP, sin dominio) viaja sin cifrar junto con los JSON. Asumido:
+servidor privado y temporal.
 
 ## 12. Decisiones abiertas
 
@@ -1629,6 +1677,7 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 19b | No resolver las salas 1, 2 y 3 (o dejar que el reloj llegue a 00:00 en cualquier sala) | Frase 20 y vuelta a `Setup`, sin pasar a la sala siguiente; en el JSON, la sala en curso con `timedOut: true` y las siguientes sin empezar | `TimeUpSequence`, `Session Seconds` |
 | 19c | Agarrar un bloque y soltarlo sobre un hueco **sin apartar la mano** | Encaja en el momento de soltar. Lo mismo con una ficha del Esc. 4, que además se queda en el hueco | `VRGrabEvents` |
 | 19d | Jugar una partida sin red (o cerrar la app a mitad), volver a abrir con red | En `Setup`, la etiqueta pasa de "N sesiones por subir" a "todo subido" sola; con el botón **Subir datos**, igual. En logcat, `[Upload] OK` por archivo | `JSONUploader.uploadPendingOnStart`, `subidos.txt` |
+| 19e | Con el APK de la URL nueva (la de Yachay): abrir `Setup` con red, jugar una partida corta | "todo subido" en `Setup`; en logcat, `[Upload] OK` con `saved_as`; el archivo aparece en el panel de Codea2Server. Si falla, la línea `Capa:` del log dice dónde | `ServidorDatos.asset`; si es `http://`, Allow downloads over HTTP; red de Yachay (sección 9, "Servidor") |
 | 20 | Sacar los JSON del visor | Un archivo por partida, `{pin}_{sessionId}_{deviceId}.json`, con el mismo `deviceId` en todos, 4 escenarios con datos e `itemType` en el esc. 3 | Informe de integridad en logcat |
 | 21 | Repetir 1–17 con las manos, sin mandos | Agarrar y pulsar funcionan | Interactores de mano del rig |
 | 22 | `Setup` → **Intermedia** → EMPEZAR | Carga `Juego`; en logcat, `[Dificultad] Escena en intermedia`; en el JSON, `difficulty: 2` | `DifficultyApplier` |

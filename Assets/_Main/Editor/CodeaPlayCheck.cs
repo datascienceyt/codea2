@@ -444,9 +444,7 @@ public static class CodeaPlayCheck
         }
 
         // Nada sale a la red aunque algo llegara a llamar a la subida.
-        foreach (JSONUploader uploader in Object.FindObjectsByType<JSONUploader>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            typeof(JSONUploader).GetField("serverUrl", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .SetValue(uploader, "http://127.0.0.1:9/prueba-sin-red");
+        JSONUploader.UrlOverride = "http://127.0.0.1:9/prueba-sin-red";
 
         // Se para en el paso anterior al primero que sube el JSON o cambia de escena.
         stopScenario = director.scenarios.Count;

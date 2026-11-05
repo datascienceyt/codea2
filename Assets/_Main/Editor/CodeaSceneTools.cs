@@ -558,8 +558,9 @@ public static class CodeaSceneTools
     {
         StringBuilder log = new StringBuilder("[Codea] Puesta al día de las escenas:\n");
 
-        // El servidor y la clave se leen del uploader de Juego, que es el que se prueba: el de
-        // Setup se quedó con los de un servidor antiguo y las sesiones pendientes no subían.
+        // La clave y el timeout se leen del uploader de Juego, que es el que se prueba: el de
+        // Setup se quedó una vez con los de un servidor antiguo y las pendientes no subían. La
+        // URL ya no va en las escenas: es la de ServidorDatos.asset, común a las dos.
         gameUploader = ReadGameUploader();
 
         if (File.Exists(SetupScene))
@@ -590,9 +591,9 @@ public static class CodeaSceneTools
         Debug.Log(log.ToString());
     }
 
-    private static (string url, string key, int timeout)? gameUploader;
+    private static (string key, int timeout)? gameUploader;
 
-    private static (string url, string key, int timeout)? ReadGameUploader()
+    private static (string key, int timeout)? ReadGameUploader()
     {
         EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
 
@@ -600,8 +601,7 @@ public static class CodeaSceneTools
         if (uploader == null) return null;
 
         SerializedObject so = new SerializedObject(uploader);
-        return (so.FindProperty("serverUrl").stringValue, so.FindProperty("apiKey").stringValue,
-                so.FindProperty("timeoutSeconds").intValue);
+        return (so.FindProperty("apiKey").stringValue, so.FindProperty("timeoutSeconds").intValue);
     }
 
     private static void UpdateSetupScene(StringBuilder log)
@@ -633,26 +633,30 @@ public static class CodeaSceneTools
 
         SetBool(uploader, "uploadPendingOnStart", true);
 
-        if (gameUploader is (string serverUrl, string serverKey, int serverTimeout) && !string.IsNullOrEmpty(serverUrl))
+        if (gameUploader is (string serverKey, int serverTimeout) && !string.IsNullOrEmpty(serverKey))
         {
             SerializedObject so = new SerializedObject(uploader);
-            bool changed = so.FindProperty("serverUrl").stringValue != serverUrl ||
-                           so.FindProperty("apiKey").stringValue != serverKey;
+            bool changed = so.FindProperty("apiKey").stringValue != serverKey ||
+                           so.FindProperty("timeoutSeconds").intValue != serverTimeout;
 
-            so.FindProperty("serverUrl").stringValue = serverUrl;
             so.FindProperty("apiKey").stringValue = serverKey;
             so.FindProperty("timeoutSeconds").intValue = serverTimeout;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // La clave no va al log: el informe se guarda en Logs/.
             log.AppendLine(changed
-                ? $"  JSONUploader: servidor y clave copiados de Juego ({serverUrl}); antes eran otros"
-                : $"  JSONUploader: mismo servidor y clave que Juego ({serverUrl})");
+                ? "  JSONUploader: clave y timeout copiados de Juego; antes eran otros"
+                : "  JSONUploader: misma clave y timeout que Juego");
         }
         else
         {
-            log.AppendLine("  ⚠ Juego no tiene JSONUploader: el de Setup conserva su servidor y su clave");
+            log.AppendLine("  ⚠ Juego no tiene JSONUploader con clave: el de Setup conserva la suya");
         }
+
+        string url = AssetDatabase.LoadAssetAtPath<UploadServerConfig>(UploadServerConfig.AssetPath)?.Url;
+        log.AppendLine(string.IsNullOrEmpty(url)
+            ? $"  ⚠ Falta la URL del servidor en {UploadServerConfig.AssetPath}: no subirá nada"
+            : $"  Servidor (de {UploadServerConfig.AssetPath}, común a Setup y Juego): {url}");
 
         Transform startKey = panel.Find("Tecla EMPEZAR");
         Transform key = panel.Find($"Tecla {UploadKeyLabel}");

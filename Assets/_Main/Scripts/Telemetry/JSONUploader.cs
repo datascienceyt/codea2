@@ -20,10 +20,13 @@ using UnityEngine.UI;
 ///   · En la pantalla del supervisor, UploadPending sube todo lo que se quedó sin subir: sin
 ///     red, con el servidor caído o con la aplicación cerrada a mitad de partida. Se lanza sola
 ///     al abrir la pantalla y también desde su botón. Qué está pendiente lo sabe TelemetryOutbox.
+///
+/// La dirección del servidor NO está aquí: está en Assets/_Main/Resources/ServidorDatos.asset
+/// (UploadServerConfig), la misma para Juego y Setup. Aquí quedan la API key y el timeout.
 /// </summary>
 public class JSONUploader : MonoBehaviour
 {
-    [SerializeField] private string serverUrl = "https://codea2.penginexr.com/upload";
+    [Tooltip("UPLOAD_API_KEY del servidor. La URL está en Assets/_Main/Resources/ServidorDatos.asset.")]
     [SerializeField] private string apiKey;
     [SerializeField] private int timeoutSeconds = 15;
     [SerializeField] private int maxRetries = 2;
@@ -134,8 +137,9 @@ public class JSONUploader : MonoBehaviour
             // tres esperas: se deja aquí. Si el servidor contestó y rechazó ESTE archivo, el
             // problema es del archivo y se sigue con los demás.
             //
-            // Un servidor caído tras Cloudflare (502–504, 520–530) cuenta como sin conexión: no es
-            // culpa del archivo, y lo que toca es reintentar más tarde.
+            // Un intermediario que no alcanza la aplicación (502–504 del proxy, 520–530 de
+            // Cloudflare) cuenta como sin conexión: no es culpa del archivo, y lo que toca es
+            // reintentar más tarde.
             if (result.ResponseCode == 0 || IsServerDown(result.ResponseCode))
             {
                 noConnection = true;
@@ -177,29 +181,134 @@ public class JSONUploader : MonoBehaviour
     }
 
     /// <summary>
-    /// Respuestas de Cloudflare o del proxy cuando no llegan al servidor. 530 con el error 1033
-    /// es el túnel (cloudflared) caído: el 22/10/2026 pasó así, y se arregla en el servidor.
+    /// Respuestas de un intermediario que no llega a la aplicación: 502–504 del proxy o servidor
+    /// intermedio (en Yachay, el que publica la laptop), 520–530 de Cloudflare (solo mientras la
+    /// URL pase por Cloudflare; el 22/10/2026 fue un 530 con el túnel caído). Nada de eso es
+    /// culpa del archivo: queda pendiente y se reintenta.
     /// </summary>
     private static bool IsServerDown(long code) =>
         code == 502 || code == 503 || code == 504 || (code >= 520 && code <= 530);
 
     /// <summary>
-    /// El cuerpo de la respuesta, para el log. Las páginas de error de Cloudflare son HTML de
-    /// cientos de líneas: de ellas basta el título y el código de error.
+    /// El cuerpo de la respuesta, para el log. Las páginas de error de un proxy o de Cloudflare
+    /// son HTML de cientos de líneas: de ellas basta el título y, si lo trae, el código de error.
     /// </summary>
     private static string Summarize(string body)
     {
         if (string.IsNullOrEmpty(body)) return "(vacía)";
 
         string trimmed = body.TrimStart();
-        if (!trimmed.StartsWith("<", System.StringComparison.Ordinal)) return body;
+        if (!trimmed.StartsWith("<", System.StringComparison.Ordinal))
+            return body.Length > 500 ? body.Substring(0, 500) + "…" : body;
 
         string title = Between(body, "<title>", "</title>");
-        string cloudflare = Between(body, "errorCode:", "}");
+        string errorCode = Between(body, "errorCode:", "}");
 
         return $"página HTML: {(title ?? "sin título").Trim()}" +
-               (cloudflare != null ? $" · error de Cloudflare {cloudflare.Trim()}" : "");
+               (errorCode != null ? $" · código de error {errorCode.Trim()}" : "");
     }
+
+    /// <summary>
+    /// En qué capa se quedó una petición, en una frase. Capas, de dentro afuera: red del visor →
+    /// DNS → conexión con la máquina y el puerto → HTTPS o HTTP → servidor intermedio o proxy →
+    /// aplicación (Codea2Server). Se usa en el ping y en el log de una subida fallida.
+    /// </summary>
+    private static string Diagnose(UnityWebRequest request, bool health)
+    {
+        if (request.result == UnityWebRequest.Result.ConnectionError)
+            return DiagnoseError(request.error);
+
+        if (request.result == UnityWebRequest.Result.Success && health)
+            return Contains(request.downloadHandler?.text, "alive")
+                ? "todo en pie: red del visor, DNS, servidor intermedio y aplicación"
+                : "contestó algo que no es Codea2Server (falta {\"status\":\"alive\"}): portal " +
+                  "cautivo de la wifi, página del proxy, o la URL apunta a otro servicio";
+
+        if (request.result == UnityWebRequest.Result.Success)
+            return "la aplicación aceptó la petición";
+
+        return DiagnoseCode(request.responseCode, health);
+    }
+
+    /// <summary>La capa de un fallo sin respuesta HTTP, por el texto del error de Unity.</summary>
+    private static string DiagnoseError(string error)
+    {
+        error ??= "";
+        if (Contains(error, "insecure"))
+            return "HTTP bloqueado por el propio visor/editor: la URL es http:// y Player Settings → " +
+                   "Android → Other Settings → Allow downloads over HTTP no está en 'Always allowed'. " +
+                   "Se arregla en el proyecto y recompilando";
+        if (Contains(error, "resolve"))
+            return "DNS: el nombre del servidor no se resuelve. URL mal escrita, dominio sin dar de " +
+                   "alta todavía, o la red del visor no tiene DNS (portal de la wifi sin aceptar)";
+        if (Contains(error, "ssl") || Contains(error, "certificate") || Contains(error, "tls"))
+            return "HTTPS: se llegó a la máquina pero el certificado no vale (caducado, de otro " +
+                   "dominio o autofirmado). Es del servidor intermedio o de Codea2Server";
+        if (Contains(error, "timeout"))
+            return "conexión: nadie contestó a tiempo. La laptop está apagada o dormida, el puerto " +
+                   "no está abierto hacia fuera (firewall o redirección de Yachay), o la red del " +
+                   "visor bloquea ese puerto";
+        if (Contains(error, "connect"))
+            return "conexión: la dirección existe pero nadie atiende en ese puerto. Docker o el " +
+                   "contenedor parados, puerto mal publicado, o la redirección de Yachay apunta a " +
+                   "otra máquina o puerto";
+
+        return "conexión: no se llegó a recibir respuesta del servidor";
+    }
+
+    /// <summary>La capa de una respuesta HTTP que no fue un éxito.</summary>
+    private static string DiagnoseCode(long code, bool health)
+    {
+        return code switch
+        {
+            401 => health
+                ? "algo rechazó el acceso antes de la aplicación (/health no pide clave): proxy o " +
+                  "firewall del servidor intermedio"
+                : "aplicación: rechazó la API key. Tiene que ser la UPLOAD_API_KEY del servidor",
+            403 => "acceso prohibido: la API key (si lo dice la aplicación) o una regla del proxy o " +
+                   "firewall de Yachay",
+            404 => health
+                ? "el servidor contesta pero no conoce /health: la URL no apunta a Codea2Server, o " +
+                  "el servidor intermedio reenvía a otra ruta"
+                : "la ruta no existe en el servidor: revisa la URL de ServidorDatos.asset",
+            405 => "el servidor no acepta ese método en esa ruta: la URL no apunta a Codea2Server " +
+                   "o es una versión sin /health",
+            413 => "el archivo es demasiado grande para el servidor intermedio (límite de tamaño " +
+                   "del proxy) o para la aplicación",
+            >= 500 and < 502 => "aplicación: error interno de Codea2Server. Mira 'docker logs' en la laptop",
+            502 or 503 or 504 => "servidor intermedio o proxy en pie, pero no alcanza la aplicación: " +
+                                 "laptop apagada o dormida, contenedor parado, o reenvío a un puerto " +
+                                 "equivocado. Se reintenta solo",
+            >= 520 and <= 530 => "Cloudflare no alcanza el origen (530 con error 1033: túnel caído). " +
+                                 "Solo puede salir mientras la URL pase por Cloudflare. Se reintenta solo",
+            >= 500 => "error en el servidor intermedio o en la aplicación",
+            >= 400 => "la petición llegó pero fue rechazada",
+            _ => "respuesta inesperada"
+        };
+    }
+
+    /// <summary>
+    /// SendWebRequest, sin dejar escapar la excepción: con una URL http:// y Player Settings sin
+    /// permitir HTTP, Unity no devuelve un error de conexión sino que LANZA
+    /// InvalidOperationException ("Insecure connection not allowed"). Sin capturarla, la
+    /// corrutina moría sin descontar PendingUploads ni soltar la subida de pendientes.
+    /// </summary>
+    private static UnityWebRequestAsyncOperation TrySend(UnityWebRequest request, out string error)
+    {
+        try
+        {
+            error = null;
+            return request.SendWebRequest();
+        }
+        catch (InvalidOperationException e)
+        {
+            error = e.Message;
+            return null;
+        }
+    }
+
+    private static bool Contains(string text, string part) =>
+        text != null && text.IndexOf(part, StringComparison.OrdinalIgnoreCase) >= 0;
 
     private static string Between(string text, string start, string end)
     {
@@ -248,11 +357,22 @@ public class JSONUploader : MonoBehaviour
     }
 
     /// <summary>
-    /// Comprueba si el servidor responde, sin subir nada.
+    /// Para pruebas desde el editor (CodeaPlayCheck, CodeaServerCheck): si no es null, se usa en
+    /// vez de la URL de ServidorDatos.asset. Se vacía al entrar en Play.
+    /// </summary>
+    public static string UrlOverride { get; set; }
+
+    /// <summary>La URL de subida: la de ServidorDatos.asset salvo que una prueba la cambie.</summary>
+    public static string UploadUrl => UrlOverride ?? UploadServerConfig.UploadUrl;
+
+    /// <summary>
+    /// Comprueba si el servidor responde, sin subir nada: GET a /health, que en Codea2Server
+    /// contesta {"status":"alive"}.
     ///
-    /// Existe porque un fallo de subida puede venir de cuatro sitios muy distintos —el visor
-    /// sin red, el DNS, el túnel de Cloudflare, o Flask— y el mensaje de error de una subida
-    /// fallida no los distingue. Aquí cada resultado se traduce a cuál de los cuatro fue.
+    /// Existe porque un fallo de subida puede venir de sitios muy distintos —el visor sin red, el
+    /// DNS, la laptop o su puerto, el certificado, el servidor intermedio de Yachay o la propia
+    /// aplicación— y el mensaje de error de una subida fallida no los distingue. Aquí cada
+    /// resultado se traduce a la capa que falló (ver Diagnose).
     /// </summary>
     [ContextMenu("Ping al servidor")]
     private void PingServer()
@@ -270,49 +390,46 @@ public class JSONUploader : MonoBehaviour
     {
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            Debug.LogError("[Ping] El visor no tiene red. No es problema del servidor.");
+            Debug.LogError("[Ping] Red del visor: no tiene red (wifi apagada o sin conectar). " +
+                           "No es problema del servidor.");
+            yield break;
+        }
+
+        string healthUrl = UploadServerConfig.HealthUrlFor(UploadUrl);
+        if (healthUrl == null)
+        {
+            Debug.LogError($"[Ping] No hay URL de servidor: revisa {UploadServerConfig.AssetPath}.");
             yield break;
         }
 
         float started = Time.realtimeSinceStartup;
 
-        // GET contra la misma URL de subida. Un 405 aquí es buena señal: significa que la
-        // petición llegó hasta Flask y solo se quejó del método.
-        using (UnityWebRequest request = UnityWebRequest.Get(serverUrl))
+        using (UnityWebRequest request = UnityWebRequest.Get(healthUrl))
         {
-            request.SetRequestHeader("X-API-Key", apiKey);
             request.timeout = timeoutSeconds;
 
-            yield return request.SendWebRequest();
-
-            int ms = Mathf.RoundToInt((Time.realtimeSinceStartup - started) * 1000f);
-            long code = request.responseCode;
-
-            if (request.result == UnityWebRequest.Result.ConnectionError)
+            UnityWebRequestAsyncOperation sending = TrySend(request, out string refused);
+            if (sending == null)
             {
-                Debug.LogError($"[Ping] No se pudo conectar con '{serverUrl}' ({ms} ms): " +
-                               $"{request.error}. Suele ser DNS, o el túnel caído.");
+                Debug.LogError($"[Ping] No se pudo enviar a '{healthUrl}' · {DiagnoseError(refused)}\n" +
+                               $"Error: {refused}", this);
                 yield break;
             }
 
-            string veredicto = code switch
-            {
-                200 or 405 => "el servidor responde. Si la subida falla, el problema está en " +
-                              "la petición, no en la conexión",
-                401 or 403 => "llegó hasta Flask, pero rechazó la API key",
-                404 => "la URL no existe en el servidor: revisa la ruta de 'serverUrl'",
-                413 => "el archivo es demasiado grande para el servidor",
-                502 or 503 or 504 => "Cloudflare está en pie pero NO alcanza el origen. Es el " +
-                                     "fallo conocido: 'raspberrypi' no se resuelve desde el " +
-                                     "contenedor de cloudflared, o Flask no está levantado",
-                523 => "Cloudflare no encuentra el origen: la Raspberry está apagada o sin túnel",
-                530 => "el túnel de Cloudflare está caído (error 1033): cloudflared no está " +
-                       "conectado en el servidor. Se arregla allí, no en la app",
-                _ => "respuesta inesperada"
-            };
+            yield return sending;
 
-            Debug.Log($"[Ping] {code} en {ms} ms · {veredicto}\n" +
-                      $"Respuesta: {Summarize(request.downloadHandler.text)}");
+            int ms = Mathf.RoundToInt((Time.realtimeSinceStartup - started) * 1000f);
+            string verdict = Diagnose(request, health: true);
+            bool alive = request.result == UnityWebRequest.Result.Success &&
+                         Contains(request.downloadHandler.text, "alive");
+
+            string message = request.result == UnityWebRequest.Result.ConnectionError
+                ? $"[Ping] Sin respuesta de '{healthUrl}' ({ms} ms) · {verdict}\nError: {request.error}"
+                : $"[Ping] {request.responseCode} de '{healthUrl}' en {ms} ms · {verdict}\n" +
+                  $"Respuesta: {Summarize(request.downloadHandler.text)}";
+
+            if (alive) Debug.Log(message, this);
+            else Debug.LogError(message, this);
         }
     }
 
@@ -390,7 +507,11 @@ public class JSONUploader : MonoBehaviour
 
     // Sin recarga de dominio al entrar en Play, el estático arrastraría la cuenta de la vez anterior.
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetStatics() => PendingUploads = 0;
+    private static void ResetStatics()
+    {
+        PendingUploads = 0;
+        UrlOverride = null;
+    }
 
     /// <summary>Las de este componente, para descontarlas si se destruye con ellas en vuelo.</summary>
     private int inFlight;
@@ -427,19 +548,39 @@ public class JSONUploader : MonoBehaviour
             yield break;
         }
 
+        // Sin asset de servidor no hay adónde subir; cuenta como sin conexión (código 0) y el
+        // archivo sigue pendiente. El error ya lo dio UploadServerConfig.
+        string url = UploadUrl;
+        if (url == null)
+        {
+            Debug.LogError("[Upload] Falló tras todos los reintentos: no hay URL de servidor. " +
+                           "El archivo permanece en el dispositivo.");
+            yield break;
+        }
+
         byte[] fileData = File.ReadAllBytes(filePath);
         string fileName = Path.GetFileName(filePath);
 
         WWWForm form = new WWWForm();
-        // El servidor Flask valida por extensión del nombre de archivo, no por este MIME.
+        // El servidor valida por extensión del nombre de archivo, no por este MIME.
         form.AddBinaryData("file", fileData, fileName, "application/json");
 
-        using (UnityWebRequest request = UnityWebRequest.Post(serverUrl, form))
+        using (UnityWebRequest request = UnityWebRequest.Post(url, form))
         {
             request.SetRequestHeader("X-API-Key", apiKey);
             request.timeout = timeoutSeconds;
 
-            yield return request.SendWebRequest();
+            // Rechazada antes de salir (http:// sin permiso): reintentar no cambia nada. Cuenta
+            // como sin conexión (código 0) y el archivo sigue pendiente.
+            UnityWebRequestAsyncOperation sending = TrySend(request, out string refused);
+            if (sending == null)
+            {
+                Debug.LogError($"[Upload] Falló tras todos los reintentos: no se pudo enviar '{fileName}' · " +
+                               $"{DiagnoseError(refused)}\nError: {refused}. El archivo permanece en el dispositivo.");
+                yield break;
+            }
+
+            yield return sending;
 
             if (request.result == UnityWebRequest.Result.Success)
             {
@@ -453,8 +594,9 @@ public class JSONUploader : MonoBehaviour
 
             // El cuerpo de la respuesta se registra además del error: UnityWebRequest.error solo
             // dice "HTTP/1.1 502 Bad Gateway", mientras que el cuerpo trae el motivo real, sea
-            // de Flask o la página de diagnóstico de Cloudflare.
+            // de la aplicación o la página de error del proxy. Y la capa, como en el ping.
             Debug.LogError($"[Upload] Falló '{fileName}' ({request.responseCode}): {request.error}\n" +
+                           $"Capa: {Diagnose(request, health: false)}\n" +
                            $"Respuesta: {Summarize(request.downloadHandler.text)}");
 
             result.ResponseCode = request.result == UnityWebRequest.Result.ProtocolError ? request.responseCode : 0;

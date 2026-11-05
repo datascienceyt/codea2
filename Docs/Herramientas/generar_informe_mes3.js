@@ -400,7 +400,8 @@ heading(2, "Ejecución y configuración");
 para("**Uso en una sesión.** El supervisor, con el visor puesto o mirando la vista compartida, introduce el PIN del participante (o pulsa la tecla de siguiente correlativo), elige la dificultad y pulsa EMPEZAR. Después entrega el visor al estudiante, que pulsa Probar en el cuarto del tutorial para comenzar. Al terminar o agotarse el tiempo, la aplicación vuelve sola a la pantalla del supervisor con el siguiente PIN propuesto.");
 para("**Configuración.** La Tabla {{Parámetros de configuración}} recoge los parámetros que pueden necesitar ajuste y dónde se cambian. Todos se cambian en el editor de Unity y requieren compilar de nuevo.");
 table([["Parámetro", 1.3], ["Dónde", 2], ["Valor actual", 2]], [
-  ["Servidor de datos y clave", "Escena Juego, objeto con JSONUploader; la herramienta «Poner al día Setup y Juego» lo copia a Setup", "https://codea2.penginexr.com/upload"],
+  ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "⟨Dirección del servidor de Yachay⟩; provisionalmente https://codea2.penginexr.com/upload"],
+  ["Clave del servidor", "Escena Juego, objeto con JSONUploader; la herramienta «Poner al día Setup y Juego» la copia a Setup", "UPLOAD_API_KEY del servidor"],
   ["Tiempo de sesión y por sala", "Escena Juego, Sesion → ScenarioTimeLimit", "900 s y 300 s"],
   ["Narración", "Assets/_Main/Narrativa.csv y audios en Sounds/VoiceLines/Camila", "22 frases y 2 variantes por dificultad"],
   ["Niveles de la sala 1", "Assets/_Main/Levels (editor de niveles) y Escenario (1) → Scenario1Difficulty", "reto-espejo (básica) y escenario1_intermedio"],
@@ -460,7 +461,8 @@ para("El proyecto incluye herramientas en el menú Tools → Codea del editor qu
 table([["Herramienta", 1.5], ["Cuándo usarla", 4]], [
   ["Comprobar escena de juego", "Tras cualquier cambio en la escena o al renombrar un método. Revisa conexiones de eventos, la secuencia del Director, la narración frente al guion y cada sala en cada dificultad"],
   ["Probar las dos dificultades en Play", "Antes de compilar una versión. Recorre la experiencia sin visor en las dos dificultades"],
-  ["Poner al día Setup y Juego", "Tras actualizar el código o cambiar un nivel: aplica las soluciones para el porcentaje de solución y copia la configuración del servidor a Setup"],
+  ["Poner al día Setup y Juego", "Tras actualizar el código o cambiar un nivel: aplica las soluciones para el porcentaje de solución y copia la clave del servidor a Setup"],
+  ["Probar el servidor", "Tras cambiar la dirección del servidor o si los datos no llegan: comprueba la conexión y envía un archivo de prueba, indicando en qué punto falla (red, DNS, servidor intermedio o aplicación)"],
   ["Asignar la voz del narrador", "Tras grabar o sustituir un audio: lo coloca en su frase por el nombre del archivo"],
   ["Feedback 27-10", "Rehace los cambios de escena de esta etapa sobre una escena restaurada"],
   ["Ver como básica o intermedia", "Para mover piezas de una sola dificultad sin que se solapen"],
@@ -474,7 +476,7 @@ bullet("**Narración:** las dos listas del narrador deben tener las mismas 20 en
 bullet("**Niveles de la sala 1:** un nivel nuevo debe mantener la salida en la casilla (0,1), frente al botón físico. Tras cambiarlo, comprobar sus soluciones con resolver_nivel.js, ajustar los bloques de la mesa si hace falta y actualizar las soluciones en CodeaSolutions.");
 bullet("**Diferencias por dificultad:** una pieza que solo existe en una dificultad lleva el componente DifficultyOnly; nunca se activa desde el Director, sino su contenedor.");
 bullet("**Enumeraciones:** los valores nuevos de una enumeración se añaden al final, porque Unity guarda el número y no el nombre.");
-bullet("**Firma y servidor:** firmar siempre con la misma clave y, si cambia el servidor, actualizarlo en la escena Juego y pasar «Poner al día Setup y Juego».");
+bullet("**Firma y servidor:** firmar siempre con la misma clave. Si cambia la dirección del servidor, se cambia solo en ServidorDatos.asset, se comprueba con «Probar el servidor» y se compila de nuevo; si la dirección empieza por http://, hay que permitir HTTP en Player Settings o el visor no enviará los datos.");
 
 heading(2, "Mejoras futuras");
 para("La Tabla {{Mejoras futuras propuestas}} recoge las mejoras identificadas que quedan fuera del alcance de esta entrega.");
