@@ -99,13 +99,16 @@ public class PinEntry : MonoBehaviour
     }
 
     /// <summary>
-    /// Propone el siguiente PIN correlativo al último usado.
+    /// Botón "+1": suma uno al PIN que hay en pantalla. Si está vacío o a medias, propone el
+    /// siguiente correlativo al último usado (que es lo que se ve al abrir la pantalla).
     ///
     /// Es el caso habitual del piloto: los participantes entran uno detrás de otro, y así el
-    /// supervisor no tiene que teclear cuatro cifras por niño con el visor en la mano.
+    /// supervisor no tiene que teclear cuatro cifras por niño con el visor en la mano. Antes
+    /// proponía siempre "último + 1", el mismo número que ya se veía, y el botón parecía no
+    /// hacer nada.
     /// </summary>
     [ContextMenu("Siguiente PIN")]
-    public void UseNextPin() => SetPin(TelemetryManager.GetLastPin() + 1);
+    public void UseNextPin() => SetPin(IsComplete ? Pin + 1 : TelemetryManager.GetLastPin() + 1);
 
     /// <summary>Fija el PIN de golpe, rellenando con ceros por la izquierda.</summary>
     public void SetPin(int value)

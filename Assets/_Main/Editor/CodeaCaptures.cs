@@ -86,7 +86,7 @@ public static class CodeaCaptures
         yield return new Shot($"sala3_{d}", new Vector3(0.75f, 4.45f, 47.1f), new Vector3(-0.85f, 3.95f, 47.35f), 65f);
     }
 
-    [MenuItem("Tools/Codea/Capturas para informes")]
+    [MenuItem("Tools/Codea/Capturas para informes", false, 80)]
     private static void RunMenu()
     {
         if (EditorApplication.isPlaying || !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

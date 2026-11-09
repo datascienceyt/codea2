@@ -19,9 +19,9 @@ public class Scenario1Hints : MonoBehaviour
     private const float ArrowHeight = 1.5f;
     private const float LabelHeight = 1.85f;
     private const float ArrowBob = 0.08f;
-    private const float PulseSpeed = 4f;
 
-    private static readonly Color HintColor = new Color(1f, 0.8f, 0.15f);
+    // Color e intensidad comunes a todas las indicaciones (HintStyle, más suave desde el 09/11/2026).
+    private static Color HintColor => HintStyle.Color;
 
     private readonly List<Socket> sockets = new List<Socket>();
     private readonly List<GridBlock> blocks = new List<GridBlock>();
@@ -60,7 +60,7 @@ public class Scenario1Hints : MonoBehaviour
     {
         bool running = runner != null && runner.IsRunning;
         bool holding = blocks.Exists(b => b != null && b.IsGrabbed);
-        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * PulseSpeed);
+        float pulse = HintStyle.Pulse;
         bool firstFree = true;
 
         foreach (Socket socket in sockets)
@@ -80,7 +80,7 @@ public class Scenario1Hints : MonoBehaviour
         if (exit == null) exit = FindAnyObjectByType<Exit>();
         if (exit != null) marker.transform.position = exit.transform.position;
 
-        arrow.localPosition = Vector3.up * (ArrowHeight + ArrowBob * Mathf.Sin(Time.time * PulseSpeed));
+        arrow.localPosition = Vector3.up * (ArrowHeight + ArrowBob * Mathf.Sin(Time.time * HintStyle.PulseSpeed));
 
         Camera view = Camera.main;
         if (view == null) return;

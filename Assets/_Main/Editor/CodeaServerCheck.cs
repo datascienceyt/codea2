@@ -58,7 +58,7 @@ public static class CodeaServerCheck
 
     // --- El asset ---
 
-    [MenuItem("Tools/Codea/Servidor de datos")]
+    [MenuItem("Tools/Codea/Servidor de datos", false, 60)]
     private static void SelectConfig()
     {
         UploadServerConfig config = AssetDatabase.LoadAssetAtPath<UploadServerConfig>(UploadServerConfig.AssetPath);
@@ -172,7 +172,7 @@ public static class CodeaServerCheck
 
     // --- Prueba en Play: Ping y JSON de prueba ---
 
-    [MenuItem("Tools/Codea/Probar el servidor (Ping y JSON de prueba)")]
+    [MenuItem("Tools/Codea/Probar el servidor (Ping y JSON de prueba)", false, 61)]
     private static void RunMenu()
     {
         if (EditorApplication.isPlaying || !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

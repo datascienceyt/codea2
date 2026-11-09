@@ -18,7 +18,13 @@ public class ArmTypeChip : BlockNode
     [Header("Tipo")]
     [SerializeField] private ArmItemType type = ArmItemType.Barril;
 
+    [Tooltip("Segundos que puede quedarse suelta fuera de su sitio antes de volver sola. Soltada " +
+             "dentro de la consola quedaba escondida (09/11/2026). 0 = no vuelve.")]
+    [SerializeField] private float returnAfterSeconds = 6f;
+
     public ArmItemType Type => type;
+
+    protected override float LooseReturnSeconds => returnAfterSeconds;
 
     public override string InstructionLabel => type.ToString();
 

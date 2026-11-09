@@ -22,5 +22,5 @@ MonoBehaviour:
     isCorrect: 1
   - label: Agregar agua
     isCorrect: 0
-  - label: "Reparar circuitos el\xE9ctricos"
+  - label: Encender las luces
     isCorrect: 0

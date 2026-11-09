@@ -60,7 +60,7 @@ public static class CodeaPlayCheck
         EditorApplication.update += Tick;
     }
 
-    [MenuItem("Tools/Codea/Probar las dos dificultades en Play")]
+    [MenuItem("Tools/Codea/Probar las dos dificultades en Play", false, 1)]
     private static void RunMenu()
     {
         if (EditorApplication.isPlaying || !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;

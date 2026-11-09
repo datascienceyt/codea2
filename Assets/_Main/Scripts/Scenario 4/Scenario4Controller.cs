@@ -49,6 +49,10 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     [Tooltip("Las fichas no se pueden agarrar hasta que termina la narración de la sala.")]
     [SerializeField] private bool lockChipsDuringNarration = true;
 
+    [Tooltip("Con una ficha en la mano, los huecos libres parpadean en ámbar suave " +
+             "(ShapeSocketHints). Todos, no solo el correcto: no da la respuesta.")]
+    [SerializeField] private bool showHints = true;
+
     [Header("Al completar")]
     [Tooltip("Sonido al completar el panel: el encendido de los motores, que es lo que cuenta " +
              "la narración de este escenario.")]
@@ -67,6 +71,14 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     private bool timedOut;
 
     public bool IsCompleted => scenarioFinished;
+    public bool IsTimedOut => timedOut;
+    public System.Collections.Generic.IReadOnlyList<ShapeSocket> Sockets => sockets;
+
+    /// <summary>
+    /// Time.time en que se completó el panel, o -1 si aún no. EarthApproach cuenta desde aquí el
+    /// arranque de los motores antes de empezar el regreso.
+    /// </summary>
+    public float CompletedTime { get; private set; } = -1f;
     public bool IsBusy => false;
 
     /// <summary>Se agotó el tiempo de la sala: el Director sigue sin esperar al panel.</summary>
@@ -120,6 +132,8 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         if (startChallengeOnStart) StartScenario();
 
         SetChipsPaused(lockChipsDuringNarration);
+
+        if (showHints && sockets != null && sockets.Length > 0) gameObject.AddComponent<ShapeSocketHints>();
     }
 
     /// <summary>
@@ -221,6 +235,7 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
             if (socket != null && !socket.IsSolved) return;
 
         scenarioFinished = true;
+        CompletedTime = Time.time;
 
         // El panel del tutorial no lleva la etiqueta del escenario: ese aviso es el que se
         // busca en consola para comprobar que el Escenario 4 de verdad se completó.

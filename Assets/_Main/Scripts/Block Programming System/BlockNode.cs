@@ -20,6 +20,11 @@ public abstract class BlockNode : MonoBehaviour
     Socket candidate;
     bool isGrabbed;
 
+    // Pose de origen, para el regreso solo de las piezas sueltas (LooseReturnSeconds).
+    Vector3 homeLocalPosition;
+    Quaternion homeLocalRotation;
+    float looseSince = -1f;
+
     // Frame de la última conexión contada. Los prefabs de bloque cablean además TryAtattch en
     // onReleased, así que una misma suelta puede pasar dos veces por AttachTo.
     int lastConnectionFrame = -1;
@@ -33,9 +38,18 @@ public abstract class BlockNode : MonoBehaviour
     /// </summary>
     public virtual string InstructionLabel => gameObject.name;
 
+    /// <summary>
+    /// Segundos que puede quedarse suelta fuera de su sitio (ni en la mano ni en un hueco) antes
+    /// de volver sola. 0 = nunca, que es lo de siempre. Lo usan las fichas de tipo de la Sala 3
+    /// (09/11/2026): soltadas dentro de la consola quedaban escondidas y no se podían recuperar.
+    /// </summary>
+    protected virtual float LooseReturnSeconds => 0f;
+
     protected virtual void Awake()
     {
         homeParent = transform.parent;
+        homeLocalPosition = transform.localPosition;
+        homeLocalRotation = transform.localRotation;
 
         // Se pudo bloquear antes de despertar (su sala estaba apagada): se aplica ahora.
         if (!IsInteractable || IsPaused) ApplyInteractable();
@@ -64,6 +78,48 @@ public abstract class BlockNode : MonoBehaviour
     {
         if (isGrabbed)
             candidate = FindNearestFreeSocket();
+
+        UpdateLooseReturn();
+    }
+
+    void UpdateLooseReturn()
+    {
+        if (LooseReturnSeconds <= 0f) return;
+
+        if (isGrabbed || IsAttached || IsAtHome)
+        {
+            looseSince = -1f;
+            return;
+        }
+
+        if (looseSince < 0f) looseSince = Time.time;
+        else if (Time.time - looseSince >= LooseReturnSeconds) ReturnHome();
+    }
+
+    bool IsAtHome => transform.parent == homeParent &&
+                     (transform.localPosition - homeLocalPosition).sqrMagnitude < 0.0001f;
+
+    /// <summary>
+    /// Vuelve a su sitio de origen. Por el BlockResetter de su sala si cuelga de uno (restaura
+    /// también la física); si no, a mano.
+    /// </summary>
+    void ReturnHome()
+    {
+        looseSince = -1f;
+
+        BlockResetter resetter = homeParent != null ? homeParent.GetComponent<BlockResetter>() : null;
+        if (resetter != null && resetter.ReturnBlock(this)) return;
+
+        if (TryGetComponent(out Rigidbody body) && !body.isKinematic)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+
+        transform.SetParent(homeParent, false);
+        transform.localPosition = homeLocalPosition;
+        transform.localRotation = homeLocalRotation;
+        OnReturnedHome();
     }
 
     void OnReleased()

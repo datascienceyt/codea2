@@ -47,7 +47,7 @@ public static class CodeaSceneCheck
 
     private static readonly Difficulty[] Difficulties = { Difficulty.Basica, Difficulty.Intermedia };
 
-    [MenuItem("Tools/Codea/Comprobar escena de juego")]
+    [MenuItem("Tools/Codea/Comprobar escena de juego", false, 0)]
     private static void CheckMenu()
     {
         Scene scene = SceneManager.GetActiveScene();
@@ -444,7 +444,7 @@ public static class CodeaSceneCheck
 
         foreach (KeyValuePair<Object, int> pair in startsByController.Where(p => p.Value > 1))
             report.Error($"El reto de '{pair.Key.name}' se abre {pair.Value} veces: debe ser una, al llegar a la sala. " +
-                         "Pasa Tools → Codea → 3");
+                         "Pasa Tools → Codea → Poner al día Setup y Juego");
 
         CheckNarratorLists(narrator, narratorWaits, report);
     }
@@ -849,7 +849,7 @@ public static class CodeaSceneCheck
             CallsOf(new SerializedObject(timer).FindProperty("OnTimeUp"), "OnTimeUp")
                 .Any(c => c.Target == timeUp && c.Method == nameof(TimeUpSequence.Begin)))
             report.Error("Timer.OnTimeUp sigue llamando a TimeUpSequence.Begin: la primera sala que agote su tiempo " +
-                         "cerraría la sesión entera. Pasa Tools → Codea → 2");
+                         "cerraría la sesión entera. Quita esa llamada de Timer.OnTimeUp");
 
         ScenarioTimeLimit limit = AllComponents<ScenarioTimeLimit>(scene).FirstOrDefault();
         if (limit != null)

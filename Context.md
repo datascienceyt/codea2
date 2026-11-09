@@ -182,7 +182,8 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
     visor):**
     - **Botones de empezar → "Probar" en celeste:** el Ejecutar del Esc. 3 y el INICIAR del tutorial
       (el del Esc. 1 ya era un icono "PROBAR"). `Blue.mat`, como el Probar del Esc. 1. El EMPEZAR de
-      `Setup` se deja: es la pantalla del supervisor
+      `Setup` se deja: es la pantalla del supervisor. El 09/11/2026 el del tutorial (`Tutorial.prefab →
+      StartButton`, el que arranca la experiencia) pasa a "Empezar": no prueba nada, inicia todo
     - **Recorrido de los botones a 0,4**: en los cuatro prefabs con `PokeInteractableVisual`
       (`StartButton`, `TextButton`, `RestartButton`, `Scenario2/Button`) la superficie que dispara la
       pulsación (`_buttonBaseTransform`) se acercó a la cara del botón: 18 → 7,2 mm y 34,8 → 13,9 mm
@@ -227,6 +228,68 @@ transferencia). Figuras en `Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` co
     leerlo**). El pedido 10 ya estaba: es `remaining`
   - Informe 3: entrega 15/11/2026, la 0.9.0 la probaron los estudiantes del 22/10, fuera "Más niveles"
   - **Decidido no tocar el perfil de render:** se mira solo si la medición de FPS no llega a RNF-01
+
+- **09/11/2026** (👓 sin probar en el visor):
+  - **Locuciones 0, 1, 3, 4, 6, 7 y 12** grabadas el 08/11, de m4a a WAV (48 kHz, estéreo) y asignadas;
+    `Anteriores (27-10)` borrada; los m4a originales en `Docs/Locuciones/`
+  - **"+1" de Setup** (`PinEntry.UseNextPin`): suma 1 al PIN en pantalla (antes repetía "último + 1")
+  - **Menú `Tools → Codea` limpio**: fuera las herramientas de montaje de una sola vez (ver "Herramientas ya hechas")
+  - **Final:** acercamiento de la Tierra (32 s), que el Director espera antes de volver a `Setup`
+    (`EarthApproach`, tabla de archivos). Rehecho después el mismo día: ver "Final con premio"
+  - **Sala 3:** consola del brazo (brazo, pedestal, panel, botones, huecos de tipo, columna) 10 cm más abajo
+  - **Indicaciones con fichas** (`Scenario 4/ShapeSocketHints.cs`, lo añade `Scenario4Controller →
+    Show Hints`): con una ficha en la mano parpadean todos los huecos libres del panel de la Sala 4,
+    no solo el correcto. El tutorial no lleva `Scenario4Controller`: sus dos huecos los enciende
+    `TutorialController → Show Hints` (el de bloque hasta encajar uno, como la Sala 1; el de figura
+    con la ficha en la mano, como la Sala 4). `Socket` recoge sus renderers también en los huecos de figura,
+    sin el verde de ocupado. Color e intensidad comunes en `Story/Tools/HintStyle.cs` (ámbar a medio
+    camino entre el original y una primera rebaja que quedó apagada: (1, 0.81, 0.275), como mucho al 75 %), también para la Sala 1
+  - Guía para TI del cambio de servidor: `Docs/Cambiar-servidor-de-datos.md`
+  - **Final con premio** (el fundido de los motores dejaba la escena vacía y sin recompensa):
+    - Motores sin fundido: `engineStart_corto.wav` (39 s) = arranque y rugido del original (0–33 s)
+      enlazado sin corte con su apagado natural (42–49 s). La Tierra empieza a acercarse a los 5 s
+      de completar el panel (`EarthApproach.engineLeadSeconds`, desde `Scenario4Controller.CompletedTime`)
+      y, con el acercamiento de 32 s (al principio eran 16; en el visor iba demasiado rápido), llega
+      a los 37 s, cuando el motor se está apagando solo. La música del regreso termina ahí también
+    - `Scenario 4/MissionCelebration.cs`, en `Escenario (4)` junto al `Scenario4Controller` (escucha su
+      `OnScenarioFinished`): fanfarria y vítores, dos cañones de confeti a los lados del jugador
+      (`Materials/Confeti.mat`, URP Particles/Unlit), rótulo "¡MISIÓN CUMPLIDA! / Volvemos a casa"
+      7 s y, al acabar la fanfarria, música del regreso (volumen 0,4, por debajo de la narración). La
+      música sobrevive al cambio a `Setup` y termina allí con su final; si después se carga otra escena,
+      se corta. Sonidos en `Sounds/Final/` (biblioteca X:\Library): `Saving Worlds stinger win.wav`
+      (Cinematic Battle Music Compilation), `CheeringCrowd AR01_98_1.wav` (Crowd Scenes Positive),
+      `04-Good-Beginning-30-SM532.wav` (Colony Sunrise, en streaming)
+  - **Sala 1, paleta intermedia plana:** la herramienta "separar la paleta intermedia" (02/11) les había
+    dado a los 13 bloques el giro de los huecos de la fila (45°) y no el de la mesa: quedaban
+    inclinados y hundidos en el tablero hasta 5,6 cm (un "Avanzar 2", `Block (3)`). Ahora, como los
+    de básica: z local 0 y dos filas (y local −0,068 y −0,182). Para que no parezcan botones, cada fila
+    va girada hacia un lado, de 6° a 12° (arriba +, abajo −): entre bloques solo hay 8 mm y con giros
+    opuestos entre vecinos se montaban a partir de ~10°. En juego no
+    cambiaba nada (al encajar toman el giro del hueco); era solo cómo se veían
+  - **Huecos, solo el marco:** `Socket` tiñe (ámbar de indicación y verde de ocupado) solo las cuatro
+    barras del borde, no la placa central, que es la pieza centrada en el hueco. En la Sala 4 la
+    placa teñida tapaba la figura. Vale para todos (Sala 1, Sala 3, Sala 4 y tutorial)
+  - **Fichas de tipo de la Sala 3 vuelven solas:** sueltas fuera de su sitio (ni en la mano ni en un
+    hueco) 6 s (al principio 10), vuelven a donde empezaron (`ArmTypeChip → Return After Seconds`; la lógica está en
+    `BlockNode.LooseReturnSeconds`, 0 = nunca). Soltadas dentro de la consola quedaban escondidas
+  - **Sala 3, consola por dificultad:** fuera el pedestal de ProBuilder (1,75 × 1,5 × 1 m). Ahora hay
+    `Consola (Basica)` y `Consola (Intermedia)` (`DifficultyOnly`, mallas en `3D Models/Escenario3/`):
+    el mismo frente inclinado, cuña por detrás y un pie hasta el suelo real (`floor_5 (1)`, y 2,905; el
+    `Teleport Collider` a 3,406 es un trigger). En básica el bloque baja hasta y 3,62; en intermedia
+    hasta 3,26, por la columna de instrucciones. El Probar va a otro sitio en básica con
+    `DifficultyPose` (`Difficulty/DifficultyPose.cs`, posición por dificultad que aplica
+    `DifficultyApplier`). El `Canvas` de la consola es un `RectTransform` sin padre de interfaz: se
+    mueve con `anchoredPosition`; mover `position` desde un script no se guarda
+  - **Sala 3, consola más estrecha:** de 1,0 a 0,83 m en las dos dificultades (z local −0,46…+0,37;
+    placa del suelo ±0,36). Las fichas de tipo, que iban una al lado de la otra hasta el borde, van
+    apiladas bajo el hueco TIPO (caja arriba, barril abajo), y la columna derecha (rótulo TIPO, hueco,
+    fichas, Probar de intermedia y Reiniciar) se acercó 7,4 cm al centro; el hueco y su rótulo, además,
+    2 cm más arriba. La pose de intermedia del Probar (`DifficultyPose`) se movió igual. 6 cm de margen
+    a cada lado
+  - **Sala 2:** en los tres prefabs de módulo, estado arriba (`Status`), título debajo (`subject`) y la
+    descripción centrada (`MiddleLeft`). Motores básica: "Reparar circuitos eléctricos" pasa a
+    "Encender las luces" (era ambigua). Los tres módulos, 35 cm más abajo en `Juego` (raíz de cada
+    instancia: `y` 1 → 0,65 en `Escenario (2)`, en dos pasos de 25 y 10 cm); la base del mueble queda bajo el suelo
 
 **Por dónde seguir, en este orden** (fijado el 27/10/2026; el punto 4 se hizo el 02/11 salvo lo dicho arriba):
 
@@ -277,16 +340,12 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
   y preguntar. El diseño de niveles lo decide el usuario; el agente lo comprueba
 - **Tras cambiar código, actualizar este documento** en la misma sesión
 
-**Herramientas ya hechas, para no rehacerlas:**
+**Herramientas ya hechas, para no rehacerlas.** El 09/11/2026 se quitaron del menú `Tools → Codea` las de montaje de una sola vez, ya aplicadas: crear `Setup` (1), preparar `Juego` (2), montar el tutorial (4), sonidos del brazo, Escenario 4 (intermedia YACHAY y sorteo de letras), separar la paleta del Esc. 1, ambientación y botón Probar del Esc. 2 y Feedback 27-10 (`CodeaFeedback.cs`, `CodeaScenario2.cs`, `CodeaScenario4.cs`, `CodeaPaletteLayout.cs`). Siguen en el historial de git (commit anterior al del 09/11) si hubiera que rehacer una escena desde cero. Las menciones a esas herramientas más abajo son historia.
 
 | Para | Usar |
 |---|---|
-| Montar o reparar las escenas | `Tools → Codea → 1` y `2` en Unity (`Editor/CodeaSceneTools.cs`) |
-| Poner las escenas ya montadas al día con el código (botón de subir datos en `Setup`; en `Juego`, una apertura por reto y fuera ajustes de prefab sin uso) | `Tools → Codea → 3`. Sin abrir Unity: `-executeMethod CodeaSceneTools.UpdateScenesBatch`. Informe en `Logs/Codea_PuestaAlDia.txt` |
-| Montar y cablear el tutorial | `Tools → Codea → 4`, con la escena de juego abierta |
+| Poner las escenas ya montadas al día con el código (botón de subir datos y clave del servidor en `Setup`; en `Juego`, una apertura por reto, fuera ajustes de prefab sin uso y soluciones para el porcentaje) | `Tools → Codea → Poner al día Setup y Juego`. Sin abrir Unity: `-executeMethod CodeaSceneTools.UpdateScenesBatch`. Informe en `Logs/Codea_PuestaAlDia.txt` |
 | Poner la voz del narrador (listas, frases de error y de tiempo agotado) desde la carpeta de audios | `Tools → Codea → Asignar la voz del narrador`. Informe en `Logs/Codea_Voz.txt` |
-| Poner al brazo robótico sus tres sonidos | `Tools → Codea → Asignar sonidos del brazo robótico` |
-| Montar la intermedia del Escenario 4 o cambiar las letras de sus fichas | `Tools → Codea → Escenario 4` (`Editor/CodeaScenario4.cs`). Informe en `Logs/Codea_Escenario4.txt` |
 | Sacar capturas sin pisar las figuras de los informes | Variable de entorno `CODEA_CAPTURAS` con la carpeta de destino, antes de lanzar `CodeaCaptures.RunBatch` |
 | Ver en el editor solo las piezas de una dificultad | `Tools → Codea → Ver como básica / Ver como intermedia / Ver todas las piezas` (solo visibilidad, no cambia la escena) |
 | Probar una dificultad en Play sin pasar por `Setup` | `Sesion → DifficultyApplier → Editor Difficulty` |
@@ -304,7 +363,6 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Comprobar que un JSON de telemetría tiene el formato del código | `node Docs/Herramientas/validar_json_telemetria.js [archivo]` (sin archivo, los de la documentación) |
 | Comprobar la telemetría de punta a punta | `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md` |
 | Asignar los `textId` de la narración | Menú contextual del Narrator: "Asignar textId por nombre del clip" |
-| Cambios de escena del feedback del 27/10 (botones de repetir del Esc. 3 en gris, giro de la paleta básica del Esc. 1, botones de empezar a "Probar" en celeste, recorrido de botones a 0,4) | `Tools → Codea → Feedback 27-10` (`Editor/CodeaFeedback.cs`). Repetible |
 
 ---
 
@@ -426,12 +484,12 @@ dependencia:
 | `Telemetry/JSONUploader.cs` | Sube por POST multipart, con reintentos: la sesión que acaba de terminar (`UploadTelemetry`) o todas las que faltan (`UploadPending`) |
 | `Telemetry/TelemetryOutbox.cs` | Estático. Qué JSON del visor no están aún en el servidor: apunta cada subida (nombre + huella del contenido) en `subidos.txt`. No mueve ni borra ningún JSON |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
-| `Map/EarthApproach.cs` | El regreso: al completar el último escenario, acerca la Tierra de `Pos_earth` hacia el jugador, sin parar hasta que se cierra la escena (cada vez más despacio, sin entrar en la atmósfera). Lo añade `Tools → Codea → 3` |
+| `Map/EarthApproach.cs` | El regreso (09/11/2026): acción del Director en el paso "Completar reto y cambiar escenario", en paralelo con la frase 19. Deja arrancar los motores `engineLeadSeconds` (5 s desde `Scenario4Controller.CompletedTime`; clip `engineStart_corto.wav`, 39 s sin fundido, que se apaga solo al llegar la Tierra), acerca la Tierra de `Pos_earth` durante `durationSeconds` (32 s, suave al empezar y al llegar, tope `approachFraction` 0,36) y termina: el Director sube los datos y vuelve a `Setup` |
+| `Scenario 4/MissionCelebration.cs` | El premio del final (09/11/2026), en `Escenario (4)` junto al `Scenario4Controller`; escucha su `OnScenarioFinished`. Fanfarria y vítores, dos cañones de confeti (`Materials/Confeti.mat`), rótulo "¡MISIÓN CUMPLIDA!" 7 s y, al acabar la fanfarria, música del regreso que sigue en `Setup` hasta su final. Menú contextual "Probar celebración" |
 | `SceneController.cs` | Vista exterior de la nave: `ChangeScenario(0)` enciende `Pos_earth` y apaga `Pos_sun`. El Director lo llama al terminar los escenarios 3 y 4 |
 | `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` · `Editor/CodeaCaptures.cs` | Comprobación de la escena, prueba en Play de las dos dificultades y capturas de cada sala para informes (tabla de herramientas, sección 0) |
 | `Editor/LevelEditorWindow.cs` | `Tools → Level Editor`. Pinta el grid y exporta JSON |
-| `Editor/CodeaScenario4.cs` | `Tools → Codea → Escenario 4`: monta la intermedia (pliego de glifos de la A a la Z, huecos de la palabra, letras de las fichas) y vuelve a sortear las letras |
-| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **1** crea la escena `Setup` con el teclado cableado; **2** prepara la escena de juego (`DifficultyApplier`, tiempo agotado, vuelta a `Setup`). **3** pone al día `Setup` y `Juego` sin rehacerlas (botón de subir datos, una apertura por reto, limpieza de ajustes de prefab sin uso). **4** monta en el cuarto del tutorial las cuatro interacciones y su `TutorialController`. **Ver como…** oculta en la vista de escena las piezas de la otra dificultad. Repetibles |
+| `Editor/CodeaSceneTools.cs` | `Tools → Codea`: **Poner al día Setup y Juego** (botón de subir datos y clave del servidor en `Setup`; una apertura por reto, limpieza de ajustes de prefab sin uso y soluciones para el porcentaje en `Juego`), **Asignar la voz del narrador** y **Ver como…**, que oculta en la vista de escena las piezas de la otra dificultad. Repetibles |
 
 ## 4. Sistema de bloques
 
@@ -1687,7 +1745,7 @@ conectado, `adb logcat -s Unity` muestra los `Debug.Log` en directo; el JSON que
 | 14 | Esc. 4: tirar una ficha al suelo | Vuelve sola a los 4 s | `fallenBelow`, collider del suelo |
 | 15 | Esc. 4: 2 aciertos + Reiniciar | Las acertadas no se mueven ni se agarran | `IsInteractable` |
 | 16 | Esc. 4: completar | Motores, frase 18, frase 19 | `completedSound`, Director |
-| 16b | Esc. 4 completado: mirar por la ventana hasta que vuelva a `Setup` | La Tierra se acerca sin pararse, cada vez más despacio, sin que la cámara entre en la atmósfera | `EarthApproach` |
+| 16b | Esc. 4 completado: mirar por la ventana hasta que vuelva a `Setup` | Al completar: motores, fanfarria, vítores, confeti y "¡MISIÓN CUMPLIDA!". A los 5 s la Tierra se acerca despacio (32 s) mientras rugen los motores y, a los ~6 s, entra la música; hacia los 37 s el motor se apaga solo, llega la Tierra, termina la música y se vuelve a `Setup`. En logcat, `[Final] Celebración`, `[Tierra] Regreso` y `[Tierra] Regreso terminado` | `MissionCelebration`, `EarthApproach` |
 | 16c | Con el mando: tocar un botón y agarrar un bloque con el cuerpo del mando, no con la punta | Funcionan; no se ve la bolita blanca. En logcat, `[Mando] Left` y `Right` con 1 interactor y 1 esfera | `ControllerReach` |
 | 16d | Pulsar cualquier botón | Se dispara con un recorrido corto (0,4 del anterior) | Superficies " (recorrido 0,4)" |
 | 17 | Fin | Vuelve sola a `Setup` con el PIN siguiente | `SceneLoader`, paso "Volver a Setup" |

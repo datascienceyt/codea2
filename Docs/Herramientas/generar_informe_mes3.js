@@ -266,9 +266,17 @@ table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["General", "Los huecos deben cambiar a verde al colocar un bloque", "Todo hueco de bloque se tiñe de verde mientras tiene un bloque"],
   ["General", "Reducir el recorrido de los botones", "Recorrido reducido al 40 % en todos los botones de pulsar"],
   ["General", "La interacción con el punto blanco de la punta del mando no es intuitiva", "Se toca y se agarra con el cuerpo completo del mando"],
-  ["Sala 4", "Ver la llegada a la Tierra sin animar la nave", "La Tierra se acerca sin detenerse hasta que se cierra la escena"],
-  ["Sala 4", "El botón de reinicio no se alcanza", "⟨Ajuste aplicado en el editor⟩"],
+  ["Sala 4", "Ver la llegada a la Tierra sin animar la nave", "Con los motores ya en marcha, la Tierra se acerca despacio durante 32 s; los motores se apagan solos al llegar y se vuelve a la pantalla del supervisor"],
+  ["Sala 4", "Al terminar la experiencia la escena queda vacía y no se siente el premio", "Fanfarria, vítores, confeti y el rótulo «¡MISIÓN CUMPLIDA!» al completar el panel, y música triunfal durante el regreso a la Tierra"],
+  ["Sala 4", "El botón de reinicio no se alcanza", "Botón de reinicio más bajo y más cerca del jugador"],
   ["Sala 2", "Más retroalimentación o mejor visualización", "⟨Ajuste aplicado en el editor⟩"],
+  ["Sala 2", "Ver primero el estado del problema, después su título, y la descripción centrada", "Pantalla de los módulos reordenada: estado arriba, título debajo y descripción centrada en su recuadro"],
+  ["Sala 2", "En motores (básica), «Reparar circuitos eléctricos» también parecía una solución", "Sustituida por «Encender las luces», que claramente no arranca un motor"],
+  ["Sala 2", "Las pantallas de los módulos quedaban demasiado altas", "Los tres módulos, 35 cm más abajo"],
+  ["Sala 1", "En intermedia los bloques de la paleta se veían inclinados, hundidos en la mesa y como botones", "Bloques apoyados en la mesa, en dos filas y algo girados, como dejados a mano"],
+  ["Sala 3", "La consola del brazo ocupa demasiado espacio visual, y en básica sobra el espacio de las instrucciones", "Consola más ligera (bloque de mando sobre un pie) y una por dificultad: en básica solo el alto que se usa, con Probar junto a REPETIR. Después, 17 % más estrecha en ambas, con las fichas de tipo apiladas"],
+  ["Sala 3", "Una ficha de tipo soltada dentro de la consola queda escondida y no se puede recuperar", "Las fichas de tipo sueltas fuera de su sitio vuelven solas a su lugar a los 6 s"],
+  ["Sala 4", "Con el hueco iluminado no se distingue bien la figura", "En todos los huecos (salas 1, 3 y 4) solo se ilumina el marco; la placa con la figura queda como está"],
   ["General", "Bajar la altura de todo; mesa de la sala 1 más baja y más cerca; salas 2 y 3 más bajas; acercar el panel del tutorial", "⟨Alturas y distancias ajustadas en el editor⟩"],
 ], { title: "Observaciones recibidas y respuesta", sz: 17 });
 
@@ -277,7 +285,7 @@ para("Las interacciones fueron el ámbito con más ajustes. Los estudiantes y el
 bullet("**Interacción con el cuerpo del mando.** En el rig de Meta, el punto de pulsación de cada mando es una esfera de 0,5 cm en su punta, marcada con una bolita blanca, y el de agarre, una esfera de 5 cm. Un componente nuevo, que se instala solo al cargar la escena de juego y no modifica el rig del SDK, traslada ambos al centro del modelo del mando y amplía su radio hasta cubrirlo: entre 2 y 5 cm para pulsar y hasta 8 cm para agarrar. La bolita blanca se oculta, porque ya no indica dónde se toca. El ajuste se limita a los mandos y a la escena de juego: las manos no cambian, y en la pantalla del supervisor se mantiene la precisión de la punta, porque sus teclas están juntas.");
 bullet("**Recorrido de los botones.** El recorrido que hay que hundir un botón hasta que se activa se redujo al 40 % en los cuatro modelos de botón de pulsar de la experiencia (de 18 a 7,2 mm y de 34,8 a 13,9 mm a la escala del modelo), sin cambiar su aspecto en reposo.");
 bullet("**Huecos en verde.** Todo hueco de bloque (tutorial, sala 1 y sala 3) se tiñe de verde mientras tiene un bloque y vuelve a su color al vaciarse, de modo que se ve de un vistazo qué falta. Los huecos de figuras de la sala 4 no cambian, porque allí el verde indica solo la ficha correcta.");
-bullet("**Botones Probar unificados.** Todos los botones que inician una comprobación (tutorial y salas 1, 2 y 3) dicen «Probar» y tienen el mismo color celeste.");
+bullet("**Botones Probar unificados.** Todos los botones que inician una comprobación (salas 1, 2 y 3) dicen «Probar» y tienen el mismo color celeste. El del tutorial, que arranca la experiencia, dice «Empezar».");
 
 heading(2, "Experiencia de uso y navegación");
 bullet("**Narración más breve.** Se reescribieron siete frases del tutorial y de la sala 1 y se retiraron dos (Tabla {{Frases de la narración modificadas}}). El narrador omite las frases retiradas sin mostrar la pantalla, y las listas de narración conservan su orden, por lo que el resto de la historia no se ve afectado.");
@@ -296,7 +304,7 @@ table([["Frase", 0.5], ["Antes", 2.6], ["Ahora", 2.4]], [
   ["7", "¡Muy bien, astronauta! Roki llegó al botón y la puerta está abierta. Puedes continuar.", "¡Muy bien! La puerta está abierta."],
   ["12", "Fíjate en el color de las cajas y observa dónde debe ir cada una.", "Fíjate en el color: los barriles rojos van a tu izquierda y las cajas celestes, a tu derecha."],
 ], { title: "Frases de la narración modificadas", sz: 16 });
-para("El tutorial y la introducción de la sala 1 pasan de 179 a 74 palabras. Las nuevas locuciones de las frases modificadas ⟨grabadas el …⟩ se asignan a su frase con la herramienta del editor que coloca cada audio a partir del nombre del archivo; hasta entonces, esas frases se muestran solo como texto.");
+para("El tutorial y la introducción de la sala 1 pasan de 179 a 74 palabras. Las nuevas locuciones de las siete frases modificadas (0, 1, 3, 4, 6, 7 y 12) se grabaron el 8 de noviembre de 2026 y se asignaron a su frase con la herramienta del editor que coloca cada audio a partir del nombre del archivo.");
 
 heading(2, "Estabilidad y mantenibilidad");
 para("Los errores encontrados en la etapa y su corrección se recogen en la sección {{§Errores corregidos}}. Los cambios de esta etapa que afectan a la escena y a los modelos de botón (materiales, bloques de la mesa, rótulos y recorrido) se aplican con una herramienta del editor repetible, que no los duplica si se vuelve a ejecutar: cada cambio queda documentado en código y se puede rehacer sobre una escena restaurada.");
@@ -339,7 +347,7 @@ table([["Error", 1], ["Corrección", 1]], [
 
 heading(2, "Evidencias de funcionamiento");
 para("Las figuras siguientes muestran el estado del módulo tras los ajustes de la etapa. Son capturas de la escena de juego en ejecución en el editor de Unity, desde el punto de vista del jugador.");
-figure("tutorial_inicio.jpg", "Tutorial: botón Probar celeste", null);
+figure("tutorial_inicio.jpg", "Tutorial: botón Empezar celeste", null);
 figure("sala1_general.jpg", "Sala 1: el robot empieza mirando hacia arriba",
   "Roki empieza de espaldas al jugador, mirando hacia el fondo de la sala. Para llegar al botón verde debe recorrer la parte superior de la rejilla y bajar hasta la casilla situada frente a él.");
 figure("sala1_mesa_basica.jpg", "Sala 1, dificultad básica: mesa con dos bloques «Girar izquierda»", null);
@@ -360,7 +368,7 @@ table([["Requisito", 1.3], ["Estado", 0.9], ["Cómo se cumple", 3.6]], [
   ["RF-04 Interacción física y lógica", "Cumple", "Intentos con su secuencia y porcentaje de solución, bloques agarrados y conectados, y errores clasificados por tipo"],
   ["RF-05 Escritura de datos", "Cumple con cambio", "Archivo JSON jerárquico por sesión, sala e intento, en lugar de CSV"],
   ["RF-06 Temporizador", "Cumple con cambio", "15 minutos de sesión, visibles en cada sala, y un máximo de 5 por sala"],
-  ["RF-07 Narración por voz", "Cumple", "Narrador con voz y texto en todas las salas; ⟨locuciones nuevas de la etapa grabadas e integradas⟩"],
+  ["RF-07 Narración por voz", "Cumple", "Narrador con voz y texto en todas las salas; locuciones nuevas de la etapa grabadas e integradas"],
   ["RF-08 Reinicio supervisado", "No implementado", "Al cerrarse la aplicación la sesión queda guardada y se envía en la siguiente apertura; un reinicio de la sala por el supervisor queda como mejora futura"],
   ["RNF-01 Al menos 60 FPS", "⟨Por medir⟩", "Optimizaciones aplicadas (sección {{§Rendimiento}}); ⟨resultado de la medición en el visor⟩"],
   ["RNF-02 Tiempo de carga y transición", "⟨Por medir⟩", "Una sola escena de juego, cargada al empezar, y traslados entre salas con fundido a negro. ⟨Tiempo de carga medido en el visor⟩"],
@@ -397,16 +405,16 @@ numbered([
 para("**Actualizaciones.** Una versión nueva solo se instala encima de la anterior si está firmada con la misma clave. La clave determina además el código del visor que se registra en cada sesión, por lo que todas las compilaciones deben firmarse con la misma (sección {{§Compilación desde el código fuente}}).");
 
 heading(2, "Ejecución y configuración");
-para("**Uso en una sesión.** El supervisor, con el visor puesto o mirando la vista compartida, introduce el PIN del participante (o pulsa la tecla de siguiente correlativo), elige la dificultad y pulsa EMPEZAR. Después entrega el visor al estudiante, que pulsa Probar en el cuarto del tutorial para comenzar. Al terminar o agotarse el tiempo, la aplicación vuelve sola a la pantalla del supervisor con el siguiente PIN propuesto.");
+para("**Uso en una sesión.** El supervisor, con el visor puesto o mirando la vista compartida, introduce el PIN del participante (o pulsa la tecla de siguiente correlativo), elige la dificultad y pulsa EMPEZAR. Después entrega el visor al estudiante, que pulsa Empezar en el cuarto del tutorial para comenzar. Al terminar o agotarse el tiempo, la aplicación vuelve sola a la pantalla del supervisor con el siguiente PIN propuesto.");
 para("**Configuración.** La Tabla {{Parámetros de configuración}} recoge los parámetros que pueden necesitar ajuste y dónde se cambian. Todos se cambian en el editor de Unity y requieren compilar de nuevo.");
 table([["Parámetro", 1.3], ["Dónde", 2], ["Valor actual", 2]], [
-  ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "⟨Dirección del servidor de Yachay⟩; provisionalmente https://codea2.penginexr.com/upload"],
+  ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "https://codea2.penginexr.com/upload, provisional hasta que el servidor de Yachay tenga dirección. El cambio está descrito en Docs/Cambiar-servidor-de-datos.md"],
   ["Clave del servidor", "Escena Juego, objeto con JSONUploader; la herramienta «Poner al día Setup y Juego» la copia a Setup", "UPLOAD_API_KEY del servidor"],
   ["Tiempo de sesión y por sala", "Escena Juego, Sesion → ScenarioTimeLimit", "900 s y 300 s"],
   ["Narración", "Assets/_Main/Narrativa.csv y audios en Sounds/VoiceLines/Camila", "22 frases y 2 variantes por dificultad"],
   ["Niveles de la sala 1", "Assets/_Main/Levels (editor de niveles) y Escenario (1) → Scenario1Difficulty", "reto-espejo (básica) y escenario1_intermedio"],
   ["Problemas de la sala 2", "Scripts/Scenario 2/Modulos, un archivo por módulo y dificultad", "Tres módulos por dificultad"],
-  ["Recorrido de los botones", "Herramienta «Feedback 27-10», constante TravelFactor", "40 % del original"],
+  ["Recorrido de los botones", "Prefabs StartButton, TextButton y RestartButton (Prefabs/Buttons) y Button (Prefabs/Scenario2): posición de la superficie de pulsación (_buttonBaseTransform del PokeInteractableVisual) respecto a la cara del botón", "40 % del original"],
 ], { title: "Parámetros de configuración" });
 para("**Datos de las sesiones.** Cada sesión queda en el visor en /sdcard/Android/data/com.yachaytech.Codea2/files/, con el nombre {PIN}_{sesión}_{visor}.json. Con conexión Wi-Fi se envían solos al terminar; los que quedan pendientes se envían al abrir la pantalla del supervisor o con su botón Subir datos. Sin red pueden copiarse por cable con Meta Quest Developer Hub o con «adb pull».");
 
@@ -417,7 +425,7 @@ numbered([
   "Antes de compilar, pasar Tools → Codea → Comprobar escena de juego y Tools → Codea → Probar las dos dificultades en Play; las dos deben terminar sin fallos.",
   "Comprobar en Player Settings la versión (1.0.0) y la clave de firma, y compilar el APK.",
 ]);
-para("⟨Clave de firma de la entrega: ubicación y custodia del keystore del proyecto.⟩ Hasta la versión 0.9.0 las compilaciones usaron la clave de depuración del equipo de desarrollo; se recomienda que el equipo del proyecto conserve una clave propia y la use en todas las compilaciones posteriores.");
+para("El proyecto no tiene una clave de firma propia: todas las compilaciones, incluida la 1.0.0, se firman con la clave de depuración que Unity genera en el equipo de desarrollo. Android solo instala una actualización encima de la versión instalada si está firmada con la misma clave; con otra hay que desinstalar antes la aplicación, y desinstalarla borra los datos que el visor aún no haya enviado y el contador de PIN. Se recomienda que el equipo del proyecto cree una clave propia, la custodie y la use en todas las compilaciones posteriores, enviando antes los datos pendientes del visor.");
 
 heading(2, "Estructura del proyecto");
 para("El contenido propio del proyecto está en Assets/_Main; el resto de carpetas de Assets son paquetes de terceros (Meta XR, paquete de recursos de ciencia ficción, TextMeshPro) y configuración de Unity. La Tabla {{Estructura de Assets/_Main}} describe cada carpeta.");
@@ -461,11 +469,12 @@ para("El proyecto incluye herramientas en el menú Tools → Codea del editor qu
 table([["Herramienta", 1.5], ["Cuándo usarla", 4]], [
   ["Comprobar escena de juego", "Tras cualquier cambio en la escena o al renombrar un método. Revisa conexiones de eventos, la secuencia del Director, la narración frente al guion y cada sala en cada dificultad"],
   ["Probar las dos dificultades en Play", "Antes de compilar una versión. Recorre la experiencia sin visor en las dos dificultades"],
-  ["Poner al día Setup y Juego", "Tras actualizar el código o cambiar un nivel: aplica las soluciones para el porcentaje de solución y copia la clave del servidor a Setup"],
+  ["Poner al día Setup y Juego", "Tras actualizar el código o cambiar un nivel: aplica las soluciones para el porcentaje de solución, limpia ajustes de prefab sin uso y copia la clave del servidor a Setup"],
   ["Probar el servidor", "Tras cambiar la dirección del servidor o si los datos no llegan: comprueba la conexión y envía un archivo de prueba, indicando en qué punto falla (red, DNS, servidor intermedio o aplicación)"],
   ["Asignar la voz del narrador", "Tras grabar o sustituir un audio: lo coloca en su frase por el nombre del archivo"],
-  ["Feedback 27-10", "Rehace los cambios de escena de esta etapa sobre una escena restaurada"],
   ["Ver como básica o intermedia", "Para mover piezas de una sola dificultad sin que se solapen"],
+  ["Servidor de datos", "Para ver o cambiar la dirección del servidor, que está solo en ServidorDatos.asset"],
+  ["Usar el Meta XR Simulator en Play", "Para jugar en el editor sin visor; sin él activado, entrar en Play sin visor cierra Unity"],
   ["Editor de niveles y resolver_nivel.js", "Para crear un nivel de la sala 1 y comprobar sus soluciones y el número de bloques"],
   ["Capturas para informes", "Para documentar el estado de cada sala"],
 ], { title: "Herramientas para el mantenimiento" });
@@ -485,7 +494,6 @@ table([["Mejora", 3.2], ["Motivo", 2.6]], [
   ["Perfil de render específico para el visor", "El perfil de calidad de Android hereda la configuración de escritorio, más exigente"],
   ["Validación completa con seguimiento de manos", "Las manos están habilitadas pero no se validaron con estudiantes"],
   ["Indicador común de progreso de la misión", "Completar RI-02 con un estado «en proceso» visible en todas las salas"],
-  ["Panel de resultados para el docente", "Aprovechar el registro de datos durante la sesión, no solo después"],
 ], { title: "Mejoras futuras propuestas" });
 
 heading(2, "Sesión de transferencia técnica");

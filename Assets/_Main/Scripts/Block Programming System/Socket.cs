@@ -51,30 +51,60 @@ public class Socket : MonoBehaviour
 
     // Los renderers propios del hueco, tomados en Awake: después el bloque encajado cuelga de
     // este objeto y GetComponentsInChildren lo tiñería también.
+    //
+    // Solo el marco (09/11/2026): todos los huecos son una placa en el centro y cuatro barras
+    // alrededor. Teñida la placa, en la Sala 4 no se distinguía bien la figura; ahora el ámbar
+    // y el verde van solo a las barras.
     Renderer[] tintRenderers;
+
+    // Distancia al centro del hueco (en sus unidades locales) por debajo de la cual una pieza
+    // es la placa central. Las barras están a 0,03 como poco.
+    const float CenterTolerance = 0.01f;
     MaterialPropertyBlock tintBlock;
+
+    // Verde al ocupar: no en los huecos de figura, que también se tiñen pero solo con la
+    // indicación ámbar (ShapeSocketHints, 09/11/2026).
+    bool tintOccupied;
 
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
 
-        if (tintWhenOccupied && GetComponent<ShapeSocket>() == null)
-        {
-            tintRenderers = System.Array.FindAll(GetComponentsInChildren<Renderer>(true),
-                r => !(r is SpriteRenderer) && r.GetComponentInParent<BlockNode>() == null);
-            tintBlock = new MaterialPropertyBlock();
-        }
+        tintOccupied = tintWhenOccupied && GetComponent<ShapeSocket>() == null;
+        Renderer[] own = System.Array.FindAll(GetComponentsInChildren<Renderer>(true),
+            r => !(r is SpriteRenderer) && r.GetComponentInParent<BlockNode>() == null);
+
+        // Un hueco sin marco (solo una pieza) se sigue tiñendo entero.
+        Renderer[] frame = System.Array.FindAll(own, r => !IsCenterPlate(r));
+        tintRenderers = frame.Length > 0 ? frame : own;
+        tintBlock = new MaterialPropertyBlock();
     }
 
+    /// <summary>
+    /// La placa del centro: la pieza centrada en el hueco. Se mira la posición del transform y no
+    /// los bounds, que en un renderer recién activado pueden no estar calculados.
+    /// </summary>
+    bool IsCenterPlate(Renderer r)
+    {
+        Vector3 local = transform.InverseTransformPoint(r.transform.position);
+        return Mathf.Abs(local.x) < CenterTolerance && Mathf.Abs(local.y) < CenterTolerance;
+    }
+
+    /// <summary>
+    /// Verde mientras tiene bloque (si tintOccupied); si no, el color propio. Quitar el tinte
+    /// también borra la indicación ámbar, que no debe quedarse puesta con una ficha dentro.
+    /// </summary>
     void SetTint(bool occupied)
     {
         if (tintRenderers == null) return;
+
+        bool green = occupied && tintOccupied;
 
         foreach (Renderer r in tintRenderers)
         {
             if (r == null) continue;
 
-            if (!occupied)
+            if (!green)
             {
                 r.SetPropertyBlock(null);
                 continue;

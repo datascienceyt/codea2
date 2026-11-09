@@ -1405,11 +1405,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3650085699923853614, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_text
-      value: Probar
+      value: Empezar
       objectReference: {fileID: 0}
     - target: {fileID: 3650085699923853614, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_fontSize
-      value: 0.3
+      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: 3650085699923853614, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_fontStyle

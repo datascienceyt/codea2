@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using Oculus.Interaction;
 using UnityEngine;
 using UnityEngine.Events;
@@ -20,7 +21,7 @@ using UnityEngine.Events;
 ///
 /// El cuarto trae una sola ficha, la que encaja. Si se añade una que no encaje, quien la
 /// expulsa es un Scenario4Controller con el challengeId vacío puesto en este mismo objeto
-/// (lo añade Tools → Codea → 4): es el rechazo del escenario, sin copiarlo aquí.
+/// (ya puesto en la escena): es el rechazo del escenario, sin copiarlo aquí.
 /// </summary>
 public class TutorialController : MonoBehaviour, IStepAction
 {
@@ -58,10 +59,21 @@ public class TutorialController : MonoBehaviour, IStepAction
     [Tooltip("Cuando ya se han hecho las cuatro.")]
     public UnityEvent OnTutorialFinished;
 
+    [Header("Indicaciones")]
+    [Tooltip("Los huecos parpadean en ámbar suave (HintStyle), como en las salas: el de bloque " +
+             "hasta que se encaja uno (Sala 1) y el de figura mientras la ficha está en la mano (Sala 4).")]
+    [SerializeField] private bool showHints = true;
+
     private bool programButtonDone;
     private bool optionButtonDone;
     private bool blockDone;
     private bool chipDone;
+
+    private Socket chipSocket;
+    private BlockNode[] blocks;
+    private ShapeChip[] chips;
+    private bool blockLit;
+    private bool chipLit;
 
     public bool IsFinished { get; private set; }
 
@@ -82,6 +94,52 @@ public class TutorialController : MonoBehaviour, IStepAction
         if (shapeSocket != null) shapeSocket.OnChipEvaluated += HandleChip;
     }
 
+    private void Start()
+    {
+        if (shapeSocket != null) chipSocket = shapeSocket.GetComponent<Socket>();
+
+        // Las piezas del cuarto, no las de las salas.
+        BlockNode[] pieces = GetComponentsInChildren<BlockNode>(true);
+        chips = pieces.OfType<ShapeChip>().ToArray();
+        blocks = pieces.Where(p => !(p is ShapeChip)).ToArray();
+    }
+
+    /// <summary>
+    /// Las indicaciones de los huecos. Hasta el 09/11/2026 el tutorial no tenía ninguna: las de
+    /// la Sala 1 y la Sala 4 dejan fuera a propósito las piezas del tutorial.
+    /// </summary>
+    private void Update()
+    {
+        if (!showHints) return;
+
+        float pulse = HintStyle.Pulse;
+
+        // Bloque: como el primer hueco libre de la Sala 1, se ilumina aunque no haya nada en la mano.
+        blockLit = Hint(blockSocket, !blockDone, pulse, blockLit);
+
+        // Ficha: como en la Sala 4, solo con la ficha en la mano.
+        bool holdingChip = chips.Any(c => c != null && c.IsGrabbed);
+        chipLit = Hint(chipSocket, !chipDone && holdingChip, pulse, chipLit);
+    }
+
+    private static bool Hint(Socket socket, bool show, float pulse, bool wasLit)
+    {
+        if (socket == null) return false;
+
+        // SetHint no toca un hueco ocupado: se queda el verde de encajado.
+        if (show) socket.SetHint(pulse, HintStyle.Color);
+        else if (wasLit) socket.SetHint(0f, HintStyle.Color);
+
+        return show;
+    }
+
+    private void OnDisable()
+    {
+        if (blockLit && blockSocket != null) blockSocket.SetHint(0f, HintStyle.Color);
+        if (chipLit && chipSocket != null) chipSocket.SetHint(0f, HintStyle.Color);
+        blockLit = chipLit = false;
+    }
+
     private void OnDestroy()
     {
         if (programButton != null) programButton.WhenSelect.RemoveListener(HandleProgramButton);
@@ -95,7 +153,7 @@ public class TutorialController : MonoBehaviour, IStepAction
         if (piece != null) return false;
 
         Debug.LogError($"[Tutorial] '{name}' no tiene asignado '{field}': esa interacción se " +
-                       "da por hecha. Pásale Tools → Codea → 4.", this);
+                       "da por hecha. Asígnalo en el inspector.", this);
         return true;
     }
 

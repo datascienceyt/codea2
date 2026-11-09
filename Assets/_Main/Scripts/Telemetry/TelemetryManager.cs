@@ -137,7 +137,7 @@ public class TelemetryManager : MonoBehaviour
 
         Debug.LogWarning($"[Telemetry] Ningún DifficultyApplier en '{gameObject.scene.name}'. " +
                          $"La run dice dificultad '{_currentDifficulty}', pero los retos no se " +
-                         "han montado para ella. Pasa Tools → Codea → 2 en esta escena.", this);
+                         "han montado para ella. Añade un DifficultyApplier a esta escena.", this);
     }
 
     // --- Ciclo de la run ---
