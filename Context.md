@@ -245,6 +245,9 @@ transferencia). Figuras en `Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` co
     sin el verde de ocupado. Color e intensidad comunes en `Story/Tools/HintStyle.cs` (ámbar a medio
     camino entre el original y una primera rebaja que quedó apagada: (1, 0.81, 0.275), como mucho al 75 %), también para la Sala 1
   - Guía para TI del cambio de servidor: `Docs/Cambiar-servidor-de-datos.md`
+  - **Icono de la app:** el emblema del logo CODEA del encabezado de los informes (la cabeza con el visor,
+    sin el texto), cuadrado de 1024 px en `Textures/Icono_Codea.png`. Puesto como icono por defecto y en
+    los tamaños Legacy y Round de Android (`Player Settings → Icon`)
   - **Final con premio** (el fundido de los motores dejaba la escena vacía y sin recompensa):
     - Motores sin fundido: `engineStart_corto.wav` (39 s) = arranque y rugido del original (0–33 s)
       enlazado sin corte con su apagado natural (42–49 s). La Tierra empieza a acercarse a los 5 s
