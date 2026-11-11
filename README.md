@@ -27,7 +27,7 @@ Proyecto con respaldo institucional de **Yachay Tech**, dirigido a estudiantes d
 
 ## Descripción
 
-El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento, recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra, con 15 minutos en total y un máximo de 5 por sala. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
+El jugador es un astronauta a bordo de una nave que ha atravesado una tormenta espacial. La tormenta desordenó los sistemas y dejó pequeñas fallas por toda la nave. Guiado por una voz narradora y ayudado por Roki, el robot de mantenimiento (un robot de orugas con los colores del proyecto), recorre **4 salas** y resuelve en cada una un problema mediante **programación por bloques**, para que la nave pueda continuar su viaje de regreso a la Tierra, con 15 minutos en total y un máximo de 5 por sala. Cada escenario corresponde a un pilar distinto de pensamiento computacional:
 
 | Escenario | Categoría | Pilar(es) de CT | Mecánica |
 |---|---|---|---|
@@ -44,9 +44,11 @@ Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para a
 - Sesiones limitadas a bloques de 15–20 minutos, con supervisor presente en todo momento.
 - Diseño basado en **fading worked examples** (ejemplos resueltos que se desvanecen progresivamente) para introducir condicionales, en **parametrización** para los bucles —el mismo programa resuelve dos casos cambiando solo un dato— y en **discriminación visual** para el reconocimiento de patrones (Escenario 4).
 - Los textos en pantalla usan vocabulario cotidiano de un niño de ocho años, en frases cortas: parte del público todavía lee con dificultad. Los bloques de instrucciones de las salas 1 y 3 llevan solo texto; el icono acompaña al problema de cada módulo (sala 2), a las fichas de tipo (sala 3) y a las figuras (sala 4).
-- Restricción de scope: lógica estrictamente secuencial en la ejecución de bloques (sin anidado; el único bucle es la fila entera), locomoción por teletransporte, sin hand tracking.
+- Restricción de scope: lógica estrictamente secuencial en la ejecución de bloques (sin anidado; el único bucle es la fila entera), locomoción por teletransporte, pensado para mandos (las manos están habilitadas, sin validar).
 
 ## Estructura de la experiencia
+
+![Recorrido de una sesión](Docs/Diagramas/flujo_sesion.jpg)
 
 ```
 Escena Setup: PIN y dificultad (supervisor)
@@ -71,6 +73,8 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 
 ## Arquitectura técnica
 
+![Subsistemas del módulo y cómo se comunican](Docs/Diagramas/arquitectura.jpg)
+
 - **Motor:** Unity 6, C#
 - **SDK:** Meta XR All-in-One SDK
 - **Render pipeline:** URP + Shader Graph
@@ -89,7 +93,9 @@ El supervisor fija la dificultad antes de entregar el visor al estudiante; una v
 
 ## Sistema de telemetría
 
-Pipeline de persistencia local con exportación remota manual:
+Persistencia local con envío automático al servidor cuando hay red:
+
+![Camino de los datos de una sesión](Docs/Diagramas/flujo_datos.jpg)
 
 1. **`TelemetryManager`** (uno por escena) captura métricas de sesión e interacción por escenario (RF-03, RF-04).
 2. Genera un **JSON individual por participante**, nombrado `{pin}_{sessionId}_{deviceId}.json` (PIN, número de sesión y código del visor) en `Application.persistentDataPath`. Se escribe durante la partida, no al cerrarla: un cierre inesperado del visor no se lleva los datos ya registrados.
@@ -155,7 +161,7 @@ Para el equipo evaluador, el detalle de qué mide cada variable está en
 - Unity `6000.4.1f1`
 - Meta XR All-in-One SDK `203.0.2` o superior
 - Visor: Meta Quest 3S (plataforma exclusiva, sin soporte para otros headsets)
-- Mandos físicos únicamente (sin hand tracking)
+- Mandos físicos; el seguimiento de manos está habilitado en el proyecto, pero no se validó con estudiantes
 - Horizon OS actualizado a su versión más reciente disponible, para garantizar compatibilidad con el SDK
 
 ## Evolución previsible del sistema
@@ -174,10 +180,10 @@ Repositorio oficial: [github.com/datascienceyt/codea2](https://github.com/datasc
 Assets/
 ├── _Main/                  # Contenido propio del proyecto
 │   ├── 2D/                 # Sprites: figuras del Escenario 4, fichas del Escenario 3, UI
-│   ├── 3D Models/
+│   ├── 3D Models/          # Roki/ (robot de la sala 1) y el resto de modelos propios
 │   ├── CustomMaterials/
 │   ├── Editor/             # Tools → Codea (montaje de escenas) y Level Editor
-│   ├── Levels/             # Niveles del Escenario 1: reto.json (básica), escenario1_intermedio.json
+│   ├── Levels/             # Niveles del Escenario 1: reto-espejo.json (básica), escenario1_intermedio.json
 │   ├── Prefabs/
 │   ├── Scripts/
 │   │   ├── Block Programming System/   # BlockNode, Socket, SocketRow, ProgramRunner…
@@ -207,11 +213,15 @@ Docs/
 ├── ejemplo_run_telemetria.json
 ├── JSON Samples/            # Runs reales del APK, convertidas al formato actual
 ├── Pruebas/                 # Plan de prueba de la telemetría y el JSON que debe producir
-├── Herramientas/            # Scripts de Node: comprobar niveles, validar los JSON y regenerar el GDD
+├── Herramientas/            # Scripts: comprobar niveles, validar los JSON, generar informes, GDD y diagramas
+├── Roki/                    # Fuentes del modelo de Roki (Blender, por script) y las propuestas descartadas
+├── Entregable-Mes3/capturas/ # Capturas de cada sala, las del informe del mes 3
 ├── Codea2_GDD.docx          # Game Design Document (30/09/2026)
 ├── Informe-Mes1.docx        # Informe técnico con el SRS (IEEE 830)
 ├── Informe-Mes1-firmado.pdf
-├── Diagramas/               # Diagramas de flujo y funcionalidad, croquis
+├── Informe-Mes2.docx, Informe-Mes3.docx
+├── Cambiar-servidor-de-datos.md  # Guía para cambiar la dirección del servidor
+├── Diagramas/               # Recorrido de la sesión, subsistemas y camino de los datos (se generan con generar_diagramas.py); los PNG y el .drawio son del diseño inicial
 └── Investigaciones/
 ```
 

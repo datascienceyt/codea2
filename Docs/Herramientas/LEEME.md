@@ -64,6 +64,26 @@ Si `require('docx')` no lo encuentra, copiar el script a la carpeta donde se ins
 ejecutarlo desde allí. Al abrir el `.docx`, Word pregunta si actualiza los campos: decir que sí,
 así se rellena el índice.
 
+## `generar_diagramas.py` — los diagramas de `Docs/Diagramas`
+
+Dibuja en SVG el recorrido de la sesión, los subsistemas y el camino de los datos, y los pasa a
+JPG con Edge (sin ventana) y PowerShell. Los usan el README y el informe del mes 3. Para cambiar
+uno, editar su función (cajas y flechas) y regenerar; los SVG quedan en `Docs/Diagramas/fuentes`.
+
+```bash
+python Docs/Herramientas/generar_diagramas.py
+```
+
+## `Docs/Roki/` — el modelo de Roki
+
+`generar_roki.py` construye en Blender, por script, las tres propuestas de robot y las renderiza;
+`exportar_roki.py` exporta la elegida (B, Rodante) a `Assets/_Main/3D Models/Roki/Roki.fbx`, partida
+en cuerpo, cabeza y brazos. Los materiales de Unity (`Roki_*.mat`) llevan el nombre de los del FBX.
+
+```bash
+blender -b --python Docs/Roki/exportar_roki.py -- "Assets/_Main/3D Models/Roki/Roki.fbx"
+```
+
 ## `recursos_escena.js` — qué recursos usa de verdad una escena
 
 Sigue las referencias (guid) de la escena, de sus prefabs y de sus materiales hasta el asset de

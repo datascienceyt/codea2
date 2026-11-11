@@ -37,6 +37,7 @@ const TEMPLATE = path.join(ROOT, "Docs", "Informe-Mes1.docx");
 // Otra ruta como argumento si el informe está abierto en Word, que lo bloquea.
 const OUTPUT = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, "Docs", "Informe-Mes3.docx");
 const CAPTURAS = path.join(ROOT, "Docs", "Entregable-Mes3", "capturas");
+const DIAGRAMAS = path.join(ROOT, "Docs", "Diagramas");
 
 // --- Piezas de formato, copiadas de la plantilla ---
 
@@ -162,7 +163,7 @@ function table(columns, rows, { sz = 18, title } = {}) {
 
 /** Imagen centrada, 14 cm de ancho, con su pie. */
 function figure(file, title, description) {
-  const src = path.join(CAPTURAS, file);
+  const src = path.isAbsolute(file) ? file : path.join(CAPTURAS, file);
   if (!fs.existsSync(src)) throw new Error(`Falta la captura ${src}. Pasa Tools → Codea → Capturas para informes.`);
 
   const rId = `rIdM3Img${media.length + 1}`;
@@ -248,9 +249,11 @@ table([["Campo", 1], ["Valor", 2.6]], [
   ["Código fuente", `${CODIGO.total} scripts en C# (${CODIGO.juego} del módulo y ${CODIGO.editor} herramientas de editor; unas ${CODIGO.miles} líneas)`],
   ["Versión de entrega", "1.0.0, rama dev del repositorio github.com/datascienceyt/codea2"],
 ], { title: "Ficha técnica del módulo entregado" });
+figure(path.join(DIAGRAMAS, "flujo_sesion.jpg"), "Recorrido de una sesión",
+  "La Figura {{Recorrido de una sesión}} resume el recorrido: el supervisor prepara la sesión, el estudiante practica en el tutorial y recorre las cuatro salas, y al terminar los datos se guardan y la aplicación vuelve a la pantalla del supervisor.");
 
 heading(2, "Origen de los ajustes");
-para("Los ajustes de esta etapa, aplicados el 27 de octubre de 2026, responden a la retroalimentación de las sesiones con estudiantes del 22 de octubre de 2026, realizadas con la versión 0.9.0 y recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
+para("Los ajustes de esta etapa, aplicados a partir del 27 de octubre de 2026, responden a la retroalimentación de las sesiones con estudiantes del 22 de octubre de 2026, realizadas con la versión 0.9.0 y recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. El 11 de noviembre de 2026 se hizo además una revisión técnica de cierre de la experiencia completa, con las herramientas de verificación y una lectura del código y de la configuración, cuyos ajustes figuran al final de la tabla. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
 table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["Tutorial", "Reducir y sintetizar el texto", "Frase del tutorial reducida a un tercio"],
   ["Tutorial", "La ficha con gravedad no vuelve si se cae", "Vuelve sola a su sitio a los 4 segundos, como en la sala 4"],
@@ -278,6 +281,10 @@ table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["Sala 3", "Una ficha de tipo soltada dentro de la consola queda escondida y no se puede recuperar", "Las fichas de tipo sueltas fuera de su sitio vuelven solas a su lugar a los 6 s"],
   ["Sala 4", "Con el hueco iluminado no se distingue bien la figura", "En todos los huecos (salas 1, 3 y 4) solo se ilumina el marco; la placa con la figura queda como está"],
   ["General", "Bajar la altura de todo; mesa de la sala 1 más baja y más cerca; salas 2 y 3 más bajas; acercar el panel del tutorial", "⟨Alturas y distancias ajustadas en el editor⟩"],
+  ["Sala 1", "Revisión de cierre: el robot debe ser más amigable y dejar claro hacia dónde mira, porque el estudiante lo ve casi siempre de espaldas", "Modelo nuevo de Roki, con orugas, una flecha en la cabeza y la batería a la espalda, en los colores del proyecto"],
+  ["General", "Revisión de cierre: equivocarse no siempre daba una señal inmediata", "Sonido de error breve y suave en las cuatro salas; en la sala 1 suena en el paso en que el robot choca"],
+  ["Sala 2", "Revisión de cierre: «Conectar una batería cargada» era largo y tocaba los bordes del botón", "«Cargar la batería», la misma frase en todos los módulos"],
+  ["General", "Revisión de cierre: el visor usaba la configuración gráfica de escritorio", "Sin antialiasing multimuestra y con sombras hasta 10 m (sección {{§Rendimiento}})"],
 ], { title: "Observaciones recibidas y respuesta", sz: 17 });
 
 heading(2, "Interacciones");
@@ -286,6 +293,7 @@ bullet("**Interacción con el cuerpo del mando.** En el rig de Meta, el punto de
 bullet("**Recorrido de los botones.** El recorrido que hay que hundir un botón hasta que se activa se redujo al 40 % en los cuatro modelos de botón de pulsar de la experiencia (de 18 a 7,2 mm y de 34,8 a 13,9 mm a la escala del modelo), sin cambiar su aspecto en reposo.");
 bullet("**Huecos en verde.** Todo hueco de bloque (tutorial, sala 1 y sala 3) se tiñe de verde mientras tiene un bloque y vuelve a su color al vaciarse, de modo que se ve de un vistazo qué falta. Los huecos de figuras de la sala 4 no cambian, porque allí el verde indica solo la ficha correcta.");
 bullet("**Botones Probar unificados.** Todos los botones que inician una comprobación (salas 1, 2 y 3) dicen «Probar» y tienen el mismo color celeste. El del tutorial, que arranca la experiencia, dice «Empezar».");
+bullet("**Aviso de error.** Cada fallo suena con un aviso breve, a medio volumen, igual en las cuatro salas: una opción equivocada en la sala 2, un intento que no despeja la carga en la sala 3, una ficha que no corresponde en la sala 4 y un programa que no llega al botón en la sala 1. En la sala 1 suena además en el mismo paso en que el robot choca o pulsa donde no hay botón, para que el estudiante vea qué instrucción falló. El aviso suena aunque el narrador esté hablando; la frase de error del narrador se mantiene.");
 
 heading(2, "Experiencia de uso y navegación");
 bullet("**Narración más breve.** Se reescribieron siete frases del tutorial y de la sala 1 y se retiraron dos (Tabla {{Frases de la narración modificadas}}). El narrador omite las frases retiradas sin mostrar la pantalla, y las listas de narración conservan su orden, por lo que el resto de la historia no se ve afectado.");
@@ -293,6 +301,8 @@ bullet("**Sala 1 en espejo.** El nivel se rediseñó para que el robot empiece m
 bullet("**Sala 2 más legible.** Cada problema termina con la pregunta «¿Qué hacemos?» en una línea propia y su letra crece de 30 a 40 puntos, ajustándose sola para no salirse de la pantalla del módulo (Figura {{Sala 2: problema con la pregunta «¿Qué hacemos?» y botón Probar centrado}}).");
 bullet("**Sala 3: el bucle se ve contar.** Cada vuelta terminada resta una repetición del contador, que llega a cero al acabar la pasada; para la pasada siguiente el estudiante vuelve a decidir cuántas repeticiones. Mientras el brazo trabaja, + y − no responden.");
 bullet("**Regreso a la Tierra.** Al completar la sala 4, la Tierra se acerca a la nave y no deja de crecer hasta que se cierra la escena, cada vez más despacio, sin llegar a introducir la cámara en su atmósfera. Sustituye a la animación anterior, que se detenía a los 25 segundos.");
+bullet("**Roki, modelo nuevo.** El robot de la sala 1 se sustituyó por un modelo propio (Figura {{Roki, el robot de la sala 1}}). El estudiante programa giros relativos viéndolo de espaldas y desde arriba, de modo que el modelo se diseñó para leerse desde ahí: las orugas indican el sentido de avance, la cabeza lleva una flecha hacia el frente y la espalda, una batería con luces verdes. Usa el naranja y el azul del proyecto y conserva el tamaño y el comportamiento del anterior.");
+bullet("**Sala 2: opción de la batería.** «Conectar una batería cargada» y «Cambiar la batería» pasan a ser «Cargar la batería» en todos los módulos: una sola frase, corta, que cabe en el botón.");
 table([["Frase", 0.5], ["Antes", 2.6], ["Ahora", 2.4]], [
   ["0", "¡Hola, astronauta! Antes de comenzar la misión, vamos a practicar con las herramientas de la nave. Sobre la mesa hay dos botones: presiona cada uno con tu mano. Después, toma el bloque y suéltalo en el espacio vacío… (69 palabras)", "¡Hola, astronauta! Vamos a practicar: presiona los dos botones, encaja el bloque en su hueco y pon la ficha sobre su misma figura."],
   ["1", "¡Bienvenido, astronauta! Tu misión está a punto de comenzar.", "¡Bienvenido, astronauta! Una tormenta espacial dañó la nave. ¡Necesitamos tu ayuda!"],
@@ -304,16 +314,19 @@ table([["Frase", 0.5], ["Antes", 2.6], ["Ahora", 2.4]], [
   ["7", "¡Muy bien, astronauta! Roki llegó al botón y la puerta está abierta. Puedes continuar.", "¡Muy bien! La puerta está abierta."],
   ["12", "Fíjate en el color de las cajas y observa dónde debe ir cada una.", "Fíjate en el color: los barriles rojos van a tu izquierda y las cajas celestes, a tu derecha."],
 ], { title: "Frases de la narración modificadas", sz: 16 });
+figure("roki_modelo.jpg", "Roki, el robot de la sala 1", null);
 para("El tutorial y la introducción de la sala 1 pasan de 179 a 74 palabras. Las nuevas locuciones de las siete frases modificadas (0, 1, 3, 4, 6, 7 y 12) se grabaron el 8 de noviembre de 2026 y se asignaron a su frase con la herramienta del editor que coloca cada audio a partir del nombre del archivo.");
 
 heading(2, "Estabilidad y mantenibilidad");
-para("Los errores encontrados en la etapa y su corrección se recogen en la sección {{§Errores corregidos}}. Los cambios de esta etapa que afectan a la escena y a los modelos de botón (materiales, bloques de la mesa, rótulos y recorrido) se aplican con una herramienta del editor repetible, que no los duplica si se vuelve a ejecutar: cada cambio queda documentado en código y se puede rehacer sobre una escena restaurada.");
+para("Los errores encontrados en la etapa y su corrección se recogen en la sección {{§Errores corregidos}}. Los cambios de esta etapa que afectan a la escena y a los modelos de botón (materiales, bloques de la mesa, rótulos y recorrido) se aplican con una herramienta del editor repetible, que no los duplica si se vuelve a ejecutar: cada cambio queda documentado en código y se puede rehacer sobre una escena restaurada. En la revisión de cierre se retiraron además 33 conexiones de eventos que no hacían nada (vacías o dirigidas a un objeto que ya no existía) en las dos escenas, con una herramienta nueva del menú que las localiza y las borra.");
 
 heading(2, "Rendimiento");
 para("Los ajustes de esta etapa se diseñaron para no añadir coste en el visor:", { keepNext: true });
 bullet("El verde de los huecos se aplica con bloques de propiedades del material, sin crear materiales nuevos, de modo que no se rompe el agrupamiento de objetos que comparten material al dibujar.");
 bullet("El componente que amplía el área de interacción del mando calcula el centro del mando una sola vez, cuando su modelo aparece, y no en cada fotograma.");
 bullet("El acercamiento de la Tierra mueve un único objeto por fotograma, sin cambiar su escala ni la de su atmósfera.");
+bullet("El modelo nuevo de Roki tiene unos 6.000 triángulos y ocho materiales sin texturas, y no lleva esqueleto.");
+para("En la revisión de cierre se encontró que el nivel de calidad de Android apuntaba a un perfil gráfico que ya no existía en el proyecto, por lo que el visor heredaba el de escritorio. Se corrigió la referencia y se ajustó el perfil que usa el visor: el antialiasing multimuestra (4x) quedó desactivado y la distancia de sombras se redujo de 50 a 10 m, suficiente para salas de pocos metros.");
 para("Se mantienen las optimizaciones descritas en el Producto 2: escritura diferida del registro de datos, registro de huecos activos para el acople por proximidad y texto de la narración sin animación. ⟨Resultado de la medición de rendimiento en el visor con la versión 1.0.0 (OVR Metrics Tool): fotogramas por segundo medios y mínimos por sala.⟩");
 
 // --- 2. Validación funcional final con usuarios clave ---
@@ -329,9 +342,11 @@ bullet("**Prueba final en el visor** con la versión de entrega, siguiendo una l
 heading(2, "Registro de pruebas finales");
 para("La Tabla {{Registro de pruebas finales}} recoge las pruebas de la etapa.");
 table([["Fecha", 0.9], ["Prueba", 1.6], ["Participantes", 1.3], ["Resultado", 2.4]], [
-  ["27/10/2026", "Comprobación automática de la escena", "Equipo de desarrollo", `Sin fallos; ${CONEXIONES} conexiones de eventos revisadas en las dos escenas; porcentaje de solución correcto en todos los casos de prueba`],
+  ["27/10/2026", "Comprobación automática de la escena", "Equipo de desarrollo", "Sin fallos; 378 conexiones de eventos revisadas en las dos escenas; porcentaje de solución correcto en todos los casos de prueba"],
   ["27/10/2026", "Prueba automática en Play de las dos dificultades", "Equipo de desarrollo", "Sin fallos ni excepciones: configuración de cada sala, nivel nuevo de la sala 1, botón Probar, bloqueo de la mesa hasta que arranca el reloj, ejecución de la sala 3, tiempo agotado en las salas 1 y 3 y secuencia completa"],
   ["22/10/2026", "Sesiones con la versión 0.9.0 en el visor", "Tres estudiantes del Colegio Luis Felipe Borja (sesiones 0601, 0102 y 0103)", "Observaciones de la Tabla {{Observaciones recibidas y respuesta}}, atendidas en la versión de entrega"],
+  ["11/11/2026", "Comprobación automática de la escena y prueba en Play, tras la revisión de cierre", "Equipo de desarrollo", `Sin fallos en las dos dificultades; ${CONEXIONES} conexiones de eventos revisadas, ninguna vacía ni sin destino`],
+  ["11/11/2026", "Prueba del servidor de datos de la universidad", "Equipo de desarrollo", "Comprobación de conexión y envío de un archivo de prueba correctos con la dirección nueva"],
   ["⟨fecha⟩", "Prueba final en el visor, versión 1.0.0", "⟨participantes⟩", "⟨resultado de la lista de comprobación⟩"],
 ], { title: "Registro de pruebas finales" });
 
@@ -342,6 +357,8 @@ table([["Error", 1], ["Corrección", 1]], [
   ["El botón del tutorial casi no se hundía al pulsarlo (unos 0,5 mm)", "Mismo recorrido que el resto de los botones"],
   ["La frase 3 anunciaba cinco minutos por sistema mientras el reloj mostraba 15", "La frase dice quince minutos"],
   ["Los botones + y − de la sala 3 respondían con el brazo en marcha", "Se bloquean durante la ejecución"],
+  ["El nivel de calidad de Android apuntaba a un perfil gráfico inexistente y el visor usaba el de escritorio", "Referencia corregida y perfil ajustado (sección {{§Rendimiento}})"],
+  ["33 conexiones de eventos vacías o sin destino en las teclas de la pantalla del supervisor y en un botón de la sala 1", "Retiradas con la herramienta «Quitar llamadas vacías y muertas»"],
   ["⟨Errores encontrados en la prueba final en el visor⟩", "⟨Corrección⟩"],
 ], { title: "Errores corregidos en la etapa" });
 
@@ -349,10 +366,12 @@ heading(2, "Evidencias de funcionamiento");
 para("Las figuras siguientes muestran el estado del módulo tras los ajustes de la etapa. Son capturas de la escena de juego en ejecución en el editor de Unity, desde el punto de vista del jugador.");
 figure("tutorial_inicio.jpg", "Tutorial: botón Empezar celeste", null);
 figure("sala1_general.jpg", "Sala 1: el robot empieza mirando hacia arriba",
-  "Roki empieza de espaldas al jugador, mirando hacia el fondo de la sala. Para llegar al botón verde debe recorrer la parte superior de la rejilla y bajar hasta la casilla situada frente a él.");
+  "Roki, con su modelo nuevo, empieza de espaldas al jugador, mirando hacia el fondo de la sala. Para llegar al botón verde debe recorrer la parte superior de la rejilla y bajar hasta la casilla situada frente a él.");
 figure("sala1_mesa_basica.jpg", "Sala 1, dificultad básica: mesa con dos bloques «Girar izquierda»", null);
 figure("sala2_modulo_sin_resolver.jpg", "Sala 2: problema con la pregunta «¿Qué hacemos?» y botón Probar centrado", null);
 figure("sala3_basica.jpg", "Sala 3: botones + y − en gris y botón Probar celeste", null);
+figure("sala4_panel.jpg", "Sala 4: panel de figuras de la dificultad básica", null);
+figure("setup_supervisor.jpg", "Pantalla del supervisor: PIN, dificultad y envío de datos", null);
 
 heading(2, "Verificación de cumplimiento de los requerimientos");
 para("La Tabla {{Cumplimiento de los requerimientos del Producto 1}} contrasta el módulo entregado con los requerimientos técnicos y funcionales definidos en la especificación del Producto 1. Los cambios de diseño que dieron lugar a un cumplimiento con cambio se justificaron en el Producto 2.");
@@ -402,13 +421,13 @@ numbered([
   "**Instalación.** Con Meta Quest Developer Hub, arrastrar el APK a la sección de aplicaciones del visor; o, desde una terminal con las herramientas de Android, ejecutar «adb install -r app.apk». La opción -r actualiza una versión anterior conservando los datos.",
   "**Primera ejecución.** En el visor, abrir la biblioteca de aplicaciones, filtrar por orígenes desconocidos y abrir Codea 2. La aplicación arranca en la pantalla del supervisor.",
 ]);
-para("**Actualizaciones.** Una versión nueva solo se instala encima de la anterior si está firmada con la misma clave. La clave determina además el código del visor que se registra en cada sesión, por lo que todas las compilaciones deben firmarse con la misma (sección {{§Compilación desde el código fuente}}).");
+para("**Actualizaciones.** Una versión nueva se instala encima de la anterior, conservando los datos, solo si está firmada con la misma clave; la firma se trata en la sección {{§Compilación desde el código fuente}}.");
 
 heading(2, "Ejecución y configuración");
 para("**Uso en una sesión.** El supervisor, con el visor puesto o mirando la vista compartida, introduce el PIN del participante (o pulsa la tecla de siguiente correlativo), elige la dificultad y pulsa EMPEZAR. Después entrega el visor al estudiante, que pulsa Empezar en el cuarto del tutorial para comenzar. Al terminar o agotarse el tiempo, la aplicación vuelve sola a la pantalla del supervisor con el siguiente PIN propuesto.");
 para("**Configuración.** La Tabla {{Parámetros de configuración}} recoge los parámetros que pueden necesitar ajuste y dónde se cambian. Todos se cambian en el editor de Unity y requieren compilar de nuevo.");
 table([["Parámetro", 1.3], ["Dónde", 2], ["Valor actual", 2]], [
-  ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "https://codea2.penginexr.com/upload, provisional hasta que el servidor de Yachay tenga dirección. El cambio está descrito en Docs/Cambiar-servidor-de-datos.md"],
+  ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "http://datascience.yachaytech.edu.ec/upload, el servidor de la universidad, desde el 11/11/2026 (antes, uno provisional). Al ser http://, los datos viajan sin cifrar. El cambio de dirección está descrito en Docs/Cambiar-servidor-de-datos.md"],
   ["Clave del servidor", "Escena Juego, objeto con JSONUploader; la herramienta «Poner al día Setup y Juego» la copia a Setup", "UPLOAD_API_KEY del servidor"],
   ["Tiempo de sesión y por sala", "Escena Juego, Sesion → ScenarioTimeLimit", "900 s y 300 s"],
   ["Narración", "Assets/_Main/Narrativa.csv y audios en Sounds/VoiceLines/Camila", "22 frases y 2 variantes por dificultad"],
@@ -417,6 +436,7 @@ table([["Parámetro", 1.3], ["Dónde", 2], ["Valor actual", 2]], [
   ["Recorrido de los botones", "Prefabs StartButton, TextButton y RestartButton (Prefabs/Buttons) y Button (Prefabs/Scenario2): posición de la superficie de pulsación (_buttonBaseTransform del PokeInteractableVisual) respecto a la cara del botón", "40 % del original"],
 ], { title: "Parámetros de configuración" });
 para("**Datos de las sesiones.** Cada sesión queda en el visor en /sdcard/Android/data/com.yachaytech.Codea2/files/, con el nombre {PIN}_{sesión}_{visor}.json. Con conexión Wi-Fi se envían solos al terminar; los que quedan pendientes se envían al abrir la pantalla del supervisor o con su botón Subir datos. Sin red pueden copiarse por cable con Meta Quest Developer Hub o con «adb pull».");
+figure(path.join(DIAGRAMAS, "flujo_datos.jpg"), "Camino de los datos de una sesión", null);
 
 heading(2, "Compilación desde el código fuente");
 numbered([
@@ -425,7 +445,7 @@ numbered([
   "Antes de compilar, pasar Tools → Codea → Comprobar escena de juego y Tools → Codea → Probar las dos dificultades en Play; las dos deben terminar sin fallos.",
   "Comprobar en Player Settings la versión (1.0.0) y la clave de firma, y compilar el APK.",
 ]);
-para("El proyecto no tiene una clave de firma propia: todas las compilaciones, incluida la 1.0.0, se firman con la clave de depuración que Unity genera en el equipo de desarrollo. Android solo instala una actualización encima de la versión instalada si está firmada con la misma clave; con otra hay que desinstalar antes la aplicación, y desinstalarla borra los datos que el visor aún no haya enviado y el contador de PIN. Se recomienda que el equipo del proyecto cree una clave propia, la custodie y la use en todas las compilaciones posteriores, enviando antes los datos pendientes del visor.");
+para("El proyecto no tiene una clave de firma propia: todas las compilaciones, incluida la 1.0.0, se firman con la clave de depuración que Unity genera en el equipo de desarrollo. La clave determina además el código del visor que se registra en cada sesión. Android solo instala una actualización encima de la versión instalada si está firmada con la misma clave; con otra hay que desinstalar antes la aplicación, y desinstalarla borra los datos que el visor aún no haya enviado y el contador de PIN. Se recomienda que el equipo del proyecto cree una clave propia, la custodie y la use en todas las compilaciones posteriores, enviando antes los datos pendientes del visor.");
 
 heading(2, "Estructura del proyecto");
 para("El contenido propio del proyecto está en Assets/_Main; el resto de carpetas de Assets son paquetes de terceros (Meta XR, paquete de recursos de ciencia ficción, TextMeshPro) y configuración de Unity. La Tabla {{Estructura de Assets/_Main}} describe cada carpeta.");
@@ -438,14 +458,28 @@ table([["Carpeta", 1.2], ["Contenido", 4]], [
   ["Sounds", "Efectos y locuciones de la narración (VoiceLines/Camila)"],
   ["Narrativa.csv", "Guion: identificador y texto de cada frase"],
 ], { title: "Estructura de Assets/_Main" });
+heading(2, "Escenas");
 para("Las escenas están en Assets/Scenes. Setup contiene la pantalla del supervisor y el envío de datos pendientes. Juego contiene el jugador, el cuarto del tutorial, las cuatro salas (objetos Escenario (1) a Escenario (4)), la sesión con sus tiempos, el narrador y el Director, que orquesta la experiencia en cinco tramos.");
 
+heading(2, "Recursos");
+para("La Tabla {{Recursos del módulo}} resume los recursos que usa la escena de juego y su origen. El inventario completo se documentó en el Producto 2; en esta etapa se añadieron el modelo de Roki, el sonido de error y las locuciones regrabadas.");
+table([["Recurso", 1.2], ["Contenido", 2.6], ["Origen", 1.8]], [
+  ["Entorno de la nave", "22 modelos, con sus materiales y texturas: suelos, paredes, ventanales, puertas y mobiliario", "Paquete Sci-Fi Styled Modular Pack"],
+  ["Roki", "Modelo en cuatro piezas (cuerpo, cabeza y dos brazos) con ocho materiales; fuentes y guion de exportación en Docs/Roki", "Propio, modelado en Blender en esta etapa"],
+  ["Piezas de los retos", "Bloques, fichas, huecos, botones, brazo robótico, consolas y módulos, como prefabs", "Propios"],
+  ["Interfaz", "12 imágenes (iconos de estado, figuras y flechas), pliegos de figuras y de glifos de la sala 4 y tipografía", "Propios"],
+  ["Locuciones", "22 frases y 2 variantes por dificultad, más 5 frases de error", "Grabadas para el proyecto"],
+  ["Efectos y música", "Sonidos de botones, robot, brazo, puertas y motores, celebración final y aviso de error", "Bibliotecas de sonido con licencia; el aviso de error procede del paquete Watery Interface SFX"],
+  ["Efectos visuales", "Fuego de las cajas dañadas y confeti de la celebración", "Paquete de efectos de fuego y propios"],
+], { title: "Recursos del módulo" });
+
 heading(2, "Documentación del código");
-para("El código sigue una organización por subsistemas que se comunican por eventos, descrita en el Producto 2 y en la sección 3 de Context.md. Cada clase y cada decisión no evidente está comentada en el propio código, con el motivo del diseño. La Tabla {{Subsistemas y componentes principales}} resume los subsistemas.");
+para("El código sigue una organización por subsistemas que se comunican por eventos, descrita en el Producto 2 y en la sección 3 de Context.md. Cada clase y cada decisión no evidente está comentada en el propio código, con el motivo del diseño. La Figura {{Subsistemas del módulo y su comunicación}} muestra cómo se relacionan y la Tabla {{Subsistemas y componentes principales}} resume cada uno.");
+figure(path.join(DIAGRAMAS, "arquitectura.jpg"), "Subsistemas del módulo y su comunicación", null);
 table([["Subsistema", 1.1], ["Responsabilidad", 2.6], ["Componentes principales", 1.8]], [
   ["Sesión", "PIN y dificultad, carga de la escena, tiempos de sesión y de sala, cierre y vuelta a la pantalla inicial", "SessionSetup, PinEntry, SceneLoader, ScenarioTimeLimit, TimeUpSequence"],
   ["Director", "Orquesta la experiencia en tramos y pasos", "Director, IStepAction"],
-  ["Narración", "Voz y texto emparejados por identificador con el guion", "Narrator"],
+  ["Narración", "Voz y texto emparejados por identificador con el guion; aviso sonoro de error", "Narrator, ErrorSound"],
   ["Programación por bloques", "Acople de bloques en huecos, filas, ejecución y repeticiones", "BlockNode, Socket, SocketRow, ProgramRunner, ProgramTrigger"],
   ["Salas", "Lógica de cada reto y su conexión con el registro", "Scenario1Controller a Scenario4Controller, LevelLoader, Bot, SystemModule, RoboticArm, ArmTypeSocket, ShapeSocket"],
   ["Dificultad", "Configura cada sala según la dificultad, en una sola escena", "DifficultyApplier, DifficultyVariant, DifficultyOnly"],
@@ -454,7 +488,7 @@ table([["Subsistema", 1.1], ["Responsabilidad", 2.6], ["Componentes principales"
 ], { title: "Subsistemas y componentes principales" });
 
 heading(2, "Interacciones implementadas");
-para("La Tabla {{Interacciones implementadas en la versión de entrega}} resume las interacciones del módulo; los ajustes de esta etapa (área del mando, recorrido de los botones y huecos en verde) se describen en la sección {{§Interacciones}}.");
+para("La Tabla {{Interacciones implementadas en la versión de entrega}} resume las interacciones del módulo; los ajustes de esta etapa (área del mando, recorrido de los botones, huecos en verde y aviso de error) se describen en la sección {{§Interacciones}}.");
 table([["Interacción", 1.2], ["Implementación", 4]], [
   ["Pulsar botones", "Botones de pulsación del SDK de Meta con sonido propio; se pulsan con el cuerpo del mando o con el dedo"],
   ["Agarrar y soltar", "Componentes de agarre del SDK para mando y mano"],
@@ -474,6 +508,7 @@ table([["Herramienta", 1.5], ["Cuándo usarla", 4]], [
   ["Asignar la voz del narrador", "Tras grabar o sustituir un audio: lo coloca en su frase por el nombre del archivo"],
   ["Ver como básica o intermedia", "Para mover piezas de una sola dificultad sin que se solapen"],
   ["Servidor de datos", "Para ver o cambiar la dirección del servidor, que está solo en ServidorDatos.asset"],
+  ["Quitar llamadas vacías y muertas", "Cuando la comprobación de la escena avisa de conexiones de eventos vacías o sin destino: las borra de Setup y de Juego"],
   ["Usar el Meta XR Simulator en Play", "Para jugar en el editor sin visor; sin él activado, entrar en Play sin visor cierra Unity"],
   ["Editor de niveles y resolver_nivel.js", "Para crear un nivel de la sala 1 y comprobar sus soluciones y el número de bloques"],
   ["Capturas para informes", "Para documentar el estado de cada sala"],
@@ -485,13 +520,16 @@ bullet("**Narración:** las dos listas del narrador deben tener las mismas 20 en
 bullet("**Niveles de la sala 1:** un nivel nuevo debe mantener la salida en la casilla (0,1), frente al botón físico. Tras cambiarlo, comprobar sus soluciones con resolver_nivel.js, ajustar los bloques de la mesa si hace falta y actualizar las soluciones en CodeaSolutions.");
 bullet("**Diferencias por dificultad:** una pieza que solo existe en una dificultad lleva el componente DifficultyOnly; nunca se activa desde el Director, sino su contenedor.");
 bullet("**Enumeraciones:** los valores nuevos de una enumeración se añaden al final, porque Unity guarda el número y no el nombre.");
-bullet("**Firma y servidor:** firmar siempre con la misma clave. Si cambia la dirección del servidor, se cambia solo en ServidorDatos.asset, se comprueba con «Probar el servidor» y se compila de nuevo; si la dirección empieza por http://, hay que permitir HTTP en Player Settings o el visor no enviará los datos.");
+bullet("**Firma y servidor:** firmar siempre con la misma clave (sección {{§Compilación desde el código fuente}}). Un cambio de dirección del servidor se hace como indica la Tabla {{Parámetros de configuración}}, se comprueba con «Probar el servidor» y exige compilar de nuevo.");
 
 heading(2, "Mejoras futuras");
 para("La Tabla {{Mejoras futuras propuestas}} recoge las mejoras identificadas que quedan fuera del alcance de esta entrega.");
 table([["Mejora", 3.2], ["Motivo", 2.6]], [
   ["Reinicio supervisado de una sala (RF-08)", "Permitir al supervisor reiniciar una sala sin cerrar la sesión"],
-  ["Perfil de render específico para el visor", "El perfil de calidad de Android hereda la configuración de escritorio, más exigente"],
+  ["Perfil gráfico propio del visor, ajustado con mediciones", "El visor comparte el perfil gráfico con el editor; ya no usa antialiasing ni sombras lejanas, pero un perfil propio permitiría ajustarlo más"],
+  ["Iconos en los bloques de instrucciones (salas 1 y 3)", "Los bloques llevan solo texto; un icono ayudaría a quien lee con dificultad"],
+  ["Aviso de tiempo restante", "El límite de cinco minutos por sala no se muestra y la sala se cierra sin aviso previo"],
+  ["Servidor con conexión cifrada (https)", "La dirección actual es http://: la clave y los datos viajan sin cifrar"],
   ["Validación completa con seguimiento de manos", "Las manos están habilitadas pero no se validaron con estudiantes"],
   ["Indicador común de progreso de la misión", "Completar RI-02 con un estado «en proceso» visible en todas las salas"],
 ], { title: "Mejoras futuras propuestas" });

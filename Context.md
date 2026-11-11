@@ -200,6 +200,27 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
   - Pendiente del feedback (lo hace el usuario): alturas, distancias, panel del tutorial, botón de
     reiniciar del Esc. 4, feedback visual del Esc. 2. Descartado: altura automática de los paneles
 
+- **11/11/2026, revisión de cierre** (commit `4478957` y siguientes; SceneCheck y PlayCheck con 0 fallos; 👓 sin probar en el visor, APK sin recompilar):
+  - **Roki nuevo:** `3D Models/Roki/Roki.fbx` (orugas, flecha en la cabeza, batería a la espalda; colores de CODEA), en cuatro piezas
+    (`Cuerpo`, `Cabeza`, `Brazo_I`, `Brazo_D`) y 8 materiales `Roki_*.mat`. `Bot.prefab` solo cambia de modelo (escala 1,3; y −0,731);
+    `Bot.cs` igual. Fuentes en `Docs/Roki/` (Blender por script). `robot.fbx`, `bot.fbx` y sus materiales quedan sin uso en `3D Models/Bot/`.
+    El halo de partículas del prefab sigue activo: mirar en el visor cómo queda
+  - **Sonido de error** (`Story/Tools/ErrorSound.cs`, estático, sin cablear): `Resources/Sonidos/Watery Interface Wrong Button 1.wav`
+    (paquete Watery Interface SFX). Lo llama `Narrator.PlayErrorLine`, donde acaban los fallos de las cuatro salas, y en la sala 1
+    también el choque (`LevelManager.RegisterError`) y el uso sin botón (`Bot.Use`). No más de uno cada 0,6 s
+  - **Servidor:** `http://datascience.yachaytech.edu.ec/upload`, misma clave; *Allow downloads over HTTP = Always allowed*
+    (en `https://` no responde). Probado con `CodeaServerCheck`
+  - **Gráficos:** el nivel de calidad Mobile apuntaba a un `Mobile_RPAsset` borrado y Android usaba `PC_RPAsset`. Ahora apunta a él,
+    sin MSAA y con sombras a 10 m
+  - **Sala 2:** «Cargar la batería» sustituye a «Conectar una batería cargada» y a «Cambiar la batería» (la telemetría registra la etiqueta nueva)
+  - **Llamadas muertas:** 33 quitadas con `Tools → Codea → Quitar llamadas vacías y muertas` (`Editor/CodeaDeadCalls.cs`;
+    en batch, `-executeMethod CodeaDeadCalls.CleanBatch`)
+  - **Documentos:** README y GDD dicen que los bloques de las salas 1 y 3 llevan solo texto; informe 3 con la revisión de cierre,
+    11 figuras (tres diagramas de `Docs/Diagramas`, de `generar_diagramas.py`) y secciones propias de Escenas y Recursos
+  - **Las frases 2 y 5 no tienen audio a propósito** (retiradas el 27/10): el aviso de SceneCheck es esperado
+  - Hallazgos de la revisión sin atender: sin aviso de tiempo restante por sala; bloques sin icono; choque sin detener el programa;
+    la clave del servidor está en las escenas del repositorio; opciones de la sala 2 que empiezan igual («Agregar…»)
+
 **Informe del mes 3 (27/10/2026):** `Docs/Informe-Mes3.docx`, Producto 3 ("Informe técnico de
 optimización, validación funcional y entrega final del módulo inmersivo"; 3.1, 3.2 y 3.3). Se genera
 con `node Docs/Herramientas/generar_informe_mes3.js` y es **el único documento de informe que queda
@@ -433,7 +454,7 @@ dependencia:
 
 | Archivo | Responsabilidad |
 |---|---|
-| `Bot.cs` | Robot. Movimiento relativo: avanzar, girar izq/der, usar |
+| `Bot.cs` | Robot. Movimiento relativo: avanzar, girar izq/der, usar. El modelo es `3D Models/Roki/Roki.fbx` (11/11/2026) |
 | `GridBlock.cs` | Acciones del bot por enum |
 | `LevelManager.cs` | Grid numérico y de objetos, validación, estado de completado |
 | `LevelLoader.cs` | Instancia el nivel desde JSON. `TileType` vive aquí: camino 0, muro 1, salida del robot 2, peligro 3, meta 5, vacío 6 (el 4 y el 7 eran del sistema de puntos, retirado) |
@@ -1712,7 +1733,8 @@ servidor privado y temporal.
 | `Docs/Informe-Mes2.docx` | Informe técnico del mes 2 (Producto 2: 2.1, 2.2, 2.3). Se genera con `Docs/Herramientas/generar_informe_mes2.js`; las figuras están en `Docs/Entregable-Mes2/capturas/` |
 | `Docs/Informe-Mes3.docx` | Informe técnico del mes 3 (Producto 3: 3.1, 3.2, 3.3): optimización, validación final, entrega e instrucciones de instalación. Se genera con `Docs/Herramientas/generar_informe_mes3.js`; figuras en `Docs/Entregable-Mes3/capturas/` |
 | `Docs/Entregable-Mes2/Recopilacion_Producto2.md` | Material reunido el 09/10/2026 para el informe del mes 2 (2.1 funcionalidades, 2.2 recursos 3D e interacciones, 2.3 pruebas). Marca con ⟨pendiente⟩ lo que debe aportar el equipo |
-| `Docs/Diagramas/` | Diagramas de flujo y funcionalidad, croquis |
+| `Docs/Diagramas/` | `flujo_sesion.jpg`, `arquitectura.jpg` y `flujo_datos.jpg` (al día; `Docs/Herramientas/generar_diagramas.py`). Los PNG, el croquis y el `.drawio` son del diseño inicial y ya no describen el módulo |
+| `Docs/Roki/` | Fuentes del modelo de Roki: `generar_roki.py` (tres propuestas y renders) y `exportar_roki.py` (FBX de la elegida) |
 | `Docs/Investigaciones/` | Respaldo académico: *worked examples*, manipulativos físico-digitales |
 | `README.md` | Presentación institucional del repositorio |
 
