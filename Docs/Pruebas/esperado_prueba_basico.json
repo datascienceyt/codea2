@@ -91,7 +91,7 @@
             },
             {
                 "module": "generadores",
-                "option": "Conectar una batería cargada",
+                "option": "Cargar la batería",
                 "correct": true,
                 "durationSeconds": "<VARIABLE: segundos>",
                 "timestamp": "<VARIABLE: fecha>"
@@ -144,7 +144,7 @@
             {
                 "module": "generadores",
                 "selection": [
-                    "Conectar una batería cargada"
+                    "Cargar la batería"
                 ],
                 "correctSelected": 1,
                 "wrongSelected": 0,

@@ -145,7 +145,7 @@ const diseno = [
   h1("5. Documento de diseño"),
   h2("5.1 Pautas de diseño"),
   bullet("**Vocabulario de un niño de ocho años** en enunciados y opciones: tanque, luces, botón, vapor, rechinar."),
-  bullet("**Icono y texto juntos** en cada pieza, porque parte del público todavía lee con dificultad."),
+  bullet("**Frases cortas** en cada pieza, porque parte del público todavía lee con dificultad. Los bloques de instrucciones (salas 1 y 3) llevan solo texto; el icono acompaña al problema de cada módulo (sala 2), a las fichas de tipo (sala 3) y a las figuras (sala 4)."),
   bullet("**Una sola idea nueva por sala.** Cada sala introduce un concepto y lo practica, sin mezclar dos a la vez."),
   bullet("**Ejemplos resueltos que se desvanecen:** en básica parte de la solución viene dada; en intermedia el niño la construye."),
   bullet("**El error es información, no castigo:** frases de ánimo del narrador y reintento automático."),

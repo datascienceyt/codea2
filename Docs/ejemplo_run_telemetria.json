@@ -109,7 +109,7 @@
             },
             {
                 "module": "generadores",
-                "option": "Conectar una batería cargada",
+                "option": "Cargar la batería",
                 "correct": true,
                 "durationSeconds": 18.2,
                 "timestamp": "2026-10-01T14:06:27.6120000Z"
@@ -130,7 +130,7 @@
             },
             {
                 "module": "motores",
-                "option": "Cambiar la batería",
+                "option": "Cargar la batería",
                 "correct": false,
                 "durationSeconds": 4.2,
                 "timestamp": "2026-10-01T14:06:48.5120000Z"
@@ -180,7 +180,7 @@
             {
                 "module": "generadores",
                 "selection": [
-                    "Conectar una batería cargada",
+                    "Cargar la batería",
                     "Reparar circuitos eléctricos"
                 ],
                 "correctSelected": 2,
@@ -194,7 +194,7 @@
                 "module": "motores",
                 "selection": [
                     "Agregar combustible",
-                    "Cambiar la batería"
+                    "Cargar la batería"
                 ],
                 "correctSelected": 1,
                 "wrongSelected": 1,

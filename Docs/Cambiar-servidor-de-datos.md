@@ -1,8 +1,9 @@
 # Cambiar el servidor de datos de Codea 2
 
-Guía para el equipo de TI de Yachay Tech. Hoy el visor envía los datos a un servidor
-provisional, `https://codea2.penginexr.com/upload`. Cuando el servidor de Yachay (laptop con
-Docker y el repositorio **Codea2Server**) tenga dirección pública, la aplicación se cambia así.
+Guía para el equipo de TI de Yachay Tech. Desde el 11/11/2026 el visor envía los datos al
+servidor de la universidad, `http://datascience.yachaytech.edu.ec/upload` (antes, al provisional
+`https://codea2.penginexr.com/upload`). Si la dirección vuelve a cambiar (por ejemplo, al tener
+`https://`), la aplicación se cambia así.
 
 ## Lo que necesita la aplicación del servidor
 

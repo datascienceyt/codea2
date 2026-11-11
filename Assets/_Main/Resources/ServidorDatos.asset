@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2eeedc21fb1d998d0c5946793616bf55, type: 3}
   m_Name: ServidorDatos
   m_EditorClassIdentifier: Assembly-CSharp::UploadServerConfig
-  uploadUrl: https://codea2.penginexr.com/upload
+  uploadUrl: http://datascience.yachaytech.edu.ec/upload

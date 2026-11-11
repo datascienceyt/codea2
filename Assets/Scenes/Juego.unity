@@ -25069,6 +25069,26 @@ PrefabInstance:
       propertyPath: m_StaticEditorFlags
       value: 2147483647
       objectReference: {fileID: 0}
+    - target: {fileID: 6813897865178885800, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6813897865178885800, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1368509073}
+    - target: {fileID: 6813897865178885800, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: PlayAudio
+      objectReference: {fileID: 0}
+    - target: {fileID: 6813897865178885800, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: Oculus.Interaction.AudioTrigger, Oculus.Interaction.Samples
+      objectReference: {fileID: 0}
+    - target: {fileID: 6813897865178885800, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+      propertyPath: _whenSelect.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 6814943273739367109, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
       propertyPath: m_StaticEditorFlags
       value: 2147483647
@@ -25135,6 +25155,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+--- !u!114 &1368509073 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2435965647798207358, guid: 6a8cb1b61357ff94f98dc59e7787809c, type: 3}
+  m_PrefabInstance: {fileID: 1368509072}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 925ef87c5bafc37469a2f7ec825dee4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1370102420
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -93,6 +93,8 @@ public class Bot : MonoBehaviour
         {
             // Con guardia: sin telemetría en la escena, la excepción cortaba la corrutina y el
             // programa se quedaba "corriendo" para siempre, con el botón de ejecutar muerto.
+            ErrorSound.Play();
+
             if (TelemetryManager.Instance != null)
                 TelemetryManager.Instance.RegisterLogicError(LogicErrorType.UsoInvalido);
 

@@ -54,6 +54,9 @@ public class LevelManager : MonoBehaviour
     /// </summary>
     void RegisterError(LogicErrorType error)
     {
+        // El choque suena en el paso que falló, no al terminar el programa.
+        ErrorSound.Play();
+
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterLogicError(error);
     }

@@ -20,7 +20,7 @@ MonoBehaviour:
     isCorrect: 1
   - label: Agregar combustible
     isCorrect: 0
-  - label: "Cambiar la bater\xEDa"
+  - label: "Cargar la bater\xEDa"
     isCorrect: 0
   - label: Agregar agua
     isCorrect: 1

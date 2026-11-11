@@ -67,7 +67,7 @@ registra).
 | 2.1 | Enfriamiento | Marcar **Agregar combustible** y pulsar **Probar** | Selección con `correct` false. Intento `[Agregar combustible]`, no reparado, 0 %. Frase de error; los botones se desmarcan solos |
 | 2.2 | Enfriamiento | Marcar **Agregar agua** y pulsar **Probar** | `correct` true. Intento reparado, 100 % |
 | 2.3 | Generadores | Marcar **Agregar agua** y pulsar **Probar** | `correct` false. Intento no reparado, 0 %. Se desmarca solo |
-| 2.4 | Generadores | Marcar **Conectar una batería cargada** y pulsar **Probar** | `correct` true. Intento reparado, 100 % |
+| 2.4 | Generadores | Marcar **Cargar la batería** y pulsar **Probar** | `correct` true. Intento reparado, 100 % |
 | 2.5 | Motores | Marcar **Agregar combustible** y pulsar **Probar** | `correct` true. Reparado y escenario completado |
 
 Totales: 5 selecciones (2 con `correct` false), 5 intentos en `attempts` y `failedAttempts` 2.

@@ -225,6 +225,9 @@ public class Narrator : MonoBehaviour, IStepAction
     [ContextMenu("Probar frase de error")]
     public void PlayErrorLine()
     {
+        // El sonido va primero y siempre: la frase puede callarse si el narrador está hablando.
+        ErrorSound.Play();
+
         if (errorLines == null || errorLines.entries == null || errorLines.entries.Count == 0)
         {
             Debug.LogWarning($"[Narrator] '{name}' no tiene frases de error cargadas.", this);

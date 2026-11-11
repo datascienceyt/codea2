@@ -22,5 +22,5 @@ MonoBehaviour:
     isCorrect: 0
   - label: Agregar aceite
     isCorrect: 1
-  - label: "Cambiar la bater\xEDa"
+  - label: "Cargar la bater\xEDa"
     isCorrect: 0

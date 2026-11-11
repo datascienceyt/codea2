@@ -43,7 +43,7 @@ Cada escenario tiene **dos niveles de dificultad** (básica / intermedia) para a
 - Público: estudiantes de 8 a 17 años, mayoritariamente sin experiencia previa en VR ni en mandos espaciales, de contexto rural.
 - Sesiones limitadas a bloques de 15–20 minutos, con supervisor presente en todo momento.
 - Diseño basado en **fading worked examples** (ejemplos resueltos que se desvanecen progresivamente) para introducir condicionales, en **parametrización** para los bucles —el mismo programa resuelve dos casos cambiando solo un dato— y en **discriminación visual** para el reconocimiento de patrones (Escenario 4).
-- Los textos en pantalla usan vocabulario cotidiano de un niño de ocho años, y las piezas combinan siempre icono y texto: parte del público todavía lee con dificultad.
+- Los textos en pantalla usan vocabulario cotidiano de un niño de ocho años, en frases cortas: parte del público todavía lee con dificultad. Los bloques de instrucciones de las salas 1 y 3 llevan solo texto; el icono acompaña al problema de cada módulo (sala 2), a las fichas de tipo (sala 3) y a las figuras (sala 4).
 - Restricción de scope: lógica estrictamente secuencial en la ejecución de bloques (sin anidado; el único bucle es la fila entera), locomoción por teletransporte, sin hand tracking.
 
 ## Estructura de la experiencia

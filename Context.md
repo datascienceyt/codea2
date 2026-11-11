@@ -928,7 +928,7 @@ variable en `Docs/VARIABLES_TELEMETRIA.md`; archivo completo de ejemplo en
 
 **Un archivo = una sesión** (`{pin}_{sessionId}_{deviceId}.json`), subido por POST multipart
 (campo `file`, cabecera `X-API-Key`) a la URL de `Assets/_Main/Resources/ServidorDatos.asset`
-(hoy `https://codea2.penginexr.com/upload`; ver "Servidor" más abajo).
+(desde el 11/11/2026, `http://datascience.yachaytech.edu.ec/upload`; ver "Servidor" más abajo).
 
 **Raíz:** `pin` (texto), `deviceId` (5 caracteres), `sessionId`, `difficulty` (1 básica, 2
 intermedia), `startedUtc`, `endedUtc`, `totalSeconds` (sesión entera, con narración y traslados),
@@ -1103,9 +1103,11 @@ instalación nueva (no está en este repositorio). El contrato con la app no cam
 
 **La URL está en un solo sitio:** `Assets/_Main/Resources/ServidorDatos.asset` (`UploadServerConfig`,
 `Tools → Codea → Servidor de datos`). La leen los dos `JSONUploader`; ya no hay URL en escenas,
-prefabs ni código. **Mientras TI no dé la definitiva sigue la de la Pi**,
-`https://codea2.penginexr.com/upload`. La nueva será `https://DOMINIO/upload` o, si no hay
-dominio, `http://IP-PÚBLICA:PUERTO/upload`. Para cambiarla:
+prefabs ni código. **Desde el 11/11/2026 es la del servidor de la universidad**,
+`http://datascience.yachaytech.edu.ec/upload`, con la misma clave (ping y subida de prueba correctos con
+`CodeaServerCheck`). Es `http://` (en `https://` no responde), así que Player Settings lleva
+*Allow downloads over HTTP = Always allowed* y la clave y los datos viajan sin cifrar. Hasta ese día
+fue la de la Pi, `https://codea2.penginexr.com/upload`. Para cambiarla:
 
 1. Probarla antes, con Unity cerrado y sin tocar el asset:
    `Unity.exe -batchmode -projectPath . -executeMethod CodeaServerCheck.RunBatch -servidor <url>`
