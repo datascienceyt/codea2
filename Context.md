@@ -221,7 +221,7 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
   - Hallazgos de la revisión sin atender: sin aviso de tiempo restante por sala; bloques sin icono; choque sin detener el programa;
     la clave del servidor está en las escenas del repositorio; opciones de la sala 2 que empiezan igual («Agregar…»)
 
-- **17/11/2026, telemetría formato 1** (sin commit; compila, PlayCheck con 0 fallos en las dos dificultades y JSON validado; 👓 sin probar en el visor; **APK sin recompilar**). Diccionario y revisión de la sección 8 del documento de métricas en **`TELEMETRIA.md`** (raíz):
+- **17/11/2026, telemetría formato 1** (commit `635451a`; compila, PlayCheck con 0 fallos en las dos dificultades y JSON validado; 👓 sin probar en el visor; **APK 1.0.0 (código 2) recompilado el 17/11/2026** con el formato 1). Diccionario y revisión de la sección 8 del documento de métricas en **`TELEMETRIA.md`** (raíz):
   - `formatVersion`, `appVersion`, `endReason` (raíz y escenario), `challengeStartedUtc`, `pausedSeconds`, `pauses` y `seq` en cada evento
   - E1 `failReason` por ejecución; E2 deselecciones (`selected` 0/1), `wrongSelections` y `modulesRequired`; E3 `itemsRequired`, `moved` y `phaseCompleted`, sin `failedAttempts`; E4 `wrongPlacements`, `socketsRequired` y `chipsReleased`. Los contadores de fallos y errores se recalculan de sus listas
   - **Ventana del reto:** `TelemetryManager` solo apunta eventos con el reto abierto y `ProgramTrigger` no ejecuta fuera de él; el Ejecutar del tutorial no se controla ni se registra (antes apuntaba intentos en E1)
