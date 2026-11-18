@@ -1,5 +1,11 @@
 # Variables de telemetría — Codea VR 2
 
+> **Desde el 17/11/2026 el JSON es el formato 1** (`formatVersion: 1`). El diccionario vigente, con
+> cuándo se escribe cada campo, los valores de `endReason` y `failReason` y la revisión de la
+> sección 8 del documento de métricas, está en **`TELEMETRIA.md`**, en la raíz del proyecto. Lo que
+> sigue describe el formato anterior y se conserva como contexto; el resumen de lo que cambió está
+> al final, en «Formato 1 (17/11/2026)».
+
 > Documento para el equipo de evaluación. Describe **qué registra el juego** en cada escenario
 > y qué permite observar cada variable.
 >
@@ -186,7 +192,13 @@ segunda pulsación justo después de que el módulo se desmarcara solo.
 
 ## Variables por pulsación
 
-Lista `selections`, con una entrada por cada acción que el niño **marca**.
+Lista `selections`, con una entrada por cada acción que el niño **marca y llega a probar**.
+
+Desde el 16/11/2026 una marca no va al JSON hasta que el niño pulsa **Probar** en ese módulo: entonces
+entran, en el orden en que se marcaron, las que siguen marcadas. La que se desmarca antes de probar, o
+la que nunca se prueba (se acaba el tiempo), no se registra. `durationSeconds` y `timestamp` son los
+del momento de marcar, no los del Probar. Una acción que se queda marcada tras un Probar (la correcta
+de una selección incompleta) no se vuelve a registrar en el siguiente.
 
 | Variable | Tipo | Qué permite observar |
 |---|---|---|
@@ -381,7 +393,7 @@ Estas no se guardan, pero se calculan directamente desde lo anterior:
 | **Eficiencia de la solución** | Longitud de la `sequence` ganadora vs la óptima del nivel | Optimización, abstracción |
 | **Uso de "Avanzar 2"** | Buscar `"Avanzar 2"` en la `sequence` | **Abstracción**: agrupar dos pasos en una instrucción |
 | **Distancia entre intentos** | Comparar `sequence` de intentos consecutivos | Distingue corrección **sistemática** de ensayo-error aleatorio |
-| **Errores del Esc. 2** | Contar en `selections` las entradas con `correct: false` | Sustituye al antiguo `wrongSelections` |
+| **Errores del Esc. 2** | Contar en `selections` las entradas con `correct: false` | Sustituye al antiguo `wrongSelections`. Desde el 16/11/2026 solo cuenta lo que se llegó a probar |
 | **Tasa de error por módulo** | Agrupar `selections` por `module` | Validar el efecto del *fading* (Esc. 2) |
 | **Tiempo de decisión** | `durationSeconds` de cada selección o colocación | Si el error llega tras pensar o por pulsar rápido (Esc. 2 y 4) |
 | **Errores del Esc. 4** | Contar en `placements` las entradas con `correct: false` | Sustituye al antiguo `wrongPlacements` |
@@ -573,3 +585,33 @@ Para leer archivos anteriores a esa fecha junto a los nuevos:
 | Esc. 1 y 3: sin medida de cercanía | `solutionPercent` en cada intento |
 | `totalSeconds` de una sala agotada: 300 s más el último intento en curso | Exactamente 300 |
 | Esc. 3: la fila corría hasta el primer hueco vacío | Con huecos vacíos no se ejecuta: frase de error y `errorInvalidCommand` |
+
+# Cambios del 16/11/2026
+
+| Antes | Ahora |
+|---|---|
+| Esc. 2: cada acción marcada iba a `selections` en el momento de marcarla, también la incorrecta que se desmarcaba sin probar | Va a `selections` al pulsar **Probar** en su módulo. No se registran errores que no se llegaron a probar |
+| Esc. 2 intermedia: Probar con una sola de las dos correctas sonaba a error y desmarcaba todo | No suena el error ni se desmarca: el narrador dice la frase 22 ("vas bien, te falta otra; son dos"). En `attempts` sigue siendo un intento sin reparar (`correctSelected: 1`, `wrongSelected: 0`, `solutionPercent: 50`) y suma a `failedAttempts` |
+
+El formato del JSON no cambia: mismos campos, mismos tipos.
+
+# Formato 1 (17/11/2026)
+
+Sustituye a lo anterior. Detalle en `TELEMETRIA.md`. Los datos anteriores no entran en el análisis.
+
+| Antes | Ahora |
+|---|---|
+| Sin versión | `formatVersion: 1` y `appVersion` en la raíz |
+| Sin motivo de cierre | `endReason` en la raíz (`completed`, `quit`, `appClosed`) y en cada escenario (`notStarted`, `completed`, `timedOut`, `abandoned`, `appClosed`) |
+| `startedUtc` = apertura del reto | `startedUtc` = entrada en la sala, con su narración, y `challengeStartedUtc` = desde cuándo el reto acepta acciones |
+| Sin pausas | `pausedSeconds` y `pauses` (`headsetRemoved`, `menu`, `focusLost`). `totalSeconds` = `endedUtc − challengeStartedUtc − pausedSeconds` |
+| Sala agotada: 300 s justos | El tiempo de reto real: 300 s más lo que se esperó a la ejecución en curso |
+| E3 y E4: la narración contaba en el reto y en los relojes | El reto se abre al terminar la narración |
+| Sin orden de eventos | `seq` en cada evento de `attempts`, `selections` y `placements` |
+| E1: sin motivo por ejecución | `failReason`: `collision`, `invalidUse`, `incompleteSequence`, `other`, o `""` si se resolvió |
+| E1 `failedAttempts` lo sumaba un evento 1,5 s después del fallo | Se calcula: ejecuciones con `solved = false` |
+| E2: las marcas iban al JSON al pulsar Probar, sin deselecciones (16/11/2026) | Cada pulsación va en el momento, con `selected` 1 o 0 |
+| E2: sin `wrongSelections` ni lista de módulos | `wrongSelections` y `modulesRequired` |
+| E3 `failedAttempts` | Eliminado. Nuevos: `itemsRequired` y, por ejecución, `moved` y `phaseCompleted`. `errorCollisionBot` aparece siempre a 0 |
+| E4: sin `wrongPlacements` ni lista de huecos | `wrongPlacements`, `socketsRequired` y `chipsReleased` |
+| Eventos fuera del reto (tutorial, narración, sala cerrada) | No se registran en ningún escenario |

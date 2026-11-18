@@ -69,7 +69,7 @@ public abstract class BlockNode : MonoBehaviour
         // guardar, y el evento queda apuntando a nada sin avisar. Desde código funciona para
         // todo bloque de todo escenario, sin nada que recordar cablear.
         if (TelemetryManager.Instance != null)
-            TelemetryManager.Instance.RegisterBlockGrabbed();
+            TelemetryManager.Instance.RegisterBlockGrabbed(this);
 
         LeaveSocket();
     }
@@ -125,6 +125,10 @@ public abstract class BlockNode : MonoBehaviour
     void OnReleased()
     {
         isGrabbed = false;
+
+        // Solo cuenta en el Escenario 4 (chipsReleased), y solo si su agarre se contó.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.RegisterBlockReleased(this);
 
         if (IsValidTarget(candidate)) AttachTo(candidate, true);
         candidate = null;

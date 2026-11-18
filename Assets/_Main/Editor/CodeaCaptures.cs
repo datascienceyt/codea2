@@ -230,6 +230,10 @@ public static class CodeaCaptures
             camera.transform.position = shot.position;
             camera.transform.LookAt(shot.target);
 
+            // Los rótulos de la Sala 3 miran al jugador; en la captura, a esta cámara.
+            foreach (Scenario3Hints hints in Object.FindObjectsByType<Scenario3Hints>(FindObjectsSortMode.None))
+                hints.FaceTowards(shot.position);
+
             RenderTexture texture = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
             {
                 antiAliasing = 4

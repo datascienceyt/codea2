@@ -70,6 +70,17 @@ public class Narrator : MonoBehaviour, IStepAction
              "principal, porque equivocarse no hace progresar la historia.")]
     [SerializeField] private NarrationList errorLines = new NarrationList();
 
+    [Header("Frases de ayuda")]
+    [Tooltip("Frases que se dicen por su ID_Texto cuando el jugador va por buen camino pero le " +
+             "falta algo (PlayHintLine): la 22, 'te falta otra opción', del Escenario 2.\n\n" +
+             "Como las de error, no avanzan la narración principal. Una frase que no esté aquí " +
+             "se dice igual, solo con el texto del CSV; la lista existe para darle su audio.")]
+    [SerializeField] private NarrationList hintLines = new NarrationList();
+
+    [Tooltip("Si el narrador está hablando, la frase de ayuda espera a que termine, como mucho " +
+             "estos segundos. Pasado ese tiempo ya no viene a cuento y no se dice.")]
+    [SerializeField] private float hintMaxWaitSeconds = 6f;
+
     [Header("Voz")]
     [SerializeField] private AudioSource audioSource;
 
@@ -114,6 +125,9 @@ public class Narrator : MonoBehaviour, IStepAction
     /// <summary>Última frase de error dicha, para no repetirla seguida. -1 = ninguna todavía.</summary>
     private int lastErrorIndex = -1;
     private bool skipRequested;
+
+    // Frase de ayuda que espera a que el narrador calle (PlayHintLine).
+    private Coroutine pendingHint;
 
     // Sustitución pedida para la próxima frase de la historia (ReplaceNextLine).
     private bool replacementPending;
@@ -237,6 +251,49 @@ public class Narrator : MonoBehaviour, IStepAction
         if (IsTyping || (audioSource != null && audioSource.isPlaying)) return;
 
         StartCoroutine(PlayEntry(errorLines.entries[PickErrorIndex()]));
+    }
+
+    /// <summary>
+    /// Dice una frase de ayuda por su ID_Texto del CSV: el jugador no ha fallado, pero le falta
+    /// algo. Sin sonido de error y sin avanzar la narración principal.
+    ///
+    /// A diferencia de las de error, no se pierde si el narrador está hablando: espera a que
+    /// termine (hasta `hintMaxWaitSeconds`). Es la única respuesta que recibe esa pulsación, y
+    /// casi siempre lo que suena es la frase de error del intento anterior.
+    /// </summary>
+    public void PlayHintLine(string textId)
+    {
+        if (string.IsNullOrWhiteSpace(textId) || !isActiveAndEnabled) return;
+
+        textId = textId.Trim();
+
+        NarrationEntry entry = hintLines != null && hintLines.entries != null
+            ? hintLines.entries.Find(e => e != null && e.textId != null && e.textId.Trim() == textId)
+            : null;
+
+        if (entry == null) entry = new NarrationEntry { textId = textId };
+
+        if (entry.clip == null && string.IsNullOrEmpty(FindText(textId)))
+        {
+            Debug.LogWarning($"[Narrator] La frase de ayuda '{textId}' no tiene audio ni texto en el CSV.", this);
+            return;
+        }
+
+        if (pendingHint != null) StopCoroutine(pendingHint);
+        pendingHint = StartCoroutine(PlayHintWhenFree(entry));
+    }
+
+    private bool IsSpeaking => IsTyping || (audioSource != null && audioSource.isPlaying);
+
+    private IEnumerator PlayHintWhenFree(NarrationEntry entry)
+    {
+        float deadline = Time.time + Mathf.Max(0f, hintMaxWaitSeconds);
+
+        while (IsSpeaking && Time.time < deadline) yield return null;
+
+        pendingHint = null;
+
+        if (!IsSpeaking) yield return PlayEntry(entry);
     }
 
     /// <summary>
@@ -434,6 +491,7 @@ public class Narrator : MonoBehaviour, IStepAction
         StopAllCoroutines();
         StopAudio();
 
+        pendingHint = null;
         IsTyping = false;
         skipRequested = false;
 

@@ -42,7 +42,8 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     private bool HasTelemetry =>
         !string.IsNullOrEmpty(challengeId) && TelemetryManager.Instance != null;
 
-    [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento.")]
+    [Tooltip("Llama a StartScenario (entrada en la sala) en Start. Desactivado: lo llama el " +
+             "Director al empezar la narración. El reto se abre en Execute.")]
     [SerializeField] private bool startChallengeOnStart = false;
 
     [Header("Fichas")]
@@ -149,12 +150,26 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
                 chip.SetPaused(value);
     }
 
-    /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
+    /// <summary>
+    /// Entrada en la sala, al empezar su narración (cableado en el Director). El reto no se
+    /// abre aquí sino en Execute, cuando las fichas se pueden agarrar.
+    /// </summary>
     public void StartScenario()
     {
         if (!HasTelemetry) return;
 
-        TelemetryManager.Instance.StartChallenge(challengeId);
+        TelemetryManager.Instance.EnterRoom(challengeId);
+        ReportSockets();
+    }
+
+    /// <summary>socketsRequired: los huecos de esta dificultad, que son los que cierran el panel.</summary>
+    private void ReportSockets()
+    {
+        var ids = new List<string>();
+        foreach (ShapeSocket socket in sockets)
+            if (socket != null) ids.Add(socket.SocketId);
+
+        TelemetryManager.Instance.SetRequired(challengeId, ids);
     }
 
     [Tooltip("Misma ficha en el mismo hueco antes de estos segundos: es la misma colocación y " +
@@ -254,8 +269,15 @@ public class Scenario4Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
     public IEnumerator Execute()
     {
-        // El Director llega aquí justo después de los pasos de narración de la sala.
+        // El Director llega aquí justo después de los pasos de narración de la sala. Las fichas
+        // se sueltan y el reto se abre en el mismo instante: desde aquí acepta acciones.
         SetChipsPaused(false);
+
+        if (HasTelemetry)
+        {
+            TelemetryManager.Instance.StartChallenge(challengeId);
+            ReportSockets();
+        }
 
         yield return new WaitUntil(() => scenarioFinished || timedOut);
     }

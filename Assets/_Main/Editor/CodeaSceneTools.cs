@@ -622,6 +622,7 @@ public static class CodeaSceneTools
         {
             AssignNarratorLists(narrator, variant, voice, log);
             AssignErrorLines(narrator, log);
+            AssignHintLines(narrator, log);
         }
 
         AssignLine(Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include), "tiempo agotado en una sala", log);
@@ -730,6 +731,28 @@ public static class CodeaSceneTools
         so.ApplyModifiedProperties();
 
         log.AppendLine($"  frases de error: {clips.Count} ({string.Join(", ", clips.Select(c => c.name))})");
+    }
+
+    /// <summary>Las frases de ayuda del Narrator (la 22 del Escenario 2), cada una por su textId.</summary>
+    private static void AssignHintLines(Narrator narrator, StringBuilder log)
+    {
+        SerializedObject so = new SerializedObject(narrator);
+        SerializedProperty entries = so.FindProperty("hintLines.entries");
+
+        for (int i = 0; i < entries.arraySize; i++)
+        {
+            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            string id = entry.FindPropertyRelative("textId").stringValue;
+            AudioClip clip = VoiceClip(VoiceFolder, id);
+
+            entry.FindPropertyRelative("clip").objectReferenceValue = clip;
+
+            log.AppendLine(clip != null
+                ? $"  frase de ayuda {id}: con audio"
+                : $"  ⚠ frase de ayuda '{id}': sin audio, sale solo con el texto");
+        }
+
+        so.ApplyModifiedProperties();
     }
 
     /// <summary>La frase 'timeUpLine' de un componente, por su textId.</summary>

@@ -31,8 +31,9 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     [Tooltip("Debe coincidir con el challengeId del ProgramTrigger de este escenario.")]
     [SerializeField] string challengeId = "escenario1";
 
-    [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento: dos llamadas " +
-             "reinician el cronómetro del escenario.")]
+    [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento (es lo normal: lo " +
+             "abre el paso 'Iniciar temporizador', tras la narración). StartChallenge abre el reto: " +
+             "desde ahí acepta acciones y corre su reloj.")]
     [SerializeField] bool startChallengeOnStart = true;
 
     [Header("Bloques")]
@@ -159,6 +160,11 @@ public class Scenario1Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         // CompleteLevel() ocurre DENTRO de la ejecución, cuando el bot usa la salida, así que
         // al llegar aquí el estado ya es definitivo.
         if (IsLevelCompleted) return;
+
+        // Desde código y antes de la espera: la corrutina muere si la sala se cierra durante el
+        // retryDelay (tiempo agotado), y el intento quedaría con failReason "other".
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.FinishBlockRun(challengeId);
 
         StartCoroutine(RetryAfterDelay());
     }

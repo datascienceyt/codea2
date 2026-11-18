@@ -29,6 +29,14 @@ public class Director : MonoBehaviour
     /// <summary>Si el recorrido está en marcha.</summary>
     public bool IsPlaying { get; private set; }
 
+    /// <summary>
+    /// Empieza un capítulo, con su nombre ("Inicio", "Escenario 1"...). TelemetryManager toma
+    /// de aquí la entrada en cada sala (startedUtc), narración incluida: los nombres
+    /// "Escenario N" se corresponden con los ids escenarioN. Cambiarles el nombre deja ese
+    /// inicio de sala en el momento en que se abre su reto.
+    /// </summary>
+    public static event Action<string> ScenarioStarted;
+
     // Desactivar el objeto mata sus corrutinas: el recorrido ya no está en marcha.
     void OnDisable() => IsPlaying = false;
 
@@ -111,6 +119,8 @@ public class Director : MonoBehaviour
 
     IEnumerator RunScenario(Scenario scenario)
     {
+        if (currentStepIndex == 0) ScenarioStarted?.Invoke(scenario.name);
+
         while (currentStepIndex < scenario.steps.Count)
         {
             Step step = scenario.steps[currentStepIndex];

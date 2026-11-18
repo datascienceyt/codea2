@@ -221,10 +221,50 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
   - Hallazgos de la revisión sin atender: sin aviso de tiempo restante por sala; bloques sin icono; choque sin detener el programa;
     la clave del servidor está en las escenas del repositorio; opciones de la sala 2 que empiezan igual («Agregar…»)
 
+- **17/11/2026, telemetría formato 1** (sin commit; compila, PlayCheck con 0 fallos en las dos dificultades y JSON validado; 👓 sin probar en el visor; **APK sin recompilar**). Diccionario y revisión de la sección 8 del documento de métricas en **`TELEMETRIA.md`** (raíz):
+  - `formatVersion`, `appVersion`, `endReason` (raíz y escenario), `challengeStartedUtc`, `pausedSeconds`, `pauses` y `seq` en cada evento
+  - E1 `failReason` por ejecución; E2 deselecciones (`selected` 0/1), `wrongSelections` y `modulesRequired`; E3 `itemsRequired`, `moved` y `phaseCompleted`, sin `failedAttempts`; E4 `wrongPlacements`, `socketsRequired` y `chipsReleased`. Los contadores de fallos y errores se recalculan de sus listas
+  - **Ventana del reto:** `TelemetryManager` solo apunta eventos con el reto abierto y `ProgramTrigger` no ejecuta fuera de él; el Ejecutar del tutorial no se controla ni se registra (antes apuntaba intentos en E1)
+  - **Cambio de juego:** en E3 y E4 el reto (con sus 5 min y el reloj de 15 min) se abre al terminar la narración (`Execute`), no al empezarla. `StartScenario` de E3 y E4 llama ahora a `EnterRoom`. E2 sigue abriendo al entrar porque sus botones responden durante la narración. `ScenarioTimeLimit` lee el reloj de la telemetría (`ChallengeSeconds`), sin pausas; una sala agotada ya no apunta 300 s justos
+  - Entrada en cada sala desde `Director.ScenarioStarted` (capítulos «Escenario N»): renombrarlos deja `startedUtc` = `challengeStartedUtc`
+  - Pausas por `OnApplicationPause`, `OnApplicationFocus` y `OVRManager` (HMD e input focus); en el editor no se detectan (`Detect Pauses In Editor`). Al pausarse se escribe una copia cerrada como `appClosed` por si el sistema mata la app
+  - Herramientas: `Tools → Codea → Validar un JSON de telemetría` (`Editor/CodeaTelemetryCheck.cs`); PlayCheck la pasa al final de cada dificultad y deja la copia en `Logs/Codea_PruebaPlay_<dificultad>.json`. `validar_json_telemetria.js` marca como `ANTES` los JSON sin `formatVersion`. Ejemplo construido en `Docs/ejemplo_formato1.json`
+  - Pendiente: un JSON real por dificultad desde el visor para `Codea2Server/JSON Samples/`
+
+- **16/11/2026, ajustes tras las pruebas** (sin commit; compila, SceneCheck y PlayCheck con 0 fallos, capturas en Play; 👓 sin probar en el visor). **APK 1.0.0 compilado el 16/11/2026** en `Build/app.apk` con todo esto; los audios del guion nuevo aún no están grabados:
+  - **Sala 2, selección incompleta:** Probar con todo lo marcado correcto pero faltando alguna (en intermedia, una de las dos) ya no
+    es un error: no suena, no se desmarca nada y el narrador dice la **frase 22** del CSV, "¡Vas bien! Esa opción es correcta, pero
+    todavía te falta otra. Recuerda: son dos opciones." (`SystemModule → Incomplete Line Id`, `Narrator.PlayHintLine`, lista
+    `Hint Lines` del Narrator). **Sin audio hasta grabar `22.wav`** en `Sounds/VoiceLines/Camila/` y pasar `Asignar la voz del
+    narrador`. Si el narrador está hablando, espera hasta 6 s a que termine
+  - **Telemetría de la Sala 2:** las marcas van a `selections[]` al pulsar Probar, no al marcar; la que se desmarca antes, o no se
+    prueba nunca, no se registra (`TelemetryManager.RegisterSelection` / `DiscardSelection`). El formato no cambia
+  - **Sala 1, obstáculos más bajos:** `Grid → LevelLoader → Obstacle Height` (0,45): muros y peligros se aplastan al 45 % de la
+    altura de su prefab al crear el nivel, en las dos dificultades; el suelo no se toca. Con 1 quedan como antes
+  - **Sala 3, rótulos de destino** (`Scenario 3/Scenario3Hints.cs`, lo añade `Scenario3Controller → Show Hints`): sobre la plataforma
+    roja "IZQUIERDA · barriles rojos" y sobre la azul "DERECHA · cajas azules". El lado sale de `ArmSlot.Yaw`, que es lo que hacen
+    Girar Izquierda y Girar Derecha. Ojo: el jugador llega mirando a la consola, con la plataforma roja delante y la azul detrás;
+    izquierda y derecha son las del brazo mirando a la pila. La frase 12 lo sigue diciendo de voz
+  - **Final hacia Ecuador** (`EarthApproach`, reescrito): la Tierra ya no gira (`EarthRotation` apagado en las dos Tierras de la
+    escena). Al encenderse `Pos_earth` queda con el norte arriba y Sudamérica a la vista; en el regreso se coloca en el centro de la
+    ventana de la Sala 4, gira 35° sobre su eje hasta dejar Ecuador delante y la nave baja hasta 1,28 radios, con una baliza que late
+    y el nombre "ECUADOR". Campos: `Landing Longitude/Latitude`, `Arrival Distance`, `Arrival Elevation` (13°; más alto, esa cara
+    recibe menos sol), `Start Turn Degrees`, `Beacon Material` (`Confeti.mat`). Sustituye a `approachFraction`
+  - **Guion puesto al día** (`Narrativa.csv` y la tabla de `generar_gdd.js`; el GDD `.docx` está sin regenerar): 9.1 y 9.2 dicen
+    «acción», «opción» y «presiona el botón azul para probar» (la 9.2, «dos»); 11 y 15 nombran barriles y cajas; 12 y 13 dicen
+    «azules», «a la izquierda / a la derecha» (sin «tu») y «el hueco que dice TIPO»; 14.1 y 14.2 terminan en el botón azul;
+    17 dice «ficha» y «hueco». **Los audios de 9.1, 9.2, 11, 12, 13, 14.1, 14.2, 15 y 17 son los anteriores y ya no coinciden
+    con el texto; la 22 no tiene.** Hay que grabar esas diez, dejarlas en `Sounds/VoiceLines/Camila/` con su ID y pasar
+    `Asignar la voz del narrador`
+  - **Informe 3 al día** con todo lo anterior (filas "Revisión final" en la tabla de observaciones, viñetas, frases 9.1–22 en la tabla
+    de frases, APK 1.0.0 sin fecha de compilación, herramienta `Compilar el APK`) y capturas nuevas. Las capturas giran los rótulos
+    de la Sala 3 hacia su cámara (`Scenario3Hints.FaceTowards`); sin eso salían del revés, porque miran a `Camera.main`
+
 **Informe del mes 3 (27/10/2026):** `Docs/Informe-Mes3.docx`, Producto 3 ("Informe técnico de
 optimización, validación funcional y entrega final del módulo inmersivo"; 3.1, 3.2 y 3.3). Se genera
 con `node Docs/Herramientas/generar_informe_mes3.js` y es **el único documento de informe que queda
-abierto**: los de los meses 1 y 2 ya no se tocan. Fecha límite 15/11/2026, subrayada en rojo.
+abierto**: los de los meses 1 y 2 ya no se tocan. **Fecha de entrega 15/11/2026, confirmada** (`FECHA_PROVISIONAL = false`,
+sin subrayar). Ningún dato del texto puede ser posterior a esa fecha: los ajustes del 16/11 figuran como "Revisión final" sin fecha.
 **El texto entre ⟨ ⟩ del script sale en rojo y entre corchetes: son los datos que faltan** (fecha y
 participantes de la revisión de la 0.9.0, prueba final en el visor, medición de FPS y carga, fecha de
 grabación de las locuciones, compilación de la 1.0.0, keystore, alturas y distancias, sesión de
@@ -383,6 +423,7 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Probar el servidor: Ping (GET `/health`) y JSON de prueba, en Play | `Tools → Codea → Probar el servidor (Ping y JSON de prueba)` (`Editor/CodeaServerCheck.cs`). Informe en `Logs/Codea_PruebaServidor.txt`. Sin abrir Unity: `-executeMethod CodeaServerCheck.RunBatch`, **con gráficos** (con `-nographics` OpenXR se cae al entrar en Play sin casco) y sin `-quit`; con `-servidor <url>` prueba otra URL sin tocar el asset |
 | Jugar en el editor sin casco (Meta XR Simulator) | Pulsar Play: `Editor/CodeaXRSimulator.cs` activa el simulador solo (v207.0, en `C:\Program Files\MetaXRSimulator`). El SDK lo activa solo para el Unity abierto, y sin activarlo, Play sin casco **cierra Unity** (`XR_ERROR_FORM_FACTOR_UNAVAILABLE` del runtime de Meta Horizon). Para el casco por Link, desmarcar `Tools → Codea → Usar el Meta XR Simulator en Play` (se guarda por equipo). En batch funciona con gráficos; con `-nographics` ningún runtime XR arranca y Unity se cae igual. Comprobado el 05/11/2026: `CodeaPlayCheck` con el simulador, 0 fallos |
 | Saber si un nivel del Escenario 1 tiene solución y cuántos bloques pide | `node Docs/Herramientas/resolver_nivel.js <nivel.json> <máx>` |
+| Compilar el APK (escenas y keystore de los ajustes del proyecto) en `Build/app.apk` | `Tools → Codea → Compilar el APK` (`Editor/CodeaBuild.cs`). Sin abrir Unity: `-batchmode -quit -buildTarget Android -executeMethod CodeaBuild.BuildBatch` (unos 2 min con la caché; la primera vez, más de 10). Informe en `Logs/Codea_Compilacion.txt` |
 | Regenerar el GDD | `Docs/Herramientas/generar_gdd.js` (ver su `LEEME.md`) |
 | Comprobar que un JSON de telemetría tiene el formato del código | `node Docs/Herramientas/validar_json_telemetria.js [archivo]` (sin archivo, los de la documentación) |
 | Comprobar la telemetría de punta a punta | `Docs/Pruebas/PLAN_PRUEBA_TELEMETRIA.md` |
@@ -508,7 +549,7 @@ dependencia:
 | `Telemetry/JSONUploader.cs` | Sube por POST multipart, con reintentos: la sesión que acaba de terminar (`UploadTelemetry`) o todas las que faltan (`UploadPending`) |
 | `Telemetry/TelemetryOutbox.cs` | Estático. Qué JSON del visor no están aún en el servidor: apunta cada subida (nombre + huella del contenido) en `subidos.txt`. No mueve ni borra ningún JSON |
 | `Map/AutomaticDoor.cs` | Puertas de apertura **vertical**. Con dos paneles, uno baja y otro sube. `IStepAction` |
-| `Map/EarthApproach.cs` | El regreso (09/11/2026): acción del Director en el paso "Completar reto y cambiar escenario", en paralelo con la frase 19. Deja arrancar los motores `engineLeadSeconds` (5 s desde `Scenario4Controller.CompletedTime`; clip `engineStart_corto.wav`, 39 s sin fundido, que se apaga solo al llegar la Tierra), acerca la Tierra de `Pos_earth` durante `durationSeconds` (32 s, suave al empezar y al llegar, tope `approachFraction` 0,36) y termina: el Director sube los datos y vuelve a `Setup` |
+| `Map/EarthApproach.cs` | El regreso (09/11/2026; hacia Ecuador desde el 16/11/2026): acción del Director en el paso "Completar reto y cambiar escenario", en paralelo con la frase 19. Deja arrancar los motores `engineLeadSeconds` (5 s desde `Scenario4Controller.CompletedTime`; clip `engineStart_corto.wav`, 39 s sin fundido, que se apaga solo al llegar la Tierra), lleva la Tierra de `Pos_earth` al centro de la ventana durante `durationSeconds` (32 s, suave al empezar y al llegar) mientras gira hasta dejar Ecuador delante, con su baliza, y termina a `arrivalDistance` (1,28 radios): el Director sube los datos y vuelve a `Setup`. `Map/EarthRotation.cs` sigue en la escena, apagado |
 | `Scenario 4/MissionCelebration.cs` | El premio del final (09/11/2026), en `Escenario (4)` junto al `Scenario4Controller`; escucha su `OnScenarioFinished`. Fanfarria y vítores, dos cañones de confeti (`Materials/Confeti.mat`), rótulo "¡MISIÓN CUMPLIDA!" 7 s y, al acabar la fanfarria, música del regreso que sigue en `Setup` hasta su final. Menú contextual "Probar celebración" |
 | `SceneController.cs` | Vista exterior de la nave: `ChangeScenario(0)` enciende `Pos_earth` y apaga `Pos_sun`. El Director lo llama al terminar los escenarios 3 y 4 |
 | `Editor/CodeaSceneCheck.cs` · `Editor/CodeaPlayCheck.cs` · `Editor/CodeaCaptures.cs` | Comprobación de la escena, prueba en Play de las dos dificultades y capturas de cada sala para informes (tabla de herramientas, sección 0) |
@@ -699,6 +740,7 @@ marcan y desmarcan libremente. Al pulsar el botón azul **Probar** (`SystemModul
 módulo se repara si lo marcado es exactamente la solución; si no, suena la frase de error y, a
 los `resetAfterErrorSeconds` (0,8 s), se desmarcan todos (reunión del 20/10/2026: "botón azul
 probar, si error reiniciar 4 botones"). Probar se apaga al repararse (`tryButton`).
+Excepción (16/11/2026): si lo marcado es correcto pero falta alguna, no hay error ni se desmarca; suena la frase 22.
 
 | | Opciones | Correctas |
 |---|---|---|
@@ -883,7 +925,7 @@ y los cuatro `ScenarioNController`.
 
 **`Narrator` reproduce voz y escribe texto a la vez** y espera a la más larga de las dos.
 Emparejado por ID: cada `NarrationEntry` tiene `clip` + `textId` contra un CSV
-(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 22 IDs (el `0` es la frase del tutorial) más 2 variantes
+(`ID_Texto, Texto_Narrativa`), hoy **`Assets/_Main/Narrativa.csv`**: 23 IDs (el `0` es la frase del tutorial; el `22`, la ayuda de selección incompleta de la Sala 2, que dice `Narrator.PlayHintLine` fuera de las listas) más 2 variantes
 por dificultad, `9.1`/`9.2` (esc. 2) y `14.1`/`14.2` (esc. 3). El `20` es el cierre de sesión por tiempo (agotados los 15 minutos, o la última sala) y el `21`, el tiempo agotado en las demás ("Tiempo de sesión y de sala", sección 5). Ni el 20 ni el 21 están en las listas: los dicen `TimeUpSequence` y `ScenarioTimeLimit`. El 27/10/2026 se acortaron las frases 0, 1, 3, 4, 6 y 7, se reescribió la 12 (dónde va cada tipo: barriles a la izquierda, cajas a la derecha) y se **retiraron la 2 y la 5** (texto vacío en el CSV y sin audio: `Narrator.PlayEntry` las omite sin mostrar nada, y las listas conservan su entrada). La frase 3 dice ahora "Tienes quince minutos para repararla. ¡Adelante!"
 
 **`textId` es texto, no número**, precisamente por esas variantes: como entero, `9.1` no
@@ -1094,7 +1136,7 @@ análisis sin tener que jugar una sesión entera.
 | Intentos fallidos (esc. 3) | `Scenario3Controller.HandleRunFinished` — **desde código** |
 | Selecciones (esc. 2) | `Scenario2Controller`. Solo al **marcar**; ninguna deselección se registra |
 | Intentos (esc. 2) | `SystemModule.Try` (botón Probar) → `Scenario2Controller.HandleTried` → `RegisterModuleAttempt` |
-| Sala agotada | `ScenarioTimeLimit.Close` → `TimeOutChallenge(id, 300)` |
+| Sala agotada | `ScenarioTimeLimit.Close` → `TimeOutChallenge(id)` (tiempo de reto real, formato 1) |
 | Colocaciones (esc. 4) | `Scenario4Controller` |
 
 **Todo se atribuye al reto activo** (`_currentChallengeId`, que fija `StartChallenge`). Si el
@@ -1216,7 +1258,7 @@ Lo que se conecta desde un `UnityEvent`. Verificado contra el código.
 
 | Componente | Métodos |
 |---|---|
-| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `RegisterModuleAttempt(...)` (esc. 2, desde código), `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · `TimeOutChallenge(string, segundos)` · eventos `ChallengeStarted`, `ChallengeEnded` · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
+| `TelemetryManager` | `StartChallenge(string)`, `CompleteChallenge(string)`, `EndRun()`, `Flush()`, `RegisterFailedAttempt()`, `RegisterBlockGrabbed()`, `RegisterBlockConnected()`, `RegisterBlockReset()`, `RegisterLogicError(int)`, `RegisterModuleAttempt(...)` (esc. 2, desde código), `EnterRoom(string)`, `QuitRun()`, `AcceptsActions(string)`, `ChallengeSeconds(string)`, `FinishBlockRun`, `UpdateLoopProgress`/`FinishLoopRun`, `SetRequired`/`SetItemsRequired`, `RegisterSelection(..., selected)`, `ReportIntegrity()`, `IncrementPin()`, `SetPin(int)`, `SetDifficulty(int)` (también la guarda como la de Setup) · desde código: `SetRunDifficulty(Difficulty)` (solo la run) · `TimeOutChallenge(string)` · eventos `ChallengeStarted`, `ChallengeEnded` · estáticos: `GetDeviceId()`, `GetPreparedDifficulty()` |
 | `ScenarioTimeLimit` | `ForceTimeUp()` (menú contextual "Agotar el tiempo de la sala actual") · `CurrentChallengeId` |
 | `JSONUploader` | `UploadTelemetry()`, `UploadPending()`, `UploadFile(string)` · evento `OnPendingUploadFinished` |
 | `ProgramTrigger` | `OnPlayPressed()`, `AddPrecondition(IRunPrecondition)` (desde código) |

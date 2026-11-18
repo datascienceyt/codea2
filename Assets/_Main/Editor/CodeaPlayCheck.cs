@@ -325,8 +325,9 @@ public static class CodeaPlayCheck
 
         int wrong = Enumerable.Range(0, module.Data.options.Count).FirstOrDefault(i => !module.Data.IsCorrectAt(i));
         int before = ReadRun()?.escenario2.attempts.Count ?? 0;
+        int marksBefore = ReadRun()?.escenario2.selections.Count ?? 0;
 
-        // Sin nada marcado no cuenta: la telemetría de abajo espera solo los dos intentos siguientes.
+        // Sin nada marcado no cuenta: la telemetría de abajo espera solo los intentos siguientes.
         module.ResetModule();
         module.Try();
 
@@ -336,23 +337,42 @@ public static class CodeaPlayCheck
         module.Try();
         Expect(!module.IsSolved, $"Esc. 2 · {module.name}: Probar con una incorrecta no repara");
 
+        // Marcar una incorrecta y desmarcarla antes de probar no deja rastro.
         module.ResetModule();
-        for (int i = 0; i < module.Data.options.Count; i++)
-            if (module.Data.IsCorrectAt(i)) module.ToggleOption(i);
+        module.ToggleOption(wrong);
+        module.ToggleOption(wrong);
+
+        List<int> right = Enumerable.Range(0, module.Data.options.Count).Where(module.Data.IsCorrectAt).ToList();
+        bool partial = right.Count > 1;
+
+        // En intermedia hay dos correctas: probar con una sola no repara, pero tampoco desmarca.
+        if (partial)
+        {
+            module.ToggleOption(right[0]);
+            module.Try();
+            Expect(!module.IsSolved, $"Esc. 2 · {module.name}: Probar con una sola de las correctas no repara");
+
+            foreach (int index in right.Skip(1)) module.ToggleOption(index);
+        }
+        else
+        {
+            foreach (int index in right) module.ToggleOption(index);
+        }
 
         Expect(!module.IsSolved, $"Esc. 2 · {module.name}: con las correctas marcadas sigue sin reparar hasta Probar");
         module.Try();
-        Expect(module.IsSolved, $"Esc. 2 · {module.name}: Probar con las correctas repara");
+        Expect(module.IsSolved, partial
+            ? $"Esc. 2 · {module.name}: la correcta ya probada sigue marcada, y al añadir la otra y Probar, repara"
+            : $"Esc. 2 · {module.name}: Probar con las correctas repara");
 
+        // Formato 1: el reto 2 todavía no está abierto (se abre al entrar en su sala), así que
+        // nada de esto puede llegar a la telemetría: ni pulsaciones ni Probar.
         TelemetryManager.Instance?.Flush();
         RunRecord run = ReadRun();
-        List<ModuleAttemptRecord> added = run != null ? run.escenario2.attempts.Skip(before).ToList() : new List<ModuleAttemptRecord>();
-        Expect(added.Count == 2 && !added[0].solved && added[1].solved && added[1].solutionPercent == 100 && added[0].solutionPercent < 100 &&
-               added[0].correctSelected == 0 && added[0].wrongSelected == 1 &&
-               added[1].correctSelected == module.Data.CorrectCount && added[1].wrongSelected == 0,
-               $"Esc. 2: telemetría con {added.Count} intento(s) · " +
-               string.Join(" · ", added.Select(a => $"{(a.solved ? "reparado" : "fallo")} {a.solutionPercent} %, " +
-                                                    $"{a.correctSelected} bien y {a.wrongSelected} mal")));
+        int added = (run?.escenario2.attempts.Count ?? 0) - before;
+        int marks = (run?.escenario2.selections.Count ?? 0) - marksBefore;
+        Expect(added == 0 && marks == 0,
+               $"Esc. 2: con el reto sin abrir no se registra nada ({marks} pulsación(es), {added} Probar)");
 
         module.ResetModule();
     }
@@ -593,12 +613,49 @@ public static class CodeaPlayCheck
         ScenarioTimeLimit limit = Object.FindAnyObjectByType<ScenarioTimeLimit>(FindObjectsInactive.Include);
         float expected = limit != null ? limit.SecondsPerScenario : 300f;
 
-        Expect(record != null && record.timedOut && !record.completed && !string.IsNullOrEmpty(record.endedUtc) &&
-               Mathf.Abs(record.totalSeconds - expected) < 0.01f,
+        // Formato 1: totalSeconds es el tiempo de reto real. La prueba agota el reloj de golpe
+        // (ForceTimeUp), así que aquí son unos segundos, no 300: lo que se comprueba es la fórmula.
+        double formula = record != null ? Seconds(record.challengeStartedUtc, record.endedUtc) - record.pausedSeconds : double.NaN;
+        Expect(record != null && record.timedOut && !record.completed && record.endReason == EndReasons.TimedOut &&
+               !string.IsNullOrEmpty(record.endedUtc) && Math.Abs(record.totalSeconds - formula) <= 0.1,
                record == null ? $"{timeoutChallenge}: no se pudo leer la telemetría"
-                              : $"{timeoutChallenge}: telemetría con timedOut {record.timedOut.ToString().ToLower()}, " +
-                                $"completed {record.completed.ToString().ToLower()}, {record.totalSeconds:0.0} s");
+                              : $"{timeoutChallenge}: telemetría con endReason {record.endReason}, timedOut {record.timedOut.ToString().ToLower()}, " +
+                                $"completed {record.completed.ToString().ToLower()}, {record.totalSeconds:0.00} s " +
+                                $"(endedUtc − challengeStartedUtc − pausedSeconds = {formula:0.00} s; límite {expected:0} s)");
     }
+
+    /// <summary>
+    /// Reglas del formato 1 sobre el JSON de la pasada (CodeaTelemetryCheck), y copia del
+    /// archivo en Logs/ para poder mirarlo después: el original se borra al terminar.
+    /// </summary>
+    private static void CheckFormat1()
+    {
+        TelemetryManager telemetry = TelemetryManager.Instance;
+        if (telemetry == null) return;
+
+        telemetry.Flush();
+        string file = telemetry.GetCurrentFilePath();
+        if (string.IsNullOrEmpty(file) || !File.Exists(file))
+        {
+            Fail("formato 1: no se encuentra el JSON de la pasada");
+            return;
+        }
+
+        string label = Label((Difficulty)SessionState.GetInt(KeyCurrent, 0)).ToLowerInvariant();
+        string copy = $"Logs/Codea_PruebaPlay_{label}.json";
+        File.Copy(file, copy, true);
+
+        List<string> problems = CodeaTelemetryCheck.Check(File.ReadAllText(file));
+        Expect(problems.Count == 0, $"formato 1: el JSON cumple las reglas del contrato (copia en {copy})" +
+                                    (problems.Count > 0 ? $" · {problems.Count} problema(s)" : ""));
+        foreach (string problem in problems.Take(30)) pass.AppendLine($"      ✗ {problem}");
+    }
+
+    private static double Seconds(string from, string to) =>
+        DateTime.TryParse(from, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime a) &&
+        DateTime.TryParse(to, null, System.Globalization.DateTimeStyles.RoundtripKind, out DateTime b)
+            ? (b - a).TotalSeconds
+            : double.NaN;
 
     private static RunRecord ReadRun()
     {
@@ -645,6 +702,8 @@ public static class CodeaPlayCheck
     private static void EndPass(string how)
     {
         pass.AppendLine($"  · {how}");
+
+        CheckFormat1();
 
         List<string> problems = logs.Where(l => l.StartsWith("✗")).ToList();
         pass.AppendLine(problems.Count == 0

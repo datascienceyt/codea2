@@ -129,7 +129,10 @@ public class ScenarioTimeLimit : MonoBehaviour
     {
         if (!roomRunning || closing) return;
 
-        roomElapsed += Time.deltaTime;
+        // El reloj de la sala es el del reto en la telemetría: tiempo real desde que se abrió,
+        // sin pausas (visor quitado, menú). Así el límite y totalSeconds miden lo mismo. Sin
+        // telemetría, por frames.
+        roomElapsed = telemetry != null ? telemetry.ChallengeSeconds(current.ChallengeId) : roomElapsed + Time.deltaTime;
 
         if (roomElapsed >= secondsPerScenario) HandleTimeUp();
     }
@@ -223,10 +226,11 @@ public class ScenarioTimeLimit : MonoBehaviour
 
         roomRunning = false;
 
-        // Sala agotada: sus 300 s justos. Si lo que se agotó fue la sesión, lo que llegó a
-        // jugarse en la sala, que es menos.
+        // totalSeconds es el tiempo de reto real (formato 1): los 300 s del límite más lo que se
+        // esperó a que terminara la ejecución en curso. Si lo que se agotó fue la sesión, lo
+        // que llegó a jugarse en la sala.
         if (telemetry != null)
-            telemetry.TimeOutChallenge(challenge.ChallengeId, Mathf.Min(roomElapsed, secondsPerScenario));
+            telemetry.TimeOutChallenge(challenge.ChallengeId);
 
         OnScenarioTimeUp?.Invoke();
 

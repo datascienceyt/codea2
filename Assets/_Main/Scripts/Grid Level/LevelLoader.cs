@@ -30,6 +30,13 @@ public class LevelLoader : MonoBehaviour
     [Header("Config")]
     public float tileSize = 1f;
     public float tileScale = 1f;
+
+    [Tooltip("Altura de los obstáculos (muros y peligros) respecto a la de sus prefabs: 1 = como " +
+             "están, 0,5 = la mitad. Solo se aplasta lo que hay sobre el suelo, que no se mueve. " +
+             "A su altura original tapaban las casillas de detrás y desde la mesa no se veía el " +
+             "camino (16/11/2026).")]
+    [Range(0.2f, 1f)] public float obstacleHeight = 0.45f;
+
     public TextAsset levelJson;
     public bool loadOnStart = true;
 
@@ -118,12 +125,44 @@ public class LevelLoader : MonoBehaviour
                 tileObject.transform.localScale = Vector3.one * tileScale;
                 objectGrid[y][x] = tileObject;
 
+                if (tilePrefab == wallPrefab || tilePrefab == dangerPrefab)
+                    LowerObstacle(tileObject.transform);
+
                 if (tileObject.TryGetComponent(out Exit exit))
                     exit.levelManager = levelManager;
             }
         }
 
         ReferenceLevelData(data.name, grid, objectGrid, spawnPos);
+    }
+
+    // Cara de arriba del suelo de una casilla, en su espacio local (Path.prefab: una losa de
+    // 0,05 centrada en y = -0,5).
+    private const float FloorTop = -0.475f;
+
+    /// <summary>
+    /// Aplasta en vertical lo que hay sobre el suelo de una casilla de obstáculo, hacia el suelo.
+    /// Todo va dentro de un contenedor nuevo, que es el que se escala: así da igual cómo esté
+    /// girada cada caja, y el suelo de la casilla (el hijo "Path" del peligro) queda fuera.
+    /// </summary>
+    private void LowerObstacle(Transform tile)
+    {
+        if (obstacleHeight >= 0.999f) return;
+
+        Transform holder = new GameObject("Obstáculo").transform;
+        holder.SetParent(tile, false);
+        holder.localPosition = Vector3.up * FloorTop;
+
+        for (int i = tile.childCount - 1; i >= 0; i--)
+        {
+            Transform child = tile.GetChild(i);
+
+            if (child == holder || child.name.StartsWith("Path")) continue;
+
+            child.SetParent(holder, true);
+        }
+
+        holder.localScale = new Vector3(1f, obstacleHeight, 1f);
     }
 
     private void ReferenceLevelData(string name, int[][] grid, GameObject[][] objectGrid, Vector2 spawnPos)

@@ -6,6 +6,7 @@
 //   node Docs/Herramientas/validar_json_telemetria.js            → los de la documentación
 //   node Docs/Herramientas/validar_json_telemetria.js run.json   → uno sacado del visor
 //
+// Los JSON sin formatVersion (anteriores al formato 1) se listan como ANTES y no se validan.
 // Los valores "<VARIABLE: ...>" del JSON esperado del plan de prueba se aceptan en cualquier campo.
 
 const fs = require('fs');
@@ -100,7 +101,7 @@ function listJson(dir) {
 
 const files = process.argv.length > 2
     ? process.argv.slice(2).map(f => path.resolve(f))
-    : [path.join(root, 'Docs/ejemplo_run_telemetria.json')]
+    : [path.join(root, 'Docs/ejemplo_formato1.json'), path.join(root, 'Docs/ejemplo_run_telemetria.json')]
         .concat(listJson(path.join(root, 'Docs/Pruebas')))
         .concat(listJson(path.join(root, 'Docs/JSON Samples')));
 
@@ -110,13 +111,23 @@ for (const file of files) {
     const errors = [];
     const older = new Set();
 
+    const name = path.relative(root, file);
+    let data = null;
+
     try {
-        check(JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, '')), 'RunRecord', 'raíz', errors, older);
+        data = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, ''));
     } catch (error) {
         errors.push(`no se pudo leer: ${error.message}`);
     }
 
-    const name = path.relative(root, file);
+    // Sin formatVersion es un JSON anterior al formato 1 (17/11/2026): se conserva como
+    // historia, pero ya no tiene los campos del modelo y no se compara con él.
+    if (data && data.formatVersion === undefined) {
+        console.log(`ANTES  ${name}  (sin formatVersion: anterior al formato 1, no se valida)`);
+        continue;
+    }
+
+    if (data) check(data, 'RunRecord', 'raíz', errors, older);
 
     if (errors.length === 0) {
         console.log(older.size === 0 ? `OK     ${name}` : `OK     ${name}  (formato anterior: difiere en ${[...older].join(', ')})`);

@@ -105,22 +105,36 @@ public class Scenario2Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     }
 
     /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
+    /// <summary>
+    /// Abre la sala y el reto a la vez. A diferencia de las salas 3 y 4, aquí los botones de los
+    /// módulos responden desde que se enciende la sala, con la narración sonando: el reto acepta
+    /// acciones desde ese momento, y así challengeStartedUtc coincide con startedUtc.
+    /// </summary>
     public void StartScenario()
     {
-        if (TelemetryManager.Instance != null)
-            TelemetryManager.Instance.StartChallenge(challengeId);
+        if (TelemetryManager.Instance == null) return;
+
+        TelemetryManager.Instance.StartChallenge(challengeId);
+
+        var required = new List<string>();
+        foreach (SystemModule module in modules)
+            if (module != null) required.Add(module.ModuleId);
+
+        TelemetryManager.Instance.SetRequired(challengeId, required);
     }
 
+    /// <summary>
+    /// Formato 1: cada pulsación del niño en un botón de acción va al JSON en el momento, la
+    /// que marca (selected = 1) y la que desmarca (selected = 0). El desmarcado automático tras
+    /// un Probar fallido no dispara OnOptionToggled: no es una acción suya y no se registra.
+    /// </summary>
     private void HandleOptionToggled(SystemModule module, int optionIndex, bool selected, bool correct)
     {
-        // Solo se registra lo que el niño marca. Desmarcar una acción correcta no va a la
-        // telemetría (pedido 5 del 01/10/2026).
-        if (selected && TelemetryManager.Instance != null)
-            TelemetryManager.Instance.RegisterSelection(
-                challengeId,
-                module.ModuleId,
-                module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString(),
-                correct);
+        if (TelemetryManager.Instance == null) return;
+
+        string option = module.Data != null ? module.Data.LabelAt(optionIndex) : optionIndex.ToString();
+
+        TelemetryManager.Instance.RegisterSelection(challengeId, module.ModuleId, option, correct, selected);
     }
 
     /// <summary>Un Probar: va a attempts[] y, si reparó el módulo, puede cerrar el escenario.</summary>

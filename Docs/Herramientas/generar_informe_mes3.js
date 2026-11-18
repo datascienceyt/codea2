@@ -20,8 +20,8 @@ const FECHA_CORTA = "15/11/2026";
 const PRODUCTO = "Informe técnico de optimización, validación funcional y entrega final del módulo inmersivo";
 const CABECERA = "Optimización, validación funcional y entrega del módulo inmersivo";
 
-// La fecha puede cambiar antes de entregar: va subrayada en rojo para no olvidarla.
-const FECHA_PROVISIONAL = true;
+// Fecha de entrega confirmada (15/11/2026). Con true iría subrayada en rojo, como provisional.
+const FECHA_PROVISIONAL = false;
 
 const ENTREGABLES = [
   ["3.1 Optimización técnica del módulo",
@@ -253,7 +253,7 @@ figure(path.join(DIAGRAMAS, "flujo_sesion.jpg"), "Recorrido de una sesión",
   "La Figura {{Recorrido de una sesión}} resume el recorrido: el supervisor prepara la sesión, el estudiante practica en el tutorial y recorre las cuatro salas, y al terminar los datos se guardan y la aplicación vuelve a la pantalla del supervisor.");
 
 heading(2, "Origen de los ajustes");
-para("Los ajustes de esta etapa, aplicados a partir del 27 de octubre de 2026, responden a la retroalimentación de las sesiones con estudiantes del 22 de octubre de 2026, realizadas con la versión 0.9.0 y recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. El 11 de noviembre de 2026 se hizo además una revisión técnica de cierre de la experiencia completa, con las herramientas de verificación y una lectura del código y de la configuración, cuyos ajustes figuran al final de la tabla. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
+para("Los ajustes de esta etapa, aplicados a partir del 27 de octubre de 2026, responden a la retroalimentación de las sesiones con estudiantes del 22 de octubre de 2026, realizadas con la versión 0.9.0 y recogidas en el Producto 2. Las observaciones se organizaron por sala y se trataron una a una: cada una se confirmó con el equipo antes de aplicarla, y las de diseño (alturas, distancias, colocación de paneles) quedaron a cargo del equipo en el editor. El 11 de noviembre de 2026 se hizo además una revisión técnica de cierre de la experiencia completa, con las herramientas de verificación y una lectura del código y de la configuración, cuyos ajustes figuran al final de la tabla, seguidos de los de la revisión final del equipo del proyecto antes de la entrega. La Tabla {{Observaciones recibidas y respuesta}} resume las observaciones y la respuesta a cada una; las secciones siguientes explican cómo se implementaron.");
 table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["Tutorial", "Reducir y sintetizar el texto", "Frase del tutorial reducida a un tercio"],
   ["Tutorial", "La ficha con gravedad no vuelve si se cae", "Vuelve sola a su sitio a los 4 segundos, como en la sala 4"],
@@ -263,13 +263,13 @@ table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["Sala 2", "El texto «Probar» aparecía repetido junto al botón", "Rótulo duplicado retirado y botón centrado"],
   ["Sala 2", "Cambiar el color de selección", "Las opciones marcadas pasan a verde"],
   ["Sala 2", "El enunciado de motores («hacen ruido») no ayudaba", "«Los motores no arrancan.», sin incluir la solución"],
-  ["Sala 3", "Indicar que las cajas van a la derecha", "Frase 12: los barriles rojos van a la izquierda y las cajas celestes a la derecha"],
+  ["Sala 3", "Indicar que las cajas van a la derecha", "Frase 12: los barriles rojos van a la izquierda y las cajas azules, a la derecha; y, durante toda la sala, un rótulo sobre cada destino con su lado y su carga, en su color"],
   ["Sala 3", "Restar las repeticiones de una en una y no reiniciarlas al cambiar de ficha", "El contador baja una unidad por vuelta terminada hasta llegar a cero"],
   ["Sala 3", "«Empezar» debe decir «Probar»; colores de los botones de sumar y restar", "Botón Probar celeste como el resto; + y − en gris con el mismo material"],
   ["General", "Los huecos deben cambiar a verde al colocar un bloque", "Todo hueco de bloque se tiñe de verde mientras tiene un bloque"],
   ["General", "Reducir el recorrido de los botones", "Recorrido reducido al 40 % en todos los botones de pulsar"],
   ["General", "La interacción con el punto blanco de la punta del mando no es intuitiva", "Se toca y se agarra con el cuerpo completo del mando"],
-  ["Sala 4", "Ver la llegada a la Tierra sin animar la nave", "Con los motores ya en marcha, la Tierra se acerca despacio durante 32 s; los motores se apagan solos al llegar y se vuelve a la pantalla del supervisor"],
+  ["Sala 4", "Ver la llegada a la Tierra sin animar la nave", "Con los motores ya en marcha, la Tierra se acerca despacio durante 32 s hasta dejar Ecuador delante de la nave; los motores se apagan solos al llegar y se vuelve a la pantalla del supervisor"],
   ["Sala 4", "Al terminar la experiencia la escena queda vacía y no se siente el premio", "Fanfarria, vítores, confeti y el rótulo «¡MISIÓN CUMPLIDA!» al completar el panel, y música triunfal durante el regreso a la Tierra"],
   ["Sala 4", "El botón de reinicio no se alcanza", "Botón de reinicio más bajo y más cerca del jugador"],
   ["Sala 2", "Más retroalimentación o mejor visualización", "⟨Ajuste aplicado en el editor⟩"],
@@ -285,6 +285,12 @@ table([["Ámbito", 0.8], ["Observación", 2.4], ["Respuesta", 2.8]], [
   ["General", "Revisión de cierre: equivocarse no siempre daba una señal inmediata", "Sonido de error breve y suave en las cuatro salas; en la sala 1 suena en el paso en que el robot choca"],
   ["Sala 2", "Revisión de cierre: «Conectar una batería cargada» era largo y tocaba los bordes del botón", "«Cargar la batería», la misma frase en todos los módulos"],
   ["General", "Revisión de cierre: el visor usaba la configuración gráfica de escritorio", "Sin antialiasing multimuestra y con sombras hasta 10 m (sección {{§Rendimiento}})"],
+  ["Sala 1", "Revisión final: los obstáculos tapaban el camino y no se entendía qué había que hacer", "Muros y zonas de peligro a menos de la mitad de su altura, en las dos dificultades: el recorrido se ve entero"],
+  ["Sala 2", "Revisión final: en intermedia, al elegir solo una de las dos opciones correctas no se sabía qué faltaba", "Frase nueva del narrador: la opción es correcta, pero falta otra, porque son dos. Sin aviso de error y sin desmarcar la opción"],
+  ["Sala 3", "Revisión final: indicar en la sala que los rojos van a la izquierda y los azules a la derecha", "Rótulos «IZQUIERDA · barriles rojos» y «DERECHA · cajas azules» sobre cada destino, de cara al jugador"],
+  ["Sala 4", "Revisión final: que la nave se acerque a Ecuador, con la Tierra quieta", "La Tierra deja de girar; durante el regreso se coloca frente a la nave y gira hasta dejar Ecuador delante, marcado con una baliza y su nombre"],
+  ["Telemetría", "Revisión final: en la sala 2 no registrar errores hasta pulsar Probar", "Las opciones se registran al pulsar Probar; marcar y desmarcar antes no deja rastro"],
+  ["Narración", "Revisión final: el guion debía coincidir con lo que se ve en las salas 2, 3 y 4", "Nueve frases reescritas (Tabla {{Frases de la narración modificadas}}): botón azul, fichas y huecos, colores rojo y azul, barriles y cajas"],
 ], { title: "Observaciones recibidas y respuesta", sz: 17 });
 
 heading(2, "Interacciones");
@@ -300,7 +306,11 @@ bullet("**Narración más breve.** Se reescribieron siete frases del tutorial y 
 bullet("**Sala 1 en espejo.** El nivel se rediseñó para que el robot empiece mirando hacia arriba y el recorrido dé la vuelta a la sala antes de llegar al botón (Figura {{Sala 1: el robot empieza mirando hacia arriba}}). La salida no se movió, porque el botón que abre la puerta es un objeto físico de la sala. En la dificultad intermedia, que ya era simétrica, bastó con girar el robot; en la básica se partió del espejo del nivel y se añadió un muro para que el recorrido no se acorte. Con el robot mirando hacia arriba la solución necesita más giros a la izquierda que a la derecha, por lo que la mesa de la dificultad básica ofrece ahora dos bloques «Girar izquierda» y uno «Girar derecha». La dirección inicial del robot forma parte del archivo de cada nivel, y la herramienta que resuelve los niveles la tiene en cuenta.");
 bullet("**Sala 2 más legible.** Cada problema termina con la pregunta «¿Qué hacemos?» en una línea propia y su letra crece de 30 a 40 puntos, ajustándose sola para no salirse de la pantalla del módulo (Figura {{Sala 2: problema con la pregunta «¿Qué hacemos?» y botón Probar centrado}}).");
 bullet("**Sala 3: el bucle se ve contar.** Cada vuelta terminada resta una repetición del contador, que llega a cero al acabar la pasada; para la pasada siguiente el estudiante vuelve a decidir cuántas repeticiones. Mientras el brazo trabaja, + y − no responden.");
-bullet("**Regreso a la Tierra.** Al completar la sala 4, la Tierra se acerca a la nave y no deja de crecer hasta que se cierra la escena, cada vez más despacio, sin llegar a introducir la cámara en su atmósfera. Sustituye a la animación anterior, que se detenía a los 25 segundos.");
+bullet("**Regreso a Ecuador.** La Tierra ya no gira sola: espera quieta, con el norte arriba y Ecuador algo apartado del centro. Al completar la sala 4, con los motores en marcha, se coloca frente a la ventana de la nave y se acerca durante 32 segundos, cada vez más despacio, mientras gira sobre su eje lo que falta para dejar Ecuador justo delante, como si la nave virase hacia él. Una baliza con el rótulo «ECUADOR» marca el punto de llegada desde el comienzo del regreso. La llegada se detiene antes de que la cámara entre en la atmósfera. Sustituye a la animación anterior, que se detenía a los 25 segundos.");
+bullet("**Sala 1: obstáculos más bajos.** Los muros y las zonas de peligro de la rejilla quedan a menos de la mitad de su altura (45 %), apoyados en el suelo, en las dos dificultades. El estudiante ve el recorrido entero y entiende que debe rodearlos; la altura se cambia con un solo valor del cargador de niveles.");
+bullet("**Sala 2: ayuda con dos opciones.** En la dificultad intermedia cada sistema necesita dos acciones. Si el estudiante pulsa Probar con una sola opción, y es correcta, el narrador le dice que va bien, pero que le falta otra, porque son dos opciones. No suena el aviso de error ni se desmarca la opción; el intento sí queda registrado.");
+bullet("**Sala 3: rótulos de los destinos.** Sobre cada destino del brazo aparece, en su color, a qué lado queda y qué va ahí: «IZQUIERDA · barriles rojos» y «DERECHA · cajas azules». El lado se calcula a partir del giro del brazo hacia ese destino, el mismo que ejecutan los bloques Girar izquierda y Girar derecha, y los rótulos se retiran al resolver la sala.");
+bullet("**Guion de las salas 2, 3 y 4.** Se reescribieron nueve frases para que coincidan con lo que se ve: el botón que se pulsa es el azul, en la sala 3 se mueven barriles rojos y cajas azules, y las piezas se llaman fichas y huecos (Tabla {{Frases de la narración modificadas}}).");
 bullet("**Roki, modelo nuevo.** El robot de la sala 1 se sustituyó por un modelo propio (Figura {{Roki, el robot de la sala 1}}). El estudiante programa giros relativos viéndolo de espaldas y desde arriba, de modo que el modelo se diseñó para leerse desde ahí: las orugas indican el sentido de avance, la cabeza lleva una flecha hacia el frente y la espalda, una batería con luces verdes. Usa el naranja y el azul del proyecto y conserva el tamaño y el comportamiento del anterior.");
 bullet("**Sala 2: opción de la batería.** «Conectar una batería cargada» y «Cambiar la batería» pasan a ser «Cargar la batería» en todos los módulos: una sola frase, corta, que cabe en el botón.");
 table([["Frase", 0.5], ["Antes", 2.6], ["Ahora", 2.4]], [
@@ -312,19 +322,29 @@ table([["Frase", 0.5], ["Antes", 2.6], ["Ahora", 2.4]], [
   ["5", "Roki, el robot de mantenimiento te ayudará. Puedes verlo a la derecha. Guíalo hasta el botón verde.", "Retirada (su contenido pasa a la frase 4)"],
   ["6", "Ordena los bloques de la mesa para crear su recorrido. Cuando termines, inicia la secuencia.", "Ordena los bloques de la mesa y presiona el botón azul."],
   ["7", "¡Muy bien, astronauta! Roki llegó al botón y la puerta está abierta. Puedes continuar.", "¡Muy bien! La puerta está abierta."],
-  ["12", "Fíjate en el color de las cajas y observa dónde debe ir cada una.", "Fíjate en el color: los barriles rojos van a tu izquierda y las cajas celestes, a tu derecha."],
+  ["9.1", "Cada sistema necesita un elemento para volver a funcionar. Observa las opciones y elige el correcto para cada uno.", "Cada sistema necesita una acción para volver a funcionar. Lee el problema, elige la opción correcta y presiona el botón azul para probar."],
+  ["9.2", "Cada sistema necesita varios elementos para volver a funcionar. Observa las opciones y selecciona todos los elementos correctos para cada uno.", "Cada sistema necesita dos acciones para volver a funcionar. Lee el problema, elige las dos opciones correctas y presiona el botón azul para probar."],
+  ["11", "Estas cajas están bloqueando el camino. Usa el brazo robótico para colocarlas en el lugar correcto.", "Estos barriles y cajas están bloqueando el camino. Usa el brazo robótico para llevarlos a su lugar."],
+  ["12", "Fíjate en el color de las cajas y observa dónde debe ir cada una.", "Fíjate en el color: los barriles rojos van a la izquierda y las cajas azules, a la derecha."],
+  ["13", "Puedes ver dos fichas de colores celeste y rojo, elige una y colócala en la casilla. Así, el brazo sabrá qué debe mover.", "Hay dos fichas, una azul y una roja. Elige una y colócala en el hueco que dice TIPO: así, el brazo sabrá qué debe mover."],
+  ["14.1", "Cuenta las cajas de ese color e indica cuántas veces debe repetir la acción. Después, haz lo mismo con el otro color.", "Cuenta los objetos de ese color, indica cuántas veces debe repetir el brazo y presiona el botón azul. Después, haz lo mismo con el otro color."],
+  ["14.2", "Ordena los bloques de acción para indicarle qué debe hacer con las cajas de ese color. Después, indica cuántas veces debe repetir la secuencia. Cuando termines, haz lo mismo con el otro color.", "Ordena los bloques para indicarle al brazo qué debe hacer con los objetos de ese color. Después, indica cuántas veces debe repetir y presiona el botón azul. Cuando termines, haz lo mismo con el otro color."],
+  ["15", "¡Muy bien, astronauta! Todas las cajas están en su lugar y el camino quedó despejado.", "¡Muy bien, astronauta! Todo está en su lugar y el camino quedó despejado."],
+  ["17", "Observa las figuras del panel y arrastra cada bloque hasta el espacio que tenga la misma figura.", "Observa las figuras del panel y lleva cada ficha hasta el hueco que tenga la misma figura."],
+  ["22", "Nueva", "¡Vas bien! Esa opción es correcta, pero todavía te falta otra. Recuerda: son dos opciones."],
 ], { title: "Frases de la narración modificadas", sz: 16 });
 figure("roki_modelo.jpg", "Roki, el robot de la sala 1", null);
-para("El tutorial y la introducción de la sala 1 pasan de 179 a 74 palabras. Las nuevas locuciones de las siete frases modificadas (0, 1, 3, 4, 6, 7 y 12) se grabaron el 8 de noviembre de 2026 y se asignaron a su frase con la herramienta del editor que coloca cada audio a partir del nombre del archivo.");
+para("El tutorial y la introducción de la sala 1 pasan de 179 a 74 palabras. Las locuciones de las frases 0, 1, 3, 4, 6 y 7 se grabaron el 8 de noviembre de 2026 y se asignaron a su frase con la herramienta del editor que coloca cada audio a partir del nombre del archivo. Las de las frases reescritas en la revisión final (9.1, 9.2, 11, 12, 13, 14.1, 14.2, 15 y 17) y la de la frase nueva 22 se asignan del mismo modo ⟨al recibir su grabación⟩; mientras tanto, la pantalla del narrador muestra el texto nuevo.");
 
 heading(2, "Estabilidad y mantenibilidad");
-para("Los errores encontrados en la etapa y su corrección se recogen en la sección {{§Errores corregidos}}. Los cambios de esta etapa que afectan a la escena y a los modelos de botón (materiales, bloques de la mesa, rótulos y recorrido) se aplican con una herramienta del editor repetible, que no los duplica si se vuelve a ejecutar: cada cambio queda documentado en código y se puede rehacer sobre una escena restaurada. En la revisión de cierre se retiraron además 33 conexiones de eventos que no hacían nada (vacías o dirigidas a un objeto que ya no existía) en las dos escenas, con una herramienta nueva del menú que las localiza y las borra.");
+para("Los errores encontrados en la etapa y su corrección se recogen en la sección {{§Errores corregidos}}. En el registro de datos de la sala 2, las opciones marcadas se guardan solo al pulsar Probar, junto con el intento: una opción marcada y desmarcada antes de probar ya no cuenta como selección ni como error, y la frase de ayuda se registra como un intento más. Los cambios de esta etapa que afectan a la escena y a los modelos de botón (materiales, bloques de la mesa, rótulos y recorrido) se aplican con una herramienta del editor repetible, que no los duplica si se vuelve a ejecutar: cada cambio queda documentado en código y se puede rehacer sobre una escena restaurada. En la revisión de cierre se retiraron además 33 conexiones de eventos que no hacían nada (vacías o dirigidas a un objeto que ya no existía) en las dos escenas, con una herramienta nueva del menú que las localiza y las borra.");
 
 heading(2, "Rendimiento");
 para("Los ajustes de esta etapa se diseñaron para no añadir coste en el visor:", { keepNext: true });
 bullet("El verde de los huecos se aplica con bloques de propiedades del material, sin crear materiales nuevos, de modo que no se rompe el agrupamiento de objetos que comparten material al dibujar.");
 bullet("El componente que amplía el área de interacción del mando calcula el centro del mando una sola vez, cuando su modelo aparece, y no en cada fotograma.");
-bullet("El acercamiento de la Tierra mueve un único objeto por fotograma, sin cambiar su escala ni la de su atmósfera.");
+bullet("El acercamiento de la Tierra mueve y gira un único objeto por fotograma, sin cambiar su escala ni la de su atmósfera; la baliza de Ecuador son dos discos y un texto. La Tierra ya no gira durante el resto de la sesión.");
+bullet("Los obstáculos de la sala 1 se rebajan escalándolos al cargar el nivel, sin geometría nueva; los rótulos de la sala 3 son dos textos que solo giran hacia el jugador.");
 bullet("El modelo nuevo de Roki tiene unos 6.000 triángulos y ocho materiales sin texturas, y no lleva esqueleto.");
 para("En la revisión de cierre se encontró que el nivel de calidad de Android apuntaba a un perfil gráfico que ya no existía en el proyecto, por lo que el visor heredaba el de escritorio. Se corrigió la referencia y se ajustó el perfil que usa el visor: el antialiasing multimuestra (4x) quedó desactivado y la distancia de sombras se redujo de 50 a 10 m, suficiente para salas de pocos metros.");
 para("Se mantienen las optimizaciones descritas en el Producto 2: escritura diferida del registro de datos, registro de huecos activos para el acople por proximidad y texto de la narración sin animación. ⟨Resultado de la medición de rendimiento en el visor con la versión 1.0.0 (OVR Metrics Tool): fotogramas por segundo medios y mínimos por sala.⟩");
@@ -366,10 +386,10 @@ heading(2, "Evidencias de funcionamiento");
 para("Las figuras siguientes muestran el estado del módulo tras los ajustes de la etapa. Son capturas de la escena de juego en ejecución en el editor de Unity, desde el punto de vista del jugador.");
 figure("tutorial_inicio.jpg", "Tutorial: botón Empezar celeste", null);
 figure("sala1_general.jpg", "Sala 1: el robot empieza mirando hacia arriba",
-  "Roki, con su modelo nuevo, empieza de espaldas al jugador, mirando hacia el fondo de la sala. Para llegar al botón verde debe recorrer la parte superior de la rejilla y bajar hasta la casilla situada frente a él.");
+  "Roki, con su modelo nuevo, empieza de espaldas al jugador, mirando hacia el fondo de la sala. Para llegar al botón verde debe recorrer la parte superior de la rejilla y bajar hasta la casilla situada frente a él. Los obstáculos, más bajos, dejan ver el recorrido completo.");
 figure("sala1_mesa_basica.jpg", "Sala 1, dificultad básica: mesa con dos bloques «Girar izquierda»", null);
 figure("sala2_modulo_sin_resolver.jpg", "Sala 2: problema con la pregunta «¿Qué hacemos?» y botón Probar centrado", null);
-figure("sala3_basica.jpg", "Sala 3: botones + y − en gris y botón Probar celeste", null);
+figure("sala3_basica.jpg", "Sala 3: botones + y − en gris, botón Probar celeste y rótulos de los destinos", null);
 figure("sala4_panel.jpg", "Sala 4: panel de figuras de la dificultad básica", null);
 figure("setup_supervisor.jpg", "Pantalla del supervisor: PIN, dificultad y envío de datos", null);
 
@@ -387,7 +407,7 @@ table([["Requisito", 1.3], ["Estado", 0.9], ["Cómo se cumple", 3.6]], [
   ["RF-04 Interacción física y lógica", "Cumple", "Intentos con su secuencia y porcentaje de solución, bloques agarrados y conectados, y errores clasificados por tipo"],
   ["RF-05 Escritura de datos", "Cumple con cambio", "Archivo JSON jerárquico por sesión, sala e intento, en lugar de CSV"],
   ["RF-06 Temporizador", "Cumple con cambio", "15 minutos de sesión, visibles en cada sala, y un máximo de 5 por sala"],
-  ["RF-07 Narración por voz", "Cumple", "Narrador con voz y texto en todas las salas; locuciones nuevas de la etapa grabadas e integradas"],
+  ["RF-07 Narración por voz", "Cumple", "Narrador con voz y texto en todas las salas; locuciones de las frases del tutorial y la sala 1 grabadas e integradas; ⟨las de la revisión final, por integrar al recibirlas⟩"],
   ["RF-08 Reinicio supervisado", "No implementado", "Al cerrarse la aplicación la sesión queda guardada y se envía en la siguiente apertura; un reinicio de la sala por el supervisor queda como mejora futura"],
   ["RNF-01 Al menos 60 FPS", "⟨Por medir⟩", "Optimizaciones aplicadas (sección {{§Rendimiento}}); ⟨resultado de la medición en el visor⟩"],
   ["RNF-02 Tiempo de carga y transición", "⟨Por medir⟩", "Una sola escena de juego, cargada al empezar, y traslados entre salas con fundido a negro. ⟨Tiempo de carga medido en el visor⟩"],
@@ -403,7 +423,7 @@ heading(2, "Contenido de la entrega");
 para("La entrega se compone del proyecto de Unity completo, con su historial, y de los archivos asociados de la Tabla {{Contenido de la entrega}}. Todo se encuentra en el repositorio github.com/datascienceyt/codea2, rama dev.");
 table([["Elemento", 1.4], ["Ubicación", 1.7], ["Contenido", 3]], [
   ["Proyecto de Unity", "Raíz del repositorio", "Escenas, scripts, modelos, materiales, sonidos y configuración, listo para abrir con Unity 6000.4.1f1"],
-  ["Aplicación compilada", "Build/app.apk", "APK de la versión de entrega para instalar en Meta Quest ⟨versión 1.0.0 compilada el …⟩"],
+  ["Aplicación compilada", "Build/app.apk", "APK de la versión de entrega 1.0.0 (código de versión 2) para instalar en Meta Quest"],
   ["Documentación técnica", "Context.md", "Documento de referencia del sistema completo: arquitectura, sistemas, salas, narración, telemetría, decisiones de diseño, problemas conocidos y comprobaciones"],
   ["Presentación del proyecto", "README.md", "Descripción institucional del módulo y de sus salas"],
   ["Variables de telemetría", "Docs/VARIABLES_TELEMETRIA.md", "Qué mide cada dato del registro, en lenguaje llano, para el equipo evaluador; con un archivo de ejemplo"],
@@ -430,7 +450,7 @@ table([["Parámetro", 1.3], ["Dónde", 2], ["Valor actual", 2]], [
   ["Dirección del servidor de datos", "Assets/_Main/Resources/ServidorDatos.asset (Tools → Codea → Servidor de datos), común a Setup y Juego. Si es http://, Player Settings → Android → Allow downloads over HTTP en «Always allowed»", "http://datascience.yachaytech.edu.ec/upload, el servidor de la universidad, desde el 11/11/2026 (antes, uno provisional). Al ser http://, los datos viajan sin cifrar. El cambio de dirección está descrito en Docs/Cambiar-servidor-de-datos.md"],
   ["Clave del servidor", "Escena Juego, objeto con JSONUploader; la herramienta «Poner al día Setup y Juego» la copia a Setup", "UPLOAD_API_KEY del servidor"],
   ["Tiempo de sesión y por sala", "Escena Juego, Sesion → ScenarioTimeLimit", "900 s y 300 s"],
-  ["Narración", "Assets/_Main/Narrativa.csv y audios en Sounds/VoiceLines/Camila", "22 frases y 2 variantes por dificultad"],
+  ["Narración", "Assets/_Main/Narrativa.csv y audios en Sounds/VoiceLines/Camila", "23 frases (dos retiradas) y 2 variantes por dificultad; la 22 es la ayuda de la sala 2"],
   ["Niveles de la sala 1", "Assets/_Main/Levels (editor de niveles) y Escenario (1) → Scenario1Difficulty", "reto-espejo (básica) y escenario1_intermedio"],
   ["Problemas de la sala 2", "Scripts/Scenario 2/Modulos, un archivo por módulo y dificultad", "Tres módulos por dificultad"],
   ["Recorrido de los botones", "Prefabs StartButton, TextButton y RestartButton (Prefabs/Buttons) y Button (Prefabs/Scenario2): posición de la superficie de pulsación (_buttonBaseTransform del PokeInteractableVisual) respecto a la cara del botón", "40 % del original"],
@@ -443,7 +463,7 @@ numbered([
   "Instalar Unity 6000.4.1f1 con el módulo Android Build Support (incluye OpenJDK, Android SDK y NDK) desde Unity Hub, y abrir la carpeta del repositorio como proyecto.",
   "En File → Build Profiles, seleccionar la plataforma Android y comprobar que las escenas están en este orden: Setup primero y Juego después, las dos marcadas.",
   "Antes de compilar, pasar Tools → Codea → Comprobar escena de juego y Tools → Codea → Probar las dos dificultades en Play; las dos deben terminar sin fallos.",
-  "Comprobar en Player Settings la versión (1.0.0) y la clave de firma, y compilar el APK.",
+  "Comprobar en Player Settings la versión (1.0.0) y la clave de firma, y compilar el APK con Tools → Codea → Compilar el APK, que lo deja en Build/app.apk con un resumen de la compilación.",
 ]);
 para("El proyecto no tiene una clave de firma propia: todas las compilaciones, incluida la 1.0.0, se firman con la clave de depuración que Unity genera en el equipo de desarrollo. La clave determina además el código del visor que se registra en cada sesión. Android solo instala una actualización encima de la versión instalada si está firmada con la misma clave; con otra hay que desinstalar antes la aplicación, y desinstalarla borra los datos que el visor aún no haya enviado y el contador de PIN. Se recomienda que el equipo del proyecto cree una clave propia, la custodie y la use en todas las compilaciones posteriores, enviando antes los datos pendientes del visor.");
 
@@ -468,7 +488,7 @@ table([["Recurso", 1.2], ["Contenido", 2.6], ["Origen", 1.8]], [
   ["Roki", "Modelo en cuatro piezas (cuerpo, cabeza y dos brazos) con ocho materiales; fuentes y guion de exportación en Docs/Roki", "Propio, modelado en Blender en esta etapa"],
   ["Piezas de los retos", "Bloques, fichas, huecos, botones, brazo robótico, consolas y módulos, como prefabs", "Propios"],
   ["Interfaz", "12 imágenes (iconos de estado, figuras y flechas), pliegos de figuras y de glifos de la sala 4 y tipografía", "Propios"],
-  ["Locuciones", "22 frases y 2 variantes por dificultad, más 5 frases de error", "Grabadas para el proyecto"],
+  ["Locuciones", "23 frases y 2 variantes por dificultad, más 5 frases de error", "Grabadas para el proyecto"],
   ["Efectos y música", "Sonidos de botones, robot, brazo, puertas y motores, celebración final y aviso de error", "Bibliotecas de sonido con licencia; el aviso de error procede del paquete Watery Interface SFX"],
   ["Efectos visuales", "Fuego de las cajas dañadas y confeti de la celebración", "Paquete de efectos de fuego y propios"],
 ], { title: "Recursos del módulo" });
@@ -495,7 +515,7 @@ table([["Interacción", 1.2], ["Implementación", 4]], [
   ["Encajar piezas", "Al soltar, la pieza se acopla al hueco libre más cercano; las piezas fijas o acertadas quedan bloqueadas"],
   ["Desplazarse", "Teletransporte a puntos fijos y traslados guiados entre salas con fundido a negro"],
   ["Física", "Las fichas de la sala 4 y del tutorial tienen gravedad y vuelven solas a su sitio si caen"],
-  ["Entorno reactivo", "Puertas, robot, brazo robótico, luces e iconos de estado, pantalla de narración que acompaña al jugador y Tierra que se acerca al final"],
+  ["Entorno reactivo", "Puertas, robot, brazo robótico, luces e iconos de estado, pantalla de narración que acompaña al jugador y Tierra que se acerca a Ecuador al final"],
 ], { title: "Interacciones implementadas en la versión de entrega" });
 
 heading(2, "Herramientas de mantenimiento");
@@ -512,6 +532,7 @@ table([["Herramienta", 1.5], ["Cuándo usarla", 4]], [
   ["Usar el Meta XR Simulator en Play", "Para jugar en el editor sin visor; sin él activado, entrar en Play sin visor cierra Unity"],
   ["Editor de niveles y resolver_nivel.js", "Para crear un nivel de la sala 1 y comprobar sus soluciones y el número de bloques"],
   ["Capturas para informes", "Para documentar el estado de cada sala"],
+  ["Compilar el APK", "Para generar la aplicación en Build/app.apk con las escenas y la firma del proyecto; también sin abrir Unity"],
 ], { title: "Herramientas para el mantenimiento" });
 
 heading(2, "Recomendaciones de mantenimiento");

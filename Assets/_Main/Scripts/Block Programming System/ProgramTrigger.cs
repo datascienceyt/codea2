@@ -79,6 +79,16 @@ public class ProgramTrigger : MonoBehaviour
 
         if (socketRow.FirstSocket == null) return;
 
+        // Fuera de la ventana de su reto (narración, sala ya cerrada) no se ejecuta: la
+        // telemetría no lo podría apuntar y el niño vería correr un intento que no existe. En
+        // una sesión de noviembre entró un Ejecutar antes de abrirse el reto. El tutorial no
+        // lleva esta comprobación: se juega antes de abrir ningún reto.
+        if (!isTutorial && TelemetryManager.Instance != null && !TelemetryManager.Instance.AcceptsActions(challengeId))
+        {
+            Debug.Log($"[{challengeId}] Ejecutar ignorado: el reto no está abierto.", this);
+            return;
+        }
+
         // Se comprueba ANTES de registrar el intento: a un programa que no llega a ejecutarse
         // no se le puede medir nada, y apuntarlo en attempts[] inflaría el recuento con
         // pulsaciones que no probaron ninguna solución. Del aviso y del error de lógica se
@@ -108,7 +118,8 @@ public class ProgramTrigger : MonoBehaviour
         // antes de llegar al registro.
         //
         // De marcar el intento como resuelto se encarga TelemetryManager.CompleteChallenge().
-        if (TelemetryManager.Instance != null)
+        // Las del tutorial no se registran: no son del reto.
+        if (!isTutorial && TelemetryManager.Instance != null)
         {
             List<string> sequence = ReadSequence(socketRow.FirstSocket);
             string argument = ReadArgument();
@@ -217,8 +228,13 @@ public class ProgramTrigger : MonoBehaviour
     /// </summary>
     private readonly List<IRunPrecondition> activePreconditions = new List<IRunPrecondition>();
 
+    /// <summary>El botón del tutorial: no se controla ni se registra en la telemetría.</summary>
+    private bool isTutorial;
+
     private void Awake()
     {
+        isTutorial = GetComponentInParent<TutorialController>(true) != null;
+
         if (preconditions == null) return;
 
         foreach (MonoBehaviour candidate in preconditions)

@@ -18227,7 +18227,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 926531510}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6f170fa477fdb645bd156e0e50b9504, type: 3}
   m_Name: 
@@ -21451,6 +21451,12 @@ MonoBehaviour:
       textId: 
     - clip: {fileID: 8300000, guid: bcb30a06144adda478b66ed5469409c3, type: 3}
       textId: 
+  hintLines:
+    name: Ayudas
+    entries:
+    - clip: {fileID: 0}
+      textId: 22
+  hintMaxWaitSeconds: 6
   audioSource: {fileID: 1195506164}
   display: {fileID: 100222836}
   displayTmp: {fileID: 0}
@@ -34576,9 +34582,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EarthApproach
   body: {fileID: 926531512}
   durationSeconds: 32
-  approachFraction: 0.36
   challengeId: escenario4
   engineLeadSeconds: 5
+  landingLongitude: -78.2
+  landingLatitude: -1.5
+  arrivalDistance: 1.28
+  shipForward: {x: 0, y: 0, z: 1}
+  arrivalElevation: 13
+  startTurnDegrees: 35
+  showBeacon: 1
+  beaconLabel: ECUADOR
+  beaconMaterial: {fileID: 2100000, guid: c4222c91cec0a6a4894091de1a2f4843, type: 2}
+  beaconColor: {r: 1, g: 0.85, b: 0.2, a: 1}
 --- !u!1 &1900281968
 GameObject:
   m_ObjectHideFlags: 0
@@ -36668,7 +36683,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1992331151}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6f170fa477fdb645bd156e0e50b9504, type: 3}
   m_Name: 

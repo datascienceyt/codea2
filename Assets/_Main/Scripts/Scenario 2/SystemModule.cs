@@ -15,6 +15,10 @@ using UnityEngine.UI;
 /// EXACTAMENTE con las acciones correctas: ni de menos ni de más. Si no, suena el error y se
 /// desmarcan todos los botones para empezar de nuevo (reunión del 20/10/2026: "botón azul
 /// probar, si error reiniciar 4 botones"). Cada Probar es un intento en la telemetría.
+///
+/// Un caso aparte (16/11/2026): lo marcado es correcto pero falta alguna acción, como una sola
+/// de las dos de intermedia. No suena el error ni se desmarca nada: el narrador dice que va
+/// bien y que le falta otra (frase 22). Sigue contando como un Probar que no reparó.
 /// </summary>
 public class SystemModule : MonoBehaviour, IStepAction
 {
@@ -70,12 +74,24 @@ public class SystemModule : MonoBehaviour, IStepAction
     [Tooltip("Sonido al repararse. El mismo que suena en el Escenario 4 al acertar una ficha.")]
     [SerializeField] private AudioClip solvedSound;
 
+    [Header("Selección incompleta")]
+    [Tooltip("ID_Texto del CSV de la frase que se dice al pulsar Probar con solo una parte de las " +
+             "acciones correctas marcadas y ninguna incorrecta (en intermedia, una de las dos): " +
+             "'vas bien, pero te falta otra'. En ese caso no suena el error ni se desmarca nada. " +
+             "Vacío = sin frase.")]
+    [SerializeField] private string incompleteLineId = "22";
+
     [Header("Eventos")]
     [Tooltip("Al marcar o desmarcar cualquier acción: sonido, parpadeo...")]
     public UnityEvent OnSelectionChanged;
 
-    [Tooltip("Al pulsar Probar sin acertar. Aquí va la frase de error del narrador, o un sonido.")]
+    [Tooltip("Al pulsar Probar sin acertar. Aquí va la frase de error del narrador, o un sonido.\n\n" +
+             "No se dispara si lo marcado es correcto pero incompleto: eso va a OnIncompleteSelection.")]
     public UnityEvent OnWrongOption;
+
+    [Tooltip("Al pulsar Probar con todo lo marcado correcto pero faltando alguna acción. La frase " +
+             "del narrador ya se dice desde código (Incomplete Line Id); esto es para algo más.")]
+    public UnityEvent OnIncompleteSelection;
 
     [Tooltip("Al quedar reparado.")]
     public UnityEvent OnSolved;
@@ -90,6 +106,8 @@ public class SystemModule : MonoBehaviour, IStepAction
 
     // Tras un Probar fallido, mientras se espera para desmarcar: no se admiten pulsaciones.
     private bool resetting;
+
+    private Narrator narrator;
 
     public ModuleData Data => data;
     public bool IsSolved { get; private set; }
@@ -327,11 +345,29 @@ public class SystemModule : MonoBehaviour, IStepAction
             return;
         }
 
+        // Todo lo marcado es correcto, pero falta alguna (en intermedia son dos): no es un
+        // error. Se le dice que va bien y que le falta otra, y lo marcado se queda marcado.
+        if (correctMarked == selected.Count && correctMarked < data.CorrectCount)
+        {
+            OnIncompleteSelection?.Invoke();
+            SayIncompleteLine();
+            return;
+        }
+
         OnWrongOption?.Invoke();
 
         // Con el módulo apagado (una prueba desde el inspector) no hay corrutina que espere.
         if (isActiveAndEnabled && resetAfterErrorSeconds > 0f) StartCoroutine(ResetAfterError());
         else ClearSelection();
+    }
+
+    /// <summary>La frase "vas bien, pero te falta otra", por el narrador de la escena.</summary>
+    private void SayIncompleteLine()
+    {
+        if (string.IsNullOrWhiteSpace(incompleteLineId)) return;
+
+        if (narrator == null) narrator = FindAnyObjectByType<Narrator>();
+        if (narrator != null) narrator.PlayHintLine(incompleteLineId);
     }
 
     private IEnumerator ResetAfterError()

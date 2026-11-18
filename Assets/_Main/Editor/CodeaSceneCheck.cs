@@ -514,6 +514,30 @@ public static class CodeaSceneCheck
 
         report.Line($"  CSV: {(csv != null ? AssetDatabase.GetAssetPath(csv) : "ninguno")} · {ids.Count} IDs");
 
+        // Frases de ayuda (PlayHintLine): la que pide cada módulo del Esc. 2 tiene que existir.
+        SerializedProperty hints = so.FindProperty("hintLines.entries");
+        var hintIds = new HashSet<string>();
+        for (int h = 0; h < hints.arraySize; h++)
+        {
+            SerializedProperty hint = hints.GetArrayElementAtIndex(h);
+            string id = hint.FindPropertyRelative("textId").stringValue;
+            hintIds.Add(id);
+
+            if (ids.Count > 0 && !ids.Contains(id)) report.Error($"La frase de ayuda '{id}' no está en el CSV");
+            else if (hint.FindPropertyRelative("clip").objectReferenceValue == null) report.Warn($"La frase de ayuda '{id}' no tiene audio: sale solo con el texto");
+        }
+
+        foreach (SystemModule module in Object.FindObjectsByType<SystemModule>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            string id = new SerializedObject(module).FindProperty("incompleteLineId").stringValue;
+            if (string.IsNullOrEmpty(id)) continue;
+
+            if (ids.Count > 0 && !ids.Contains(id))
+                report.Error($"'{module.name}' pide la frase '{id}' para la selección incompleta, que no está en el CSV");
+            else if (!hintIds.Contains(id))
+                report.Warn($"'{module.name}' pide la frase '{id}', que no está en las frases de ayuda del Narrator: nunca tendrá audio");
+        }
+
         NarrationDifficulty variant = narrator.GetComponent<NarrationDifficulty>();
         if (variant == null)
         {

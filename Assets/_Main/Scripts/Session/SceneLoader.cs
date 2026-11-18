@@ -60,10 +60,12 @@ public class SceneLoader : MonoBehaviour
 
         if (closeRunBeforeLoading && TelemetryManager.Instance != null)
         {
-            // Flush primero y EndRun después: EndRun sella endedUtc y guarda, así que la
-            // última escritura del archivo se lleva dentro también lo diferido.
+            // Flush primero y QuitRun después: cierra la run y guarda, así que la última
+            // escritura del archivo se lleva dentro también lo diferido. Si la historia ya la
+            // cerró (EndRun, endReason completed), no hace nada; si no, salir a mitad de
+            // partida la cierra con endReason quit.
             TelemetryManager.Instance.Flush();
-            TelemetryManager.Instance.EndRun();
+            TelemetryManager.Instance.QuitRun();
         }
 
         loading = true;

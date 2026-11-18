@@ -56,17 +56,23 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     [Header("Telemetría")]
     [SerializeField] private string challengeId = "escenario3";
 
-    [Tooltip("Desactívalo si el Director ya llama a StartChallenge por evento: dos llamadas " +
-             "reinician el cronómetro del escenario.")]
+    [Tooltip("Llama a StartScenario (entrada en la sala) en Start. Desactivado: lo llama el " +
+             "Director al empezar la narración. El reto se abre en Execute.")]
     [SerializeField] private bool startChallengeOnStart = false;
 
     [Header("Bloques")]
     [Tooltip("Fichas y bloques no se pueden agarrar hasta que termina la narración de la sala.")]
     [SerializeField] private bool lockPiecesDuringNarration = true;
 
+    [Header("Indicaciones")]
+    [Tooltip("Rótulos sobre los dos destinos: 'IZQUIERDA · barriles rojos' y 'DERECHA · cajas " +
+             "azules' (Scenario3Hints).")]
+    [SerializeField] private bool showHints = true;
+
     [Header("Acciones al finalizar")]
     public UnityEvent OnScenarioFinished;
 
+    private Scenario3Hints hints;
     private bool scenarioFinished;
     private bool timedOut;
 
@@ -129,9 +135,36 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
 
         SetPiecesPaused(lockPiecesDuringNarration);
 
-        // Cuántos hay de cada tipo en TODAS las posiciones del brazo, no solo en el montón de
-        // origen: así da igual que el decorado reparta los barriles entre varios sitios, y el
-        // dato sigue siendo del nivel y no del estado de la partida.
+        EnsureRequired();
+
+        lastDeliveredTotal = DeliveredTotal();
+
+        if (showHints && arm != null)
+        {
+            var destinations = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<ArmItemType, ArmSlot>>();
+
+            foreach (SortingGoal goal in goals)
+                if (goal != null && goal.destination != null)
+                    destinations.Add(new System.Collections.Generic.KeyValuePair<ArmItemType, ArmSlot>(goal.type, goal.destination));
+
+            hints = gameObject.AddComponent<Scenario3Hints>();
+            hints.Build(destinations, arm.transform);
+        }
+    }
+
+    private bool requiredCounted;
+
+    /// <summary>
+    /// Cuántos hay de cada tipo en TODAS las posiciones del brazo, no solo en el montón de
+    /// origen: así da igual que el decorado reparta los barriles entre varios sitios, y el dato
+    /// sigue siendo del nivel y no del estado de la partida. Una vez, antes de mover nada: lo
+    /// piden Start y StartScenario, y no se sabe cuál llega antes.
+    /// </summary>
+    private void EnsureRequired()
+    {
+        if (requiredCounted || goals == null) return;
+        requiredCounted = true;
+
         foreach (SortingGoal goal in goals)
         {
             if (goal == null) continue;
@@ -142,15 +175,25 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
                 Debug.LogError($"[Escenario3] El objetivo '{goal.type}' no tiene destino " +
                                "asignado: nunca se dará por clasificado.", this);
         }
-
-        lastDeliveredTotal = DeliveredTotal();
     }
 
-    /// <summary>Cablear al Director si se prefiere lanzarlo desde un Step.</summary>
+    /// <summary>
+    /// Entrada en la sala, al empezar su narración (cableado en el Director). El reto no se
+    /// abre aquí sino en Execute, cuando las piezas se pueden agarrar.
+    /// </summary>
     public void StartScenario()
     {
-        if (TelemetryManager.Instance != null)
-            TelemetryManager.Instance.StartChallenge(challengeId);
+        if (TelemetryManager.Instance == null) return;
+
+        EnsureRequired();
+
+        TelemetryManager.Instance.EnterRoom(challengeId);
+
+        var items = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, int>>();
+        foreach (SortingGoal goal in goals)
+            if (goal != null) items.Add(new System.Collections.Generic.KeyValuePair<string, int>(goal.type.ToString(), goal.required));
+
+        TelemetryManager.Instance.SetItemsRequired(challengeId, items);
     }
 
     private void HandleInvalidAction()
@@ -169,6 +212,10 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         // todas las ejecuciones siguientes. Va en código y no cableado por la misma razón que
         // el registro de fallos: olvidarlo deja el escenario sin salida.
         if (arm != null) arm.ReturnHeldToOrigin();
+
+        // moved y phaseCompleted de la ejecución que acaba, y fin de su recuento.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.FinishLoopRun(challengeId, Remaining);
 
         // El escenario se resuelve DENTRO de la ejecución, en el último Soltar, así que al
         // llegar aquí el estado ya es definitivo.
@@ -197,9 +244,9 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
             return;
         }
 
-        // El registro va ANTES de la espera, y desde código, por las dos razones de siempre:
-        // una corrutina muere si el Director desactiva la estación durante retryDelay, y
-        // cablearlo por UnityEvent significa que olvidarlo rompe los datos en silencio.
+        // El ciclo del siguiente intento empieza aquí (no se cuenta ningún fallo: el escenario 3
+        // no tiene failedAttempts). Antes de la espera, porque la corrutina muere si el Director
+        // desactiva la estación durante retryDelay.
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.RegisterFailedAttempt();
 
@@ -262,6 +309,11 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     {
         if (scenarioFinished || goals == null || goals.Length == 0) return;
 
+        // Tras cada acción del brazo, antes de mirar si terminó: la ejecución que completa el
+        // escenario no llega a HandleRunFinished si el Director apaga la estación.
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.UpdateLoopProgress(challengeId, Remaining);
+
         int total = 0;
 
         foreach (SortingGoal goal in goals)
@@ -280,6 +332,8 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
         if (TelemetryManager.Instance != null)
             TelemetryManager.Instance.CompleteChallenge(challengeId);
 
+        if (hints != null) Destroy(hints);
+
         OnScenarioFinished?.Invoke();
     }
 
@@ -290,8 +344,12 @@ public class Scenario3Controller : MonoBehaviour, IStepAction, ITimeLimitedChall
     /// </summary>
     public IEnumerator Execute()
     {
-        // El Director llega aquí justo después de los pasos de narración de la sala.
+        // El Director llega aquí justo después de los pasos de narración de la sala. Las piezas
+        // se sueltan y el reto se abre en el mismo instante: desde aquí acepta acciones.
         SetPiecesPaused(false);
+
+        if (TelemetryManager.Instance != null)
+            TelemetryManager.Instance.StartChallenge(challengeId);
 
         yield return new WaitUntil(() => scenarioFinished || timedOut);
     }
