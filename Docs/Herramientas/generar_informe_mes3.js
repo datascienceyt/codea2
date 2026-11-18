@@ -470,7 +470,7 @@ para("El proyecto no tiene una clave de firma propia: todas las compilaciones, i
 heading(2, "Estructura del proyecto");
 para("El contenido propio del proyecto está en Assets/_Main; el resto de carpetas de Assets son paquetes de terceros (Meta XR, paquete de recursos de ciencia ficción, TextMeshPro) y configuración de Unity. La Tabla {{Estructura de Assets/_Main}} describe cada carpeta.");
 table([["Carpeta", 1.2], ["Contenido", 4]], [
-  ["Scripts", "Código del módulo, por subsistema: Block Programming System, Grid Level (sala 1), Scenario 2, Scenario 3, Scenario 4, Story (Director, narración, tutorial y utilidades), Session, Difficulty, Telemetry y Map"],
+  ["Scripts", "Código del módulo, por subsistema: Block Programming System, Scenario 1, Scenario 2, Scenario 3, Scenario 4, Story (Director, narración, tutorial y utilidades), Session, Difficulty, Telemetry y Map"],
   ["Editor", "Herramientas del menú Tools → Codea, editor de niveles y comprobaciones automáticas"],
   ["Prefabs", "Piezas reutilizables: bloques, fichas, huecos, botones, módulos de la sala 2, tutorial y jugador"],
   ["Levels", "Niveles de la sala 1 en JSON"],

@@ -96,7 +96,7 @@ la rama `dev`**: nada de ramas nuevas (la `informe-mes2` se juntó en `dev` y se
     hijo con los interactables cuando no tiene `interactionRoot` (los bloques del Esc. 1 no lo
     tenían, y `SetInteractable` no les hacía nada). El bloque del tutorial no se bloquea.
     **Primera versión fallida** (vista en el visor): comparaba con `IInteractable` sin espacio de
-    nombres, que es la interfaz propia del grid (`Grid Level/IInteractable.cs`), no la de Meta; y
+    nombres, que es la interfaz propia del grid (`Scenario 1/IInteractable.cs`), no la de Meta; y
     bloqueaba bloques que aún no habían pasado por `Awake`. Ahora usa
     `Oculus.Interaction.IInteractable`, busca al bloquear y reaplica en `Awake`. PlayCheck
     comprueba que no quede ningún interactable de Meta activo en la paleta bloqueada
@@ -273,7 +273,7 @@ transferencia). Figuras en `Docs/Entregable-Mes3/capturas/` (`CODEA_CAPTURAS` co
 
 - **02/11/2026, feedback de las sesiones, solo código** (compila; 👓 sin probar en Play ni en el visor;
   Unity estaba abierto, así que no se tocó ninguna escena):
-  - **Sala 1, indicaciones** (`Grid Level/Scenario1Hints.cs`, lo añade `Scenario1Controller` al empezar
+  - **Sala 1, indicaciones** (`Scenario 1/Scenario1Hints.cs`, lo añade `Scenario1Controller` al empezar
     el reto, `Show Hints`): el primer hueco libre se ilumina en ámbar, con un bloque en la mano todos
     los libres; flecha y rótulo "OBJETIVO: ABRIR LA PUERTA" sobre la salida. Alturas en sus constantes
     (`ArrowHeight`, `LabelHeight`): ajustarlas al verlas
@@ -411,6 +411,7 @@ prisa: dividir su Tabla 17 (35 errores) en desarrollo y pruebas en el visor
 | Poner las escenas ya montadas al día con el código (botón de subir datos y clave del servidor en `Setup`; en `Juego`, una apertura por reto, fuera ajustes de prefab sin uso y soluciones para el porcentaje) | `Tools → Codea → Poner al día Setup y Juego`. Sin abrir Unity: `-executeMethod CodeaSceneTools.UpdateScenesBatch`. Informe en `Logs/Codea_PuestaAlDia.txt` |
 | Poner la voz del narrador (listas, frases de error y de tiempo agotado) desde la carpeta de audios | `Tools → Codea → Asignar la voz del narrador`. Informe en `Logs/Codea_Voz.txt` |
 | Sacar capturas sin pisar las figuras de los informes | Variable de entorno `CODEA_CAPTURAS` con la carpeta de destino, antes de lanzar `CodeaCaptures.RunBatch` |
+| Capturas y listados de la capacitación técnica | `CODEA_CAPTURAS=Docs/Capacitacion/capturas` y `CODEA_CAPACITACION=1`: añade la sala 1 desde arriba, la nave desde fuera, la jerarquía de `Juego` (`jerarquia_juego.txt`) y los pasos del Director (`director_juego.txt`). La presentación se genera con `node Docs/Herramientas/generar_presentacion_codigo.js`. En batch, **activar antes el Meta XR Simulator**: sin él, Unity se cierra al entrar en Play la segunda vez (18/11/2026) y no restaura el contador de sesiones ni borra el JSON de prueba |
 | Ver en el editor solo las piezas de una dificultad | `Tools → Codea → Ver como básica / Ver como intermedia / Ver todas las piezas` (solo visibilidad, no cambia la escena) |
 | Probar una dificultad en Play sin pasar por `Setup` | `Sesion → DifficultyApplier → Editor Difficulty` |
 | Revisar la escena de juego entera sin jugarla: llamadas de UnityEvent rotas, scripts perdidos, el Director paso a paso, narración contra el CSV, cada reto en cada dificultad, `Setup` | `Tools → Codea → Comprobar escena de juego` (`Editor/CodeaSceneCheck.cs`). Informe en `Logs/Codea_Comprobacion.txt`. **Pasarla tras tocar la escena o renombrar un método** |
@@ -491,7 +492,7 @@ dependencia:
 | `BlockResetter.cs` | Devuelve bloques a su sitio sin instanciar ni destruir |
 | `IRunPrecondition.cs` | Contrato: condición que puede vetar la ejecución y aporta su argumento |
 
-### `Scripts/Grid Level/` — Escenario 1
+### `Scripts/Scenario 1/` — Escenario 1 (hasta el 18/11/2026, `Grid Level/`)
 
 | Archivo | Responsabilidad |
 |---|---|
@@ -605,7 +606,7 @@ Lo que no lleva nada es común a las dos.
 | Esc. 1 (`Scenario1Difficulty`) | `reto-espejo.json`, 8 huecos, paleta de 8 | `escenario1_intermedio.json`, 11 huecos, paleta de 13 en otra colocación |
 | Esc. 2 (`Scenario2Difficulty`) | `*_Basica` | `*_Intermedia` |
 | Esc. 3 (`Scenario3Difficulty`) | Fila **oculta** y bloqueada: Recoger · Girar al destino · Soltar · Volver. Funciona sola: el niño solo pone la ficha y las repeticiones | Visible, editable y desordenada: Soltar · Girar Der · Recoger · Girar Izq |
-| Esc. 4 | Las 4 figuras actuales | **Las mismas** hasta el pedido 11 |
+| Esc. 4 (`DifficultyOnly`) | Figuras abstractas | YACHAY en glifos cuadrados (definitivos, confirmado el 18/11/2026) |
 
 **La paleta del Esc. 1 no comparte bloques**: en `Intermedio` estaba recolocada entera, así
 que hay 8 bloques con `DifficultyOnly` Básica y 13 con Intermedia, uno encima de otro en la

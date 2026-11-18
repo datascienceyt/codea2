@@ -140,7 +140,7 @@ Puntos críticos abiertos en el SRS:
 | Escenario 1 — Secuencialidad | Funcional en las dos dificultades; básica verificada en visor |
 | Escenario 2 — Condicionales | Funcional, probado en el APK (4 opciones en ambas dificultades) |
 | Escenario 3 — Bucles y parámetros | Funcional, probado en el APK |
-| Escenario 4 — Patrones | Funcional, probado en el APK. Falta el juego de figuras propio de intermedia |
+| Escenario 4 — Patrones | Funcional, probado en el APK. En intermedia, los glifos de YACHAY (definitivos) |
 | Sistema narrativo | Funcional, con CSV y voces nuevas por dificultad |
 | Telemetría JSON + subida | Funcional de punta a punta |
 | Temporizador visible en todas las salas | Implementado: 15 minutos de sesión a la vista y 5 por sala por dentro; agotada una sala se pasa a la siguiente, y agotada la sesión o la última sala se cierra (RF-06) |
@@ -187,7 +187,7 @@ Assets/
 │   ├── Prefabs/
 │   ├── Scripts/
 │   │   ├── Block Programming System/   # BlockNode, Socket, SocketRow, ProgramRunner…
-│   │   ├── Grid Level/                 # Bot, LevelManager, LevelLoader (Escenario 1)
+│   │   ├── Scenario 1/                 # Bot, LevelManager, LevelLoader (Escenario 1)
 │   │   ├── Scenario 2/                 # Módulos de la sala de control y sus ModuleData
 │   │   ├── Scenario 3/                 # Brazo robótico, posiciones, fichas de tipo
 │   │   ├── Scenario 4/                 # Fichas, huecos y pliego de figuras

@@ -84,6 +84,92 @@ public static class CodeaCaptures
 
         yield return new Shot($"sala1_mesa_{d}", new Vector3(-6.95f, 5.25f, -2.9f), new Vector3(-5.95f, 4.4f, -2.9f), 60f);
         yield return new Shot($"sala3_{d}", new Vector3(0.75f, 4.45f, 47.1f), new Vector3(-0.85f, 3.95f, 47.35f), 65f);
+
+        if (Capacitacion && difficulty == Difficulty.Basica)
+            foreach (Shot shot in CapacitacionShots()) yield return shot;
+    }
+
+    // Con CODEA_CAPACITACION=1 se añaden vistas desde arriba y los listados de la escena (jerarquía
+    // y pasos del Director), para la presentación de la capacitación técnica
+    // (Docs/Herramientas/generar_presentacion_codigo.js).
+    private static bool Capacitacion => Environment.GetEnvironmentVariable("CODEA_CAPACITACION") == "1";
+
+    /// <summary>Vistas cenitales calculadas con lo que hay en la escena, no con coordenadas fijas.</summary>
+    private static IEnumerable<Shot> CapacitacionShots()
+    {
+        LevelManager level = Object.FindAnyObjectByType<LevelManager>();
+        if (level != null && TryBounds(level.GetComponentsInChildren<Renderer>(), out Bounds grid))
+            yield return Above("sala1_cenital", grid, 1.25f, 3.6f);
+
+        // La nave desde fuera, en diagonal: la estructura de las cuatro salas (Enviroment).
+        GameObject environment = GameObject.Find("Enviroment");
+        if (environment != null && TryBounds(environment.GetComponentsInChildren<Renderer>(), out Bounds ship))
+        {
+            Vector3 direction = new Vector3(-0.9f, 1.1f, -0.55f).normalized;
+            float distance = ship.extents.magnitude * 1.6f;
+            yield return new Shot("mapa_nave", ship.center + direction * distance, ship.center, 45f);
+        }
+    }
+
+    private static bool TryBounds(IEnumerable<Renderer> renderers, out Bounds bounds)
+    {
+        bounds = default;
+        bool any = false;
+        foreach (Renderer r in renderers)
+        {
+            if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if (!any) { bounds = r.bounds; any = true; }
+            else bounds.Encapsulate(r.bounds);
+        }
+        return any;
+    }
+
+    /// <summary>Cámara encima del centro, mirando abajo, a la altura que hace caber la caja (con tope).</summary>
+    private static Shot Above(string file, Bounds b, float margin, float maxHeight, float fov = 80f)
+    {
+        float half = Mathf.Max(b.extents.x, b.extents.z / (Width / (float)Height)) * margin;
+        float horizontalFov = 2f * Mathf.Atan(Mathf.Tan(fov * Mathf.Deg2Rad / 2f) * Width / Height);
+        float height = Mathf.Min(maxHeight, half / Mathf.Tan(horizontalFov / 2f));
+        Vector3 top = new Vector3(b.center.x, b.max.y + height, b.center.z);
+        // Mirar casi en vertical (LookAt no admite la vertical exacta con el arriba del mundo).
+        return new Shot(file, top, new Vector3(b.center.x, b.min.y, b.center.z + 0.01f), fov);
+    }
+
+    /// <summary>Raíces de Juego.unity y sus hijos, con los componentes propios del proyecto.</summary>
+    private static void DumpHierarchy()
+    {
+        var lines = new List<string>();
+        string Own(GameObject go) => string.Join(", ", go.GetComponents<MonoBehaviour>()
+            .Where(m => m != null && m.GetType().Assembly.GetName().Name == "Assembly-CSharp")
+            .Select(m => m.GetType().Name).Distinct());
+
+        foreach (GameObject root in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+        {
+            lines.Add($"{root.name}\t{Own(root)}\t{root.transform.childCount}");
+            foreach (Transform child in root.transform)
+                lines.Add($"  {child.name}\t{Own(child.gameObject)}\t{child.childCount}");
+        }
+        File.WriteAllLines(Path.Combine(OutputFolder, "jerarquia_juego.txt"), lines);
+        Log($"✓ jerarquia_juego.txt ({lines.Count} líneas)");
+    }
+
+    /// <summary>Capítulos y pasos del Director, como están en el inspector.</summary>
+    private static void DumpDirector()
+    {
+        Director director = Object.FindAnyObjectByType<Director>(FindObjectsInactive.Include);
+        if (director == null) return;
+        var lines = new List<string>();
+        foreach (Scenario scenario in director.scenarios)
+        {
+            lines.Add($"# {scenario.name}");
+            foreach (Step step in scenario.steps)
+            {
+                string waits = string.Join(", ", (step.waitActions ?? new List<GameObject>()).Where(g => g != null).Select(g => g.name));
+                lines.Add($"{step.message}\t{step.completionType}\t{waits}\t{step.instantEvents.GetPersistentEventCount()}");
+            }
+        }
+        File.WriteAllLines(Path.Combine(OutputFolder, "director_juego.txt"), lines);
+        Log($"✓ director_juego.txt ({lines.Count} líneas)");
     }
 
     [MenuItem("Tools/Codea/Capturas para informes", false, 80)]
@@ -265,6 +351,20 @@ public static class CodeaCaptures
     private static void Finish()
     {
         EditorApplication.update -= Tick;
+
+        if (Capacitacion)
+        {
+            try
+            {
+                EditorSceneManager.OpenScene(GameScene, OpenSceneMode.Single);
+                DumpHierarchy();
+                DumpDirector();
+            }
+            catch (Exception e)
+            {
+                Log($"✗ Listados: {e.GetType().Name}: {e.Message}");
+            }
+        }
 
         // La pantalla del supervisor no cambia en Play: se fotografía en el editor.
         try

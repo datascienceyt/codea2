@@ -1,0 +1,70 @@
+Global Volume		0
+Directional Light		0
+TelemetryUpdater	JSONUploader	0
+TelemetryManager	TelemetryManager	0
+Pos_earth	EarthApproach	3
+  Earth	EarthRotation	1
+  Sun		1
+  Moon		1
+Pos_sun		3
+  Earth	EarthRotation	1
+  Sun		1
+  Moon		1
+Player		2
+  TrackingSpace		8
+  [BuildingBlock] OVRComprehensiveInteractionRig		10
+Director	Director	2
+  Narrator	Narrator, NarrationDifficulty	7
+  Tools	Tools	4
+Ambient sound		0
+SceneManager	SceneController	0
+Enviroment		7
+  Part1		20
+  door_1	AutomaticDoor	2
+  Part2		5
+  door_2	AutomaticDoor	2
+  Part3		10
+  door_3	AutomaticDoor	2
+  Part4		23
+ScreenNarrator	ScreenTeleporter	1
+  Canvas		1
+Tutorial	TutorialController, BlockResetter	4
+  Room		0
+  Desk		1
+  StartButton		3
+  Interactables		6
+Escenario (1)	Scenario1Controller, ProgramTrigger, ProgramRunner, Scenario1Difficulty	5
+  Timer	TimerDisplay	1
+  Desktop		0
+  Grid	LevelLoader, LevelManager	0
+  Items		3
+  SocketRow	SocketRow	5
+Escenario (2)	Scenario2Controller, Scenario2Difficulty	5
+  Timer	TimerDisplay	1
+  CoolingModule	SystemModule	7
+  GeneratorsModule	SystemModule	7
+  EngineModule	SystemModule	7
+  Ambientación		7
+Escenario (3)	Scenario3Controller, ProgramRunner, ProgramTrigger, Scenario3Difficulty	13
+  Timer	TimerDisplay	1
+  Consola (Intermedia)	DifficultyOnly	0
+  Consola (Basica)	DifficultyOnly	0
+  RoboticArm	RoboticArm	1
+  Buttons		4
+  Canvas		1
+  SocketColumn	SocketRow	9
+  TipoCaja	VRGrabEvents, ArmTypeChip	3
+  TipoBarril	VRGrabEvents, ArmTypeChip	3
+  SocketTipo	Socket, ArmTypeSocket	5
+  Barriles	ArmSlot	0
+  Cajas	ArmSlot	0
+  Objetos	ArmSlot	10
+Escenario (4)	Scenario4Controller, Scenario4Difficulty, MissionCelebration	6
+  Timer	TimerDisplay	1
+  Collider		0
+  Desk		1
+  RestartB		3
+  Blocks	BlockResetter	18
+  Sockets		10
+EventSystem		0
+Sesion	DifficultyApplier, SceneLoader, TimeUpSequence, ScenarioTimeLimit	0

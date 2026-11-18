@@ -1,0 +1,28 @@
+# Inicio
+Iniciar tutorial	Sequence	Narrator, Tutorial	2
+Teletransportar a Escenario 1	Sequence	Fader, Teleporter, Fader	2
+# Escenario 1
+Esperar 2 segundos	All	Waiter	1
+Narrar	Sequence	Narrator, Narrator, Narrator, Narrator, Narrator, Narrator	0
+Iniciar temporizador	All		2
+Esperar a completar el escenario 1	Sequence	Escenario (1), Narrator, door_1	1
+Teletransportar jugador a escenario 2	Sequence	Fader, Teleporter, Fader, door_1	2
+Desactivar Escenario 1	Sequence		1
+# Escenario 2
+Narrar escenario 2	Sequence	Narrator, Narrator, Fader	2
+Teletransportar a panel 1	Sequence	Fader, CoolingModule, Fader	2
+Teletransportar a panel 2	Sequence	Fader, GeneratorsModule, Fader	2
+Teletransportar a panel 3	Sequence	Fader, EngineModule, Narrator, door_2, Fader	2
+Teletransportar jugador a escenario 3	Sequence	Fader, door_2	2
+Desactivar Escenario 2	Sequence		1
+# Escenario 3
+Narrar escenario 3	Sequence	Narrator, Narrator, Narrator, Narrator	1
+Esperar completar escenario 3	Sequence	Escenario (3), Narrator, door_3, Fader	0
+Teletransportar al final	All	Fader, door_3	4
+Desactivar Escenario 3	All		1
+# Escenario 4
+Narrar escenario 4	Sequence	Narrator, Narrator	1
+Esperar completar escenario 4	Sequence	Escenario (4), Narrator, Waiter	0
+Completar reto y cambiar escenario	All	Narrator, Pos_earth	3
+Subir JSON	All		1
+Volver a Setup	All		2
